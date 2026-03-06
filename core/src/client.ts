@@ -1,15 +1,21 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { StitchConfigSchema, StitchConfig, StitchMCPClientSpec } from './spec/client.js';
+import { StitchConfigSchema, StitchConfig, StitchToolClientSpec } from './spec/client.js';
 import pkg from '../package.json' with { type: 'json' };
 
 /**
- * A robust, authenticated driver for the Stitch MCP Server.
- * Handles auth injection, retries, and transport negotiation.
+ * Authenticated tool pipe for the Stitch MCP Server.
+ *
+ * Designed for agents and orchestration scripts that forward JSON payloads
+ * to MCP tools. Handles auth injection via the transport layer (not global fetch).
+ *
+ * Usage:
+ *   const client = new StitchToolClient();          // reads STITCH_API_KEY from env
+ *   const result = await client.callTool("generate_screen_from_text", { ... });
  */
-export class StitchMCPClient implements StitchMCPClientSpec {
-  name: 'stitch-mcp-client' = 'stitch-mcp-client';
-  description: 'Authenticated driver for Stitch MCP Server' = 'Authenticated driver for Stitch MCP Server';
+export class StitchToolClient implements StitchToolClientSpec {
+  name: 'stitch-tool-client' = 'stitch-tool-client';
+  description: 'Authenticated tool pipe for Stitch MCP Server' = 'Authenticated tool pipe for Stitch MCP Server';
 
   private client: Client;
   private transport: StreamableHTTPClientTransport | null = null;
@@ -33,80 +39,35 @@ export class StitchMCPClient implements StitchMCPClientSpec {
   }
 
   /**
-   * Validates the token against Google's tokeninfo endpoint.
+   * Build auth headers based on config (API key or OAuth).
    */
-  private async validateToken(token: string) {
-    const checkUrl = `https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${encodeURIComponent(this.config.accessToken!)}`;
-    let response = await fetch(checkUrl);
-
-    if (!response.ok) {
-      console.warn("⚠️ Initial token validation failed. Attempting refresh...");
-      try {
-        this.config.accessToken = token;
-        // Re-validate
-        response = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${encodeURIComponent(this.config.accessToken!)}`);
-        if (!response.ok) throw new Error("Refreshed token is invalid.");
-      } catch (error) {
-        throw new Error(`Authentication Failed: ${(error as Error).message}`);
-      }
-    }
-  }
-
-  /**
-   * Monkey-patches global fetch to ensure headers are ALWAYS present.
-   * This fixes issues where SDK layers might drop headers on redirects or retries.
-   */
-  private installNetworkInterceptor() {
-    const originalFetch = globalThis.fetch;
-    if ((originalFetch as any).__stitchPatched) return;
-
-    globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-      let url = input.toString();
-      if (input instanceof Request) url = input.url;
-
-      // Only intercept Stitch calls
-      if (url.startsWith(this.config.baseUrl)) {
-        const newHeaders = new Headers(init?.headers);
-
-        if (this.config.apiKey) {
-          newHeaders.set("X-Goog-Api-Key", this.config.apiKey);
-          // No X-Goog-User-Project for API key auth
-        } else {
-          newHeaders.set("Authorization", `Bearer ${this.config.accessToken}`);
-          newHeaders.set("X-Goog-User-Project", this.config.projectId!);
-        }
-
-        newHeaders.set("Accept", "application/json, text/event-stream");
-
-        // Ensure Content-Type for POST
-        if (!newHeaders.has("Content-Type") && (init?.method === "POST" || (input instanceof Request && input.method === "POST"))) {
-          newHeaders.set("Content-Type", "application/json");
-        }
-
-        const newInit: RequestInit = { ...init, headers: newHeaders };
-
-        // Preserve method if it was in the Request object but not in init
-        if (input instanceof Request && !newInit.method) {
-          newInit.method = input.method;
-        }
-
-        return originalFetch(url, newInit);
-      }
-      return originalFetch(input, init);
+  private buildAuthHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+      'Accept': 'application/json, text/event-stream',
     };
-    (globalThis.fetch as any).__stitchPatched = true;
+
+    if (this.config.apiKey) {
+      headers['X-Goog-Api-Key'] = this.config.apiKey;
+    } else {
+      headers['Authorization'] = `Bearer ${this.config.accessToken}`;
+      headers['X-Goog-User-Project'] = this.config.projectId!;
+    }
+
+    return headers;
   }
 
   async connect() {
     if (this.isConnected) return;
 
-    if (!this.config.apiKey) {
-      await this.validateToken(this.config.accessToken!); // OAuth only
-    }
-    this.installNetworkInterceptor();
-
-    // Transport gets the URL; headers are handled by interceptor
-    this.transport = new StreamableHTTPClientTransport(new URL(this.config.baseUrl));
+    // Create transport with auth headers injected per-instance (no global fetch mutation)
+    this.transport = new StreamableHTTPClientTransport(
+      new URL(this.config.baseUrl),
+      {
+        requestInit: {
+          headers: this.buildAuthHeaders(),
+        },
+      }
+    );
 
     this.transport.onerror = (err) => {
       console.error("Stitch Transport Error:", err);
@@ -150,7 +111,7 @@ export class StitchMCPClient implements StitchMCPClientSpec {
     return anyResult as T;
   }
 
-  async getCapabilities() {
+  async listTools() {
     if (!this.isConnected) await this.connect();
     return this.client.listTools();
   }

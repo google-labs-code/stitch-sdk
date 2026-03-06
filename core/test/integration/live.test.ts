@@ -1,36 +1,29 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { Stitch } from "../../src/sdk.js";
+import { Stitch } from "../../generated/src/stitch.js";
+import { StitchToolClient } from "../../src/client.js";
 
 const runIfConfigured = process.env.STITCH_ACCESS_TOKEN ? describe : describe.skip;
 
 runIfConfigured("Stitch Live Integration", () => {
-  let stitch: Stitch;
-  let testProjectId: string;
+  let sdk: Stitch;
 
   beforeAll(async () => {
-    stitch = new Stitch();
-    const connectResult = await stitch.connect();
-    expect(connectResult.success).toBe(true);
+    const client = new StitchToolClient();
+    await client.connect();
+    sdk = new Stitch(client);
   });
 
   it("should list projects", async () => {
-    const result = await stitch.projects();
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(Array.isArray(result.data)).toBe(true);
-      if (result.data.length > 0) {
-        expect(result.data[0]).toHaveProperty("id");
-      }
+    const projects = await sdk.projects();
+    expect(Array.isArray(projects)).toBe(true);
+    if (projects.length > 0) {
+      expect(projects[0]).toHaveProperty("id");
     }
   });
 
   it("should create and retrieve a project", async () => {
-    const result = await stitch.createProject(`Test Project ${Date.now()}`);
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.id).toContain("projects/");
-      testProjectId = result.data.id;
-      console.log("Created Project:", testProjectId);
-    }
+    const project = await sdk.createProject(`Test Project ${Date.now()}`);
+    expect(project.id).toContain("projects/");
+    console.log("Created Project:", project.id);
   }, 30000);
 });

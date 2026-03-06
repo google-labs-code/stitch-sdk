@@ -1,6 +1,7 @@
 {
   "name": "stitch-root",
   "private": true,
+  "type": "module",
   "version": "0.1.0",
   "workspaces": [
     "core"
@@ -18,9 +19,11 @@
     "predeploy:release": "npm run version:sync",
     "deploy:release": "bun scripts/pack-release.ts",
     "validate:release": "bun scripts/validate-release.ts",
-    "test:smoke": "bun scripts/smoke-test.ts"
+    "test:smoke": "bun scripts/smoke-test.ts",
+    "test:e2e": "bun scripts/e2e-test.ts"
   },
   "devDependencies": {
+    "@types/bun": "^1.3.10",
     "@types/react": "^18.3.0",
     "firebase-tools": "^14.26.0",
     "ink": "^4.0.0",

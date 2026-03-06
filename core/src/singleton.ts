@@ -1,14 +1,16 @@
-import { Stitch } from "./sdk.js";
+import { Stitch } from "../generated/src/stitch.js";
+import { StitchToolClient } from "./client.js";
 
 /** Lazily-initialized default Stitch instance */
 let _stitch: Stitch | null = null;
 
 function getStitchInstance(): Stitch {
   if (!_stitch) {
-    _stitch = new Stitch({
+    const client = new StitchToolClient({
       apiKey: process.env.STITCH_API_KEY,
       baseUrl: process.env.STITCH_HOST || "https://stitch.googleapis.com/mcp",
     });
+    _stitch = new Stitch(client);
   }
   return _stitch;
 }

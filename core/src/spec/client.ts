@@ -40,21 +40,21 @@ export const ToolResultSchema = z.object({
 });
 export type ToolResult = z.infer<typeof ToolResultSchema>;
 
-export const CapabilitiesSchema = z.object({
+export const ToolsSchema = z.object({
   tools: z.array(z.object({
     name: z.string(),
     description: z.string().optional(),
     inputSchema: z.unknown().optional(),
   })),
 });
-export type Capabilities = z.infer<typeof CapabilitiesSchema>;
+export type Tools = z.infer<typeof ToolsSchema>;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 3. BEHAVIOR INTERFACE - The contract
 // ─────────────────────────────────────────────────────────────────────────────
-export interface StitchMCPClientSpec {
-  name: 'stitch-mcp-client';
-  description: 'Authenticated driver for Stitch MCP Server';
+export interface StitchToolClientSpec {
+  name: 'stitch-tool-client';
+  description: 'Authenticated tool pipe for Stitch MCP Server';
 
   /**
    * Validate configuration and establish connection.
@@ -75,7 +75,7 @@ export interface StitchMCPClientSpec {
   /**
    * Get available tools from the server.
    */
-  getCapabilities: () => Promise<Capabilities>;
+  listTools: () => Promise<Tools>;
 
   /**
    * Close the connection.

@@ -17,13 +17,41 @@ export const StitchErrorCode = z.enum([
 export type StitchErrorCode = z.infer<typeof StitchErrorCode>;
 
 /**
- * Structured error with code, message, and recovery hints.
+ * Structured error data for internal Result types.
  */
-export const StitchError = z.object({
-  code: StitchErrorCode,
-  message: z.string(),
-  suggestion: z.string().optional(),
-  recoverable: z.boolean(),
-});
+export interface StitchErrorData {
+  code: StitchErrorCode;
+  message: string;
+  suggestion?: string;
+  recoverable: boolean;
+}
 
-export type StitchError = z.infer<typeof StitchError>;
+/**
+ * Throwable error class for the public API.
+ * Extends Error so it works with try/catch and instanceof checks.
+ */
+export class StitchError extends Error {
+  public readonly code: StitchErrorCode;
+  public readonly suggestion?: string;
+  public readonly recoverable: boolean;
+
+  constructor(data: StitchErrorData) {
+    super(data.message);
+    this.name = 'StitchError';
+    this.code = data.code;
+    this.suggestion = data.suggestion;
+    this.recoverable = data.recoverable;
+  }
+
+/**
+ * Create a StitchError from an unknown caught error.
+ */
+  static fromUnknown(error: unknown): StitchError {
+    if (error instanceof StitchError) return error;
+    return new StitchError({
+      code: 'UNKNOWN_ERROR',
+      message: error instanceof Error ? error.message : String(error),
+      recoverable: false,
+    });
+  }
+}

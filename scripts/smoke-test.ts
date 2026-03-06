@@ -3,9 +3,10 @@
  * 
  * Verifies:
  * 1. dist/ output exists after build
- * 2. Entry point (dist/index.js) is importable
- * 3. All key exports are present and correctly typed
- * 4. Type declarations (dist/index.d.ts) are emitted
+ * 2. Generated pipeline artifacts are co-located in core/generated/
+ * 3. Entry point (dist/src/index.js) is importable
+ * 4. All public exports are present
+ * 5. Internal exports are NOT leaked
  */
 
 import { existsSync } from "node:fs";
@@ -13,6 +14,7 @@ import { resolve } from "node:path";
 
 const CORE_DIR = resolve(process.cwd(), "core");
 const DIST_DIR = resolve(CORE_DIR, "dist");
+const GENERATED_DIR = resolve(CORE_DIR, "generated");
 
 let failures = 0;
 
@@ -28,46 +30,55 @@ function assert(condition: boolean, message: string) {
 async function main() {
   // ── 1. Verify dist output exists ──────────────────────────────
   console.log("\n📦 Checking build output...");
-  assert(existsSync(resolve(DIST_DIR, "index.js")), "dist/index.js exists");
-  assert(existsSync(resolve(DIST_DIR, "index.d.ts")), "dist/index.d.ts exists");
-  assert(existsSync(resolve(DIST_DIR, "client.js")), "dist/client.js exists");
-  assert(existsSync(resolve(DIST_DIR, "sdk.js")), "dist/sdk.js exists");
-  assert(existsSync(resolve(DIST_DIR, "screen.js")), "dist/screen.js exists");
-  assert(existsSync(resolve(DIST_DIR, "project.js")), "dist/project.js exists");
-  assert(existsSync(resolve(DIST_DIR, "result.js")), "dist/result.js exists");
-  assert(existsSync(resolve(DIST_DIR, "proxy")), "dist/proxy/ directory exists");
+  assert(existsSync(resolve(DIST_DIR, "src/index.js")), "dist/src/index.js exists");
+  assert(existsSync(resolve(DIST_DIR, "src/index.d.ts")), "dist/src/index.d.ts exists");
+  assert(existsSync(resolve(DIST_DIR, "src/client.js")), "dist/src/client.js exists");
+  assert(existsSync(resolve(DIST_DIR, "src/sdk.js")), "dist/src/sdk.js exists");
+  assert(existsSync(resolve(DIST_DIR, "src/screen.js")), "dist/src/screen.js exists");
+  assert(existsSync(resolve(DIST_DIR, "src/project.js")), "dist/src/project.js exists");
+  assert(existsSync(resolve(DIST_DIR, "src/proxy")), "dist/src/proxy/ directory exists");
 
-  // ── 2. Dynamic import of the built package ────────────────────
+  // ── 2. Verify generated pipeline artifacts ────────────────────
+  console.log("\n📂 Checking generated pipeline artifacts...");
+  assert(existsSync(resolve(GENERATED_DIR, "stitch-sdk.lock")), "core/generated/stitch-sdk.lock exists");
+  assert(existsSync(resolve(GENERATED_DIR, "tools-manifest.json")), "core/generated/tools-manifest.json exists");
+  assert(existsSync(resolve(GENERATED_DIR, "domain-map.json")), "core/generated/domain-map.json exists");
+  assert(existsSync(resolve(GENERATED_DIR, "src/stitch.ts")), "core/generated/src/stitch.ts exists");
+  assert(existsSync(resolve(GENERATED_DIR, "src/project.ts")), "core/generated/src/project.ts exists");
+  assert(existsSync(resolve(GENERATED_DIR, "src/screen.ts")), "core/generated/src/screen.ts exists");
+  assert(existsSync(resolve(GENERATED_DIR, "src/index.ts")), "core/generated/src/index.ts exists");
+
+  // ── 3. Verify compiled generated output ───────────────────────
+  console.log("\n🔧 Checking compiled generated output...");
+  assert(existsSync(resolve(DIST_DIR, "generated/src/index.js")), "dist/generated/src/index.js exists");
+  assert(existsSync(resolve(DIST_DIR, "generated/src/stitch.js")), "dist/generated/src/stitch.js exists");
+  assert(existsSync(resolve(DIST_DIR, "generated/src/project.js")), "dist/generated/src/project.js exists");
+  assert(existsSync(resolve(DIST_DIR, "generated/src/screen.js")), "dist/generated/src/screen.js exists");
+
+  // ── 4. Dynamic import ─────────────────────────────────────────
   console.log("\n🔌 Importing package...");
-  const sdk = await import(resolve(DIST_DIR, "index.js"));
+  const sdk = await import(resolve(DIST_DIR, "src/index.js"));
 
-  // ── 3. Verify key exports ─────────────────────────────────────
-  console.log("\n🔍 Checking exports...");
-
-  // Classes
+  // ── 5. Verify public exports ──────────────────────────────────
+  console.log("\n🔍 Checking public exports...");
   assert(typeof sdk.Stitch === "function", "Stitch class exported");
-  assert(typeof sdk.StitchMCPClient === "function", "StitchMCPClient class exported");
+  assert(typeof sdk.StitchToolClient === "function", "StitchToolClient class exported");
   assert(typeof sdk.Screen === "function", "Screen class exported");
   assert(typeof sdk.Project === "function", "Project class exported");
   assert(typeof sdk.StitchProxy === "function", "StitchProxy class exported");
-
-  // Singleton
   assert(typeof sdk.stitch === "object", "stitch singleton exported");
-
-  // Result helpers
-  assert(typeof sdk.ok === "function", "ok() result helper exported");
-  assert(typeof sdk.fail === "function", "fail() result helper exported");
-  assert(typeof sdk.failFromError === "function", "failFromError() result helper exported");
-
-  // Zod schemas
-  assert(typeof sdk.StitchConfigSchema === "object", "StitchConfigSchema exported");
   assert(typeof sdk.StitchErrorCode === "object", "StitchErrorCode exported");
-  assert(typeof sdk.StitchError === "object", "StitchError (schema) exported");
+  assert(typeof sdk.StitchError === "function", "StitchError class exported");
 
-  // Proxy utilities
-  assert(typeof sdk.forwardToStitch === "function", "forwardToStitch() exported");
-  assert(typeof sdk.initializeStitchConnection === "function", "initializeStitchConnection() exported");
-  assert(typeof sdk.refreshTools === "function", "refreshTools() exported");
+  // ── 6. Verify internal exports are NOT leaked ─────────────────
+  console.log("\n🔒 Checking internal exports are hidden...");
+  assert(sdk.ok === undefined, "ok() NOT exported (internal)");
+  assert(sdk.fail === undefined, "fail() NOT exported (internal)");
+  assert(sdk.failFromError === undefined, "failFromError() NOT exported (internal)");
+  assert(sdk.StitchConfigSchema === undefined, "StitchConfigSchema NOT exported (internal)");
+  assert(sdk.forwardToStitch === undefined, "forwardToStitch() NOT exported (internal)");
+  assert(sdk.initializeStitchConnection === undefined, "initializeStitchConnection() NOT exported (internal)");
+  assert(sdk.refreshTools === undefined, "refreshTools() NOT exported (internal)");
 
   // ── Summary ───────────────────────────────────────────────────
   console.log("");

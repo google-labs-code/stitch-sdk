@@ -1,0 +1,327 @@
+{
+  "classes": {
+    "Stitch": {
+      "description": "Main entry point. Manages projects.",
+      "constructorParams": [],
+      "isRoot": true,
+      "factories": [
+        {
+          "method": "project",
+          "returns": "Project",
+          "description": "Create a Project handle from an existing ID without an API call."
+        }
+      ]
+    },
+    "Project": {
+      "description": "A Stitch project containing screens.",
+      "constructorParams": [
+        "projectId"
+      ],
+      "fieldMapping": {
+        "projectId": {
+          "from": "name",
+          "stripPrefix": "projects/"
+        }
+      }
+    },
+    "Screen": {
+      "description": "A generated UI screen. Provides access to HTML and screenshots.",
+      "constructorParams": [
+        "projectId",
+        "screenId"
+      ],
+      "fieldMapping": {
+        "projectId": {
+          "from": "projectId"
+        },
+        "screenId": {
+          "from": "id",
+          "fallback": {
+            "field": "name",
+            "splitOn": "/screens/"
+          }
+        }
+      },
+      "parentField": "projectId",
+      "idField": "screenId"
+    }
+  },
+  "bindings": [
+    {
+      "tool": "create_project",
+      "class": "Stitch",
+      "method": "createProject",
+      "args": {
+        "title": {
+          "from": "param"
+        }
+      },
+      "returns": {
+        "class": "Project",
+        "projection": []
+      }
+    },
+    {
+      "tool": "get_project",
+      "class": "Stitch",
+      "method": "getProject",
+      "args": {
+        "name": {
+          "from": "param",
+          "rename": "id"
+        }
+      },
+      "returns": {
+        "class": "Project",
+        "projection": []
+      }
+    },
+    {
+      "tool": "list_projects",
+      "class": "Stitch",
+      "method": "projects",
+      "args": {},
+      "returns": {
+        "class": "Project",
+        "projection": [
+          {
+            "prop": "projects"
+          }
+        ],
+        "array": true
+      }
+    },
+    {
+      "tool": "generate_screen_from_text",
+      "class": "Project",
+      "method": "generate",
+      "args": {
+        "projectId": {
+          "from": "self"
+        },
+        "prompt": {
+          "from": "param"
+        },
+        "deviceType": {
+          "from": "param",
+          "optional": true,
+          "default": "DESKTOP"
+        }
+      },
+      "returns": {
+        "class": "Screen",
+        "projection": [
+          {
+            "prop": "outputComponents",
+            "index": 0
+          },
+          {
+            "prop": "design"
+          },
+          {
+            "prop": "screens",
+            "index": 0
+          }
+        ]
+      }
+    },
+    {
+      "tool": "edit_screens",
+      "class": "Screen",
+      "method": "edit",
+      "args": {
+        "projectId": {
+          "from": "self"
+        },
+        "selectedScreenIds": {
+          "from": "selfArray",
+          "field": "screenId"
+        },
+        "prompt": {
+          "from": "param"
+        },
+        "deviceType": {
+          "from": "param",
+          "optional": true
+        },
+        "modelId": {
+          "from": "param",
+          "optional": true
+        }
+      },
+      "returns": {
+        "class": "Screen",
+        "projection": [
+          {
+            "prop": "outputComponents",
+            "index": 0
+          },
+          {
+            "prop": "design"
+          },
+          {
+            "prop": "screens",
+            "index": 0
+          }
+        ]
+      }
+    },
+    {
+      "tool": "generate_variants",
+      "class": "Screen",
+      "method": "variants",
+      "args": {
+        "projectId": {
+          "from": "self"
+        },
+        "selectedScreenIds": {
+          "from": "selfArray",
+          "field": "screenId"
+        },
+        "prompt": {
+          "from": "param"
+        },
+        "variantOptions": {
+          "from": "param"
+        },
+        "deviceType": {
+          "from": "param",
+          "optional": true
+        },
+        "modelId": {
+          "from": "param",
+          "optional": true
+        }
+      },
+      "returns": {
+        "class": "Screen",
+        "projection": [
+          {
+            "prop": "outputComponents",
+            "each": true
+          },
+          {
+            "prop": "design"
+          },
+          {
+            "prop": "screens",
+            "each": true
+          }
+        ],
+        "array": true
+      }
+    },
+    {
+      "tool": "list_screens",
+      "class": "Project",
+      "method": "screens",
+      "args": {
+        "projectId": {
+          "from": "self"
+        }
+      },
+      "returns": {
+        "class": "Screen",
+        "projection": [
+          {
+            "prop": "screens"
+          }
+        ],
+        "array": true
+      }
+    },
+    {
+      "tool": "get_screen",
+      "class": "Project",
+      "method": "getScreen",
+      "args": {
+        "projectId": {
+          "from": "self"
+        },
+        "screenId": {
+          "from": "param"
+        },
+        "name": {
+          "from": "computed",
+          "template": "projects/{projectId}/screens/{screenId}"
+        }
+      },
+      "returns": {
+        "class": "Screen",
+        "projection": []
+      }
+    },
+    {
+      "tool": "get_screen",
+      "class": "Screen",
+      "method": "getHtml",
+      "args": {
+        "projectId": {
+          "from": "self"
+        },
+        "screenId": {
+          "from": "self"
+        },
+        "name": {
+          "from": "computed",
+          "template": "projects/{projectId}/screens/{screenId}"
+        }
+      },
+      "returns": {
+        "type": "string",
+        "projection": [
+          {
+            "prop": "htmlCode"
+          }
+        ]
+      },
+      "cache": {
+        "projection": [
+          {
+            "prop": "htmlCode"
+          }
+        ],
+        "description": "Use cached HTML from generation response if available"
+      }
+    },
+    {
+      "tool": "get_screen",
+      "class": "Screen",
+      "method": "getImage",
+      "args": {
+        "projectId": {
+          "from": "self"
+        },
+        "screenId": {
+          "from": "self"
+        },
+        "name": {
+          "from": "computed",
+          "template": "projects/{projectId}/screens/{screenId}"
+        }
+      },
+      "returns": {
+        "type": "string",
+        "projection": [
+          {
+            "prop": "screenshot"
+          },
+          {
+            "prop": "downloadUrl"
+          }
+        ]
+      },
+      "cache": {
+        "projection": [
+          {
+            "prop": "screenshot"
+          },
+          {
+            "prop": "downloadUrl"
+          }
+        ],
+        "description": "Use cached screenshot URL from generation response"
+      }
+    }
+  ]
+}

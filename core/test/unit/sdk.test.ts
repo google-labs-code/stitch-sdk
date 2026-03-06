@@ -1,98 +1,134 @@
 import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
-import { Screen } from "../../src/screen.js";
-import { Project } from "../../src/project.js";
-import { StitchMCPClient } from "../../src/client.js";
-import { ScreenInstance } from "../../src/types.js";
+import { Screen } from "../../generated/src/screen.js";
+import { Project } from "../../generated/src/project.js";
+import { StitchToolClient } from "../../src/client.js";
 
-// Mock the StitchMCPClient class
+// Mock the StitchToolClient class
 vi.mock("../../src/client");
 
 describe("SDK Unit Tests", () => {
-  let mockClient: StitchMCPClient;
+  let mockClient: StitchToolClient;
 
   beforeEach(() => {
     vi.clearAllMocks();
     // Create a mock instance of the client
-    mockClient = new StitchMCPClient();
+    mockClient = new StitchToolClient();
     mockClient.callTool = vi.fn();
   });
 
   describe("Screen Class", () => {
-    const screenData: ScreenInstance = { id: "screen-123", sourceScreen: "Login" };
+    const screenData = { id: "screen-123", name: "Login", htmlCode: "<div>Cached</div>", screenshot: { downloadUrl: "https://cached.example.com/img.png" }, projectId: "proj-123" };
     const projectId = "proj-123";
 
-    it("getHtml should return raw HTML directly if provided", async () => {
-      const screen = new Screen(mockClient, projectId, screenData);
+    it("getHtml should return cached HTML from data if available", async () => {
+      const screen = new Screen(mockClient, screenData);
+      const result = await screen.getHtml();
 
-      // Mock callTool to return HTML directly
+      // Should not call API — uses cached data.htmlCode
+      expect(mockClient.callTool).not.toHaveBeenCalled();
+      expect(result).toBe("<div>Cached</div>");
+    });
+
+    it("getHtml should call get_screen if no cached htmlCode", async () => {
+      const screen = new Screen(mockClient, { id: "screen-123", name: "Login", projectId });
+
       (mockClient.callTool as Mock).mockResolvedValue({
-        htmlCode: "<div>Hello World</div>"
+        htmlCode: "<div>From API</div>"
       });
 
       const result = await screen.getHtml();
 
-      expect(mockClient.callTool).toHaveBeenCalledWith("get_screen_html", {
+      expect(mockClient.callTool).toHaveBeenCalledWith("get_screen", {
         projectId: projectId,
-        screenId: screenData.id
+        screenId: "screen-123",
+        name: "projects/proj-123/screens/screen-123",
       });
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toBe("<div>Hello World</div>");
-      }
+      expect(result).toBe("<div>From API</div>");
     });
 
-    it("getHtml should fetch content if URL is provided", async () => {
-      const screen = new Screen(mockClient, projectId, screenData);
-      const fakeUrl = "https://example.com/screen.html";
-      const fakeContent = "<html>Fetched Content</html>";
+    it("getImage should return cached screenshot URL from data if available", async () => {
+      const screen = new Screen(mockClient, screenData);
+      const result = await screen.getImage();
 
-      // Mock callTool to return a URL
-      (mockClient.callTool as Mock).mockResolvedValue({
-        uri: fakeUrl
-      });
-
-      // Mock global fetch
-      const originalFetch = globalThis.fetch;
-      globalThis.fetch = vi.fn().mockResolvedValue({
-        text: () => Promise.resolve(fakeContent)
-      } as any);
-
-      try {
-        const result = await screen.getHtml();
-
-        expect(mockClient.callTool).toHaveBeenCalledWith("get_screen_html", {
-          projectId: projectId,
-          screenId: screenData.id
-        });
-        expect(globalThis.fetch).toHaveBeenCalledWith(fakeUrl);
-        expect(result.success).toBe(true);
-        if (result.success) {
-          expect(result.data).toBe(fakeContent);
-        }
-      } finally {
-        globalThis.fetch = originalFetch;
-      }
+      // Should not call API — uses cached data.screenshot.downloadUrl
+      expect(mockClient.callTool).not.toHaveBeenCalled();
+      expect(result).toBe("https://cached.example.com/img.png");
     });
 
-    it("getImage should return the image URL", async () => {
-      const screen = new Screen(mockClient, projectId, screenData);
-      const imageUrl = "https://example.com/image.png";
+    it("getImage should call get_screen if no cached screenshot", async () => {
+      const screen = new Screen(mockClient, { id: "screen-123", name: "Login", projectId });
 
-      // Mock callTool to return image URL
       (mockClient.callTool as Mock).mockResolvedValue({
-        url: imageUrl
+        screenshot: { downloadUrl: "https://api.example.com/image.png" }
       });
 
       const result = await screen.getImage();
 
-      expect(mockClient.callTool).toHaveBeenCalledWith("get_screen_image", {
+      expect(mockClient.callTool).toHaveBeenCalledWith("get_screen", {
         projectId: projectId,
-        screenId: screenData.id
+        screenId: "screen-123",
+        name: "projects/proj-123/screens/screen-123",
       });
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toBe(imageUrl);
-      }
+      expect(result).toBe("https://api.example.com/image.png");
+    });
+
+    it("getHtml should throw StitchError on failure", async () => {
+      const screen = new Screen(mockClient, { id: "screen-123", name: "Login", projectId });
+      (mockClient.callTool as Mock).mockRejectedValue(new Error("Network failure"));
+
+      await expect(screen.getHtml()).rejects.toThrow("Network failure");
+    });
+
+    it("edit should call edit_screens and return new Screen", async () => {
+      const screen = new Screen(mockClient, screenData);
+
+      (mockClient.callTool as Mock).mockResolvedValue({
+        outputComponents: [{
+          design: { screens: [{ id: "edited-screen", htmlCode: "<div>Edited</div>", projectId }] },
+        }],
+        projectId,
+        sessionId: "session-1",
+      });
+
+      const edited = await screen.edit("Make it dark");
+
+      expect(mockClient.callTool).toHaveBeenCalledWith("edit_screens", {
+        projectId,
+        selectedScreenIds: ["screen-123"],
+        prompt: "Make it dark",
+      });
+      expect(edited).toBeInstanceOf(Screen);
+      expect(edited.id).toBe("edited-screen");
+    });
+
+    it("variants should call generate_variants and return Screen[]", async () => {
+      const screen = new Screen(mockClient, screenData);
+
+      (mockClient.callTool as Mock).mockResolvedValue({
+        outputComponents: [{
+          design: {
+            screens: [
+              { id: "var-1", htmlCode: "<div>V1</div>", projectId },
+              { id: "var-2", htmlCode: "<div>V2</div>", projectId },
+            ],
+          },
+        }],
+        projectId,
+        sessionId: "session-1",
+      });
+
+      const results = await screen.variants("Try colors", { variantCount: 2 });
+
+      expect(mockClient.callTool).toHaveBeenCalledWith("generate_variants", {
+        projectId,
+        selectedScreenIds: ["screen-123"],
+        prompt: "Try colors",
+        variantOptions: { variantCount: 2 },
+      });
+      expect(results).toHaveLength(2);
+      expect(results[0]).toBeInstanceOf(Screen);
+      expect(results[0].id).toBe("var-1");
+      expect(results[1].id).toBe("var-2");
     });
   });
 
@@ -102,32 +138,38 @@ describe("SDK Unit Tests", () => {
     it("generate should call correct tool and return a Screen instance", async () => {
       const project = new Project(mockClient, projectId);
       const prompt = "Login page";
-      const mockResponse: ScreenInstance = { id: "new-screen-1", sourceScreen: "Generated" };
 
-      (mockClient.callTool as Mock).mockResolvedValue(mockResponse);
+      (mockClient.callTool as Mock).mockResolvedValue({
+        outputComponents: [
+          {
+            design: {
+              screens: [{ id: "new-screen-1", name: "Generated", htmlCode: "<div>test</div>", projectId }],
+            },
+          },
+        ],
+        projectId: projectId,
+        sessionId: "session-1",
+      });
 
       const result = await project.generate(prompt);
 
       expect(mockClient.callTool).toHaveBeenCalledWith("generate_screen_from_text", {
         projectId: projectId,
         prompt: prompt,
-        deviceType: "DESKTOP"
+        deviceType: undefined
       });
 
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toBeInstanceOf(Screen);
-        expect(result.data.id).toBe(mockResponse.id);
-        expect(result.data.projectId).toBe(projectId);
-      }
+      expect(result).toBeInstanceOf(Screen);
+      expect(result.id).toBe("new-screen-1");
+      expect(result.projectId).toBe(projectId);
     });
 
     it("screens should list screens and return Screen instances", async () => {
       const project = new Project(mockClient, projectId);
       const mockResponse = {
         screens: [
-          { id: "s1", sourceScreen: "S1" },
-          { id: "s2", sourceScreen: "S2" }
+          { id: "s1", sourceScreen: "S1", projectId },
+          { id: "s2", sourceScreen: "S2", projectId }
         ]
       };
 
@@ -139,13 +181,18 @@ describe("SDK Unit Tests", () => {
         projectId: projectId
       });
 
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toHaveLength(2);
-        expect(result.data[0]).toBeInstanceOf(Screen);
-        expect(result.data[1]).toBeInstanceOf(Screen);
-        expect(result.data[0].id).toBe("s1");
-      }
+      expect(result).toHaveLength(2);
+      expect(result[0]).toBeInstanceOf(Screen);
+      expect(result[1]).toBeInstanceOf(Screen);
+      expect(result[0].id).toBe("s1");
+    });
+
+    it("generate should throw StitchError on failure", async () => {
+      const project = new Project(mockClient, projectId);
+
+      (mockClient.callTool as Mock).mockRejectedValue(new Error("Generation failed"));
+
+      await expect(project.generate("test")).rejects.toThrow("Generation failed");
     });
   });
 });

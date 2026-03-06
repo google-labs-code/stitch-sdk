@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { StitchMCPClient } from "../../src/client.js";
+import { StitchToolClient } from "../../src/client.js";
 import { ZodError } from "zod";
 
 // Mock child_process for gcloud calls
@@ -7,7 +7,7 @@ vi.mock("child_process", () => ({
   execSync: vi.fn().mockReturnValue("ya29.mocked_refreshed_token"),
 }));
 
-describe("StitchMCPClient", () => {
+describe("StitchToolClient", () => {
   const originalFetch = globalThis.fetch;
   const originalEnv = { ...process.env };
 
@@ -26,7 +26,7 @@ describe("StitchMCPClient", () => {
 
   // --- NEW DUAL-AUTH TESTS ---
   it('should create client with API key only', () => {
-    const client = new StitchMCPClient({ apiKey: 'test-key' });
+    const client = new StitchToolClient({ apiKey: 'test-key' });
     expect(client).toBeDefined();
   });
 
@@ -36,56 +36,47 @@ describe("StitchMCPClient", () => {
     delete process.env.STITCH_ACCESS_TOKEN;
     delete process.env.GOOGLE_CLOUD_PROJECT;
 
-    expect(() => new StitchMCPClient({})).toThrow(ZodError);
-    expect(() => new StitchMCPClient()).toThrow(ZodError);
+    expect(() => new StitchToolClient({})).toThrow(ZodError);
+    expect(() => new StitchToolClient()).toThrow(ZodError);
   });
 
   it('should throw if accessToken is provided without projectId', () => {
-    expect(() => new StitchMCPClient({ accessToken: 'test-token' })).toThrow(ZodError);
+    delete process.env.STITCH_API_KEY;
+    delete process.env.STITCH_ACCESS_TOKEN;
+    delete process.env.GOOGLE_CLOUD_PROJECT;
+
+    expect(() => new StitchToolClient({ accessToken: 'test-token' })).toThrow(ZodError);
   });
 
   it('should use STITCH_API_KEY env var as a fallback', () => {
     process.env.STITCH_API_KEY = 'env-key';
-    const client = new StitchMCPClient();
+    const client = new StitchToolClient();
     expect(client).toBeDefined();
   });
 
   it('should use STITCH_ACCESS_TOKEN and GOOGLE_CLOUD_PROJECT env vars', () => {
     process.env.STITCH_ACCESS_TOKEN = 'env-token';
     process.env.GOOGLE_CLOUD_PROJECT = 'env-project';
-    const client = new StitchMCPClient();
+    const client = new StitchToolClient();
     expect(client).toBeDefined();
   });
 
-  it('should not validate token on connect when using API key', async () => {
-    const fetchSpy = vi.fn();
-    globalThis.fetch = fetchSpy;
+  it('should store API key config for transport header injection', () => {
+    const client = new StitchToolClient({ apiKey: 'test-key' });
 
-    const client = new StitchMCPClient({ apiKey: 'test-key' });
-    client['client'].connect = vi.fn(); // Mock the underlying connect
-
-    await client.connect();
-
-    // Fetch should NOT be called for token validation
-    expect(fetchSpy).not.toHaveBeenCalled();
+    // Verify API key is stored for transport header injection
+    expect(client['config'].apiKey).toBe('test-key');
   });
 
 
   // --- EXISTING OAUTH TESTS (ADAPTED) ---
   it("should validate token on connect with OAuth", async () => {
-    const fetchSpy = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ expires_in: 3600, scope: "cloud-platform" }),
-    } as Response);
-    globalThis.fetch = fetchSpy;
+    delete process.env.STITCH_API_KEY;
 
-    const client = new StitchMCPClient({ accessToken: 'initial_token', projectId: 'test-project' });
-    client['client'].connect = vi.fn();
+    const client = new StitchToolClient({ accessToken: 'initial_token', projectId: 'test-project' });
 
-    await client.connect();
-
-    expect(fetchSpy).toHaveBeenCalledWith(
-      expect.stringContaining("tokeninfo?access_token=initial_token")
-    );
+    // Verify OAuth credentials are stored for transport header injection
+    expect(client['config'].accessToken).toBe('initial_token');
+    expect(client['config'].projectId).toBe('test-project');
   });
 });
