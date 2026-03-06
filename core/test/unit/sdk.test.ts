@@ -17,23 +17,23 @@ describe("SDK Unit Tests", () => {
   });
 
   describe("Screen Class", () => {
-    const screenData = { id: "screen-123", name: "Login", htmlCode: "<div>Cached</div>", screenshot: { downloadUrl: "https://cached.example.com/img.png" }, projectId: "proj-123" };
+    const screenData = { id: "screen-123", name: "Login", htmlCode: { downloadUrl: "https://cached.example.com/html" }, screenshot: { downloadUrl: "https://cached.example.com/img.png" }, projectId: "proj-123" };
     const projectId = "proj-123";
 
     it("getHtml should return cached HTML from data if available", async () => {
       const screen = new Screen(mockClient, screenData);
       const result = await screen.getHtml();
 
-      // Should not call API — uses cached data.htmlCode
+      // Should not call API — uses cached data.htmlCode.downloadUrl
       expect(mockClient.callTool).not.toHaveBeenCalled();
-      expect(result).toBe("<div>Cached</div>");
+      expect(result).toBe("https://cached.example.com/html");
     });
 
     it("getHtml should call get_screen if no cached htmlCode", async () => {
       const screen = new Screen(mockClient, { id: "screen-123", name: "Login", projectId });
 
       (mockClient.callTool as Mock).mockResolvedValue({
-        htmlCode: "<div>From API</div>"
+        htmlCode: { downloadUrl: "https://api.example.com/html" }
       });
 
       const result = await screen.getHtml();
@@ -43,7 +43,7 @@ describe("SDK Unit Tests", () => {
         screenId: "screen-123",
         name: "projects/proj-123/screens/screen-123",
       });
-      expect(result).toBe("<div>From API</div>");
+      expect(result).toBe("https://api.example.com/html");
     });
 
     it("getImage should return cached screenshot URL from data if available", async () => {

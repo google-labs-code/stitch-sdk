@@ -183,7 +183,7 @@ function emitFlatMapProjection(steps: ProjectionStep[], rawVar: string): string 
       const innerSteps: string[] = [];
       i++;
       while (i < steps.length && !steps[i].each) {
-        innerSteps.push(`.${steps[i].prop}`);
+        innerSteps.push(`?.${steps[i].prop}`);
         if (steps[i].index !== undefined) {
           innerSteps.push(`[${steps[i].index}]`);
         }
@@ -192,7 +192,7 @@ function emitFlatMapProjection(steps: ProjectionStep[], rawVar: string): string 
 
       // If there are more 'each' steps after inner steps, continue flatMap chain
       if (i < steps.length && steps[i].each) {
-        const innerPath = innerSteps.join("") + `.${steps[i].prop}`;
+        const innerPath = innerSteps.join("") + `?.${steps[i].prop}`;
         code = `${code}.flatMap((${tempVar}: any) => ${tempVar}${innerPath} || [])`;
         tempVar = String.fromCharCode(tempVar.charCodeAt(0) + 1);
         i++;

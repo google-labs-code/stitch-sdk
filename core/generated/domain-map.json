@@ -272,6 +272,9 @@
         "projection": [
           {
             "prop": "htmlCode"
+          },
+          {
+            "prop": "downloadUrl"
           }
         ]
       },
@@ -279,9 +282,12 @@
         "projection": [
           {
             "prop": "htmlCode"
+          },
+          {
+            "prop": "downloadUrl"
           }
         ],
-        "description": "Use cached HTML from generation response if available"
+        "description": "Use cached HTML download URL from generation response if available"
       }
     },
     {

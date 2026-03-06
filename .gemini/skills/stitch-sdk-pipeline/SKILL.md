@@ -127,6 +127,9 @@ npm run validate:generated
 
 Verifies that `stitch-sdk.lock` hashes match the actual generated files. Catches drift (someone edited generated files manually or forgot to regenerate).
 
+> [!IMPORTANT]
+> Always run **after** Stage 3 (Generate). If you run Capture (Stage 1) then Validate without re-generating, the hashes will mismatch because the manifest hash changed.
+
 ---
 
 ## Quick Reference

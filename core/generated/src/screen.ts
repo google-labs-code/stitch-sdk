@@ -3,8 +3,8 @@
 DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:1f84b31604f9...)
-        domain-map.json     (sha256:2719cd99dac5...)
-Generated: 2026-03-06T22:08:28.624Z
+        domain-map.json     (sha256:17efa9c1fff7...)
+Generated: 2026-03-06T22:31:50.514Z
  */
 import { type StitchToolClient } from "../../src/client.js";
 import { StitchError } from "../../src/spec/errors.js";
@@ -51,7 +51,7 @@ export class Screen {
     async variants(prompt: string, variantOptions: any, deviceType?: "DEVICE_TYPE_UNSPECIFIED" | "MOBILE" | "DESKTOP" | "TABLET" | "AGNOSTIC", modelId?: "MODEL_ID_UNSPECIFIED" | "GEMINI_3_PRO" | "GEMINI_3_FLASH"): Promise<Screen[]> {
         try {
           const raw = await this.client.callTool<any>("generate_variants", { projectId: this.projectId, selectedScreenIds: [this.screenId], prompt, variantOptions, deviceType, modelId });
-          return ((raw.outputComponents || []).flatMap((a: any) => a.design.screens || []) || []).map((item: any) => new Screen(this.client, { ...item, projectId: this.projectId }));
+          return ((raw.outputComponents || []).flatMap((a: any) => a?.design?.screens || []) || []).map((item: any) => new Screen(this.client, { ...item, projectId: this.projectId }));
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }
@@ -62,12 +62,12 @@ export class Screen {
      * Tool: get_screen
      */
     async getHtml(): Promise<string> {
-        // Use cached HTML from generation response if available
-        if (this.data?.htmlCode) return this.data?.htmlCode;
+        // Use cached HTML download URL from generation response if available
+        if (this.data?.htmlCode?.downloadUrl) return this.data?.htmlCode?.downloadUrl;
         
         try {
           const raw = await this.client.callTool<any>("get_screen", { projectId: this.projectId, screenId: this.screenId, name: `projects/${this.projectId}/screens/${this.screenId}` });
-          return raw.htmlCode || "";
+          return raw.htmlCode.downloadUrl || "";
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }

@@ -97,7 +97,7 @@ try {
 
   // ── 8. Generate variants ────────────────────────────────────
   console.log("\n🎭 Generating variants...");
-  const variants = await screen.variants("Try different color schemes", { count: 2 });
+  const variants = await screen.variants("Try different color schemes", { variantCount: 2 });
   assert(Array.isArray(variants), `Got ${variants.length} variant(s)`);
   assert(variants.length > 0, "At least 1 variant returned");
 
