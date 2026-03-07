@@ -79,4 +79,79 @@ describe("StitchToolClient", () => {
     expect(client['config'].accessToken).toBe('initial_token');
     expect(client['config'].projectId).toBe('test-project');
   });
+
+  // ─── Cycle 2: buildAuthHeaders ──────────────────────────────────
+  describe("buildAuthHeaders", () => {
+    it("should set X-Goog-Api-Key for API key auth", () => {
+      const client = new StitchToolClient({ apiKey: "test-key" });
+      const headers = client["buildAuthHeaders"]();
+      expect(headers["X-Goog-Api-Key"]).toBe("test-key");
+      expect(headers["Authorization"]).toBeUndefined();
+    });
+
+    it("should set Bearer token and project for OAuth auth", () => {
+      delete process.env.STITCH_API_KEY;
+      const client = new StitchToolClient({ accessToken: "ya29.token", projectId: "proj-1" });
+      const headers = client["buildAuthHeaders"]();
+      expect(headers["Authorization"]).toBe("Bearer ya29.token");
+      expect(headers["X-Goog-User-Project"]).toBe("proj-1");
+      expect(headers["X-Goog-Api-Key"]).toBeUndefined();
+    });
+
+    it("should always include Accept header", () => {
+      const client = new StitchToolClient({ apiKey: "k" });
+      const headers = client["buildAuthHeaders"]();
+      expect(headers["Accept"]).toContain("application/json");
+    });
+  });
+
+  // ─── Cycle 3: callTool response parsing ─────────────────────────
+  describe("callTool", () => {
+    function createConnectedClient() {
+      const client = new StitchToolClient({ apiKey: "k" });
+      client["isConnected"] = true;
+      return client;
+    }
+
+    it("should throw on isError response with tool name", async () => {
+      const client = createConnectedClient();
+      client["client"].callTool = vi.fn().mockResolvedValue({
+        isError: true,
+        content: [{ type: "text", text: "something went wrong" }],
+      });
+      await expect(client.callTool("bad_tool", {}))
+        .rejects.toThrow("Tool Call Failed [bad_tool]");
+    });
+
+    it("should return structuredContent when present", async () => {
+      const client = createConnectedClient();
+      client["client"].callTool = vi.fn().mockResolvedValue({
+        isError: false,
+        content: [],
+        structuredContent: { projects: [{ name: "p1" }] },
+      });
+      const result = await client.callTool("list_projects", {});
+      expect(result).toEqual({ projects: [{ name: "p1" }] });
+    });
+
+    it("should parse JSON from text content", async () => {
+      const client = createConnectedClient();
+      client["client"].callTool = vi.fn().mockResolvedValue({
+        isError: false,
+        content: [{ type: "text", text: '{"id":"123"}' }],
+      });
+      const result = await client.callTool("get_project", {});
+      expect(result).toEqual({ id: "123" });
+    });
+
+    it("should return raw text when JSON parse fails", async () => {
+      const client = createConnectedClient();
+      client["client"].callTool = vi.fn().mockResolvedValue({
+        isError: false,
+        content: [{ type: "text", text: "plain string" }],
+      });
+      const result = await client.callTool("some_tool", {});
+      expect(result).toBe("plain string");
+    });
+  });
 });
