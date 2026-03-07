@@ -27,9 +27,8 @@ const hasEnv =
 const runIfConfigured = hasEnv ? describe : describe.skip;
 
 runIfConfigured("AI SDK E2E with Gemini", () => {
-  const tools = stitchTools();
-
   it("creates a project via stitchTools()", async () => {
+    const tools = stitchTools();
     const model = await createGeminiModel();
     const result = await generateText({
       model,
@@ -42,6 +41,7 @@ runIfConfigured("AI SDK E2E with Gemini", () => {
   }, 30000);
 
   it("design → React component → preview app", async () => {
+    const tools = stitchTools();
     const model = await createGeminiModel();
 
     // ── Phase 1: Get a design from Stitch ────────────────────────────
