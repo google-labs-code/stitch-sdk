@@ -1,199 +1,217 @@
 ---
 name: stitch-sdk-development
-description: Contribute to the Stitch SDK codebase. Use when adding new operations, fixing bugs, or understanding the SDK architecture. Follows the Spec & Handler zero-contention pattern.
+description: Develop the Stitch SDK. Covers the generation pipeline, dual modality (agent vs SDK), error handling, and Traffic Light (Red-Green-Yellow) implementation workflow. Use when adding features, fixing bugs, or understanding the architecture.
 ---
 
-# Developing the Stitch SDK
+# Stitch SDK Development
 
-This skill covers contributing to the Stitch SDK codebase.
+This skill encodes the expertise needed to develop `@google/stitch-sdk` — the core systems, patterns, and philosophies. It does not enumerate every method (the codebase is the source of truth for that). It teaches you how to think about the system.
 
-## Architecture Overview
+---
 
-The SDK uses a **Spec & Handler** pattern for zero-contention development:
+## The Generation Pipeline
+
+The domain layer is **fully generated**. No handwritten domain classes. The pipeline has 3 stages:
 
 ```
-core/src/
-├── methods/                    # All operations by domain
-│   ├── stitch/                 # Stitch-level (connect, projects)
-│   │   └── {operation}/
-│   │       ├── spec.ts         # Input/output schemas
-│   │       └── handler.ts      # Implementation
-│   ├── project/                # Project-level (generate, screens)
-│   └── screen/                 # Screen-level (getHtml, getImage)
-├── proxy/                      # MCP Proxy server
-└── spec/                       # Shared specifications
+Stage 1: Capture            Stage 2: Domain Design       Stage 3: Generate
+┌──────────────────┐       ┌──────────────────┐        ┌──────────────────┐
+│ capture-tools.ts │──────▶│  domain-map.json │───────▶│ generate-sdk.ts  │
+│                  │       │  (the IR)        │        │                  │
+│ Connects to MCP  │       │ Classes, bindings│        │ Deterministic    │
+│ server, calls    │       │ arg routing,     │        │ codegen into     │
+│ tools/list       │       │ cache, extraction│        │ core/generated/  │
+└──────────────────┘       └──────────────────┘        └──────────────────┘
+        │                          │                           │
+        ▼                          ▼                           ▼
+ tools-manifest.json        domain-map.json          core/generated/src/*.ts
+ (raw MCP tool schemas)     (tool→class mapping)     (Stitch, Project, Screen)
 ```
 
-## Adding a New Operation
+**Stage 1** (`bun scripts/capture-tools.ts`): Connects to the live Stitch MCP server, calls `tools/list`, writes `tools-manifest.json`. Source of truth for what tools exist.
 
-### 1. Create the Folder
+**Stage 2** (agent/human): Reads the manifest and produces `domain-map.json` — the intermediate representation. This is where judgment lives: which tool maps to which class, what args come from `self` vs `param` vs `computed`, how to extract the return value, and what data to cache.
 
-```bash
-mkdir -p core/src/methods/{domain}/{operationName}
-```
+**Stage 3** (`bun scripts/generate-sdk.ts`): Deterministic codegen. Reads manifest + domain-map, emits TypeScript classes in `core/generated/src/`. No LLM involved — pure template expansion.
 
-### 2. Create spec.ts
+**Integrity**: `stitch-sdk.lock` records SHA-256 hashes of all inputs and outputs. `bun scripts/validate-generated.ts` verifies consistency. Run in CI to prevent publishing stale code.
 
-```typescript
-import { z } from 'zod';
-import type { Result } from '../../../result.js';
+### Supporting a New Tool
 
-// Input schema
-export const MyOperationInputSchema = z.object({
-  projectId: z.string(),
-  // ... other fields
-});
+When the Stitch MCP server adds a new tool:
 
-// Types
-export type MyOperationInput = z.infer<typeof MyOperationInputSchema>;
-export type MyOperationResult = Result<YourReturnType>;
+1. Run Stage 1 to capture the updated manifest
+2. Run Stage 2: add a binding in `domain-map.json` for the new tool
+3. Run Stage 3 to regenerate the SDK classes
+4. Run `validate-generated.ts` to confirm consistency
+5. Update tests as needed
 
-// Interface
-export interface MyOperationSpec {
-  execute(input: MyOperationInput): Promise<MyOperationResult>;
-}
-```
+### The Domain Map IR
 
-### 3. Create handler.ts
+`domain-map.json` expresses two things:
 
-```typescript
-import type { StitchMCPClient } from '../../../client.js';
-import type { MyOperationSpec, MyOperationInput, MyOperationResult } from './spec.js';
-import { ok, failFromError } from '../../../result.js';
-
-export class MyOperationHandler implements MyOperationSpec {
-  constructor(private client: StitchMCPClient) {}
-
-  async execute(input: MyOperationInput): Promise<MyOperationResult> {
-    try {
-      const response = await this.client.callTool('tool_name', {
-        // map input to tool params
-      });
-      return ok(response);
-    } catch (error) {
-      return failFromError(error);
-    }
+**Classes**: What domain objects exist and how they're constructed.
+```json
+{
+  "Screen": {
+    "constructorParams": ["projectId", "screenId"],
+    "fieldMapping": {
+      "projectId": { "from": "projectId" },
+      "screenId": { "from": "id", "fallback": { "field": "name", "splitOn": "/screens/" } }
+    },
+    "parentField": "projectId",
+    "idField": "screenId"
   }
 }
 ```
 
-### 4. Update Barrel Exports
-
-```bash
-bun scripts/generate-barrels.ts
-```
-
-Or manually add to `core/src/methods/index.ts`.
-
-### 5. Add to Wrapper Class
-
-In the appropriate class (`sdk.ts`, `project.ts`, or `screen.ts`):
-
-```typescript
-import { MyOperationHandler } from './methods/{domain}/{operation}/handler.js';
-
-export class Project {
-  private _myOperation: MyOperationHandler;
-
-  constructor(private client: StitchMCPClient) {
-    this._myOperation = new MyOperationHandler(client);
-  }
-
-  async myOperation(param: string): Promise<Result<ReturnType>> {
-    return this._myOperation.execute({ projectId: this.id, param });
+**Bindings**: How MCP tools map to class methods.
+```json
+{
+  "tool": "generate_screen_from_text",
+  "class": "Project",
+  "method": "generate",
+  "args": {
+    "projectId": { "from": "self" },
+    "prompt": { "from": "param" },
+    "name": { "from": "computed", "template": "projects/{projectId}/screens/{screenId}" }
+  },
+  "returns": {
+    "class": "Screen",
+    "projection": [
+      { "prop": "outputComponents", "index": 0 },
+      { "prop": "design" },
+      { "prop": "screens", "index": 0 }
+    ]
   }
 }
 ```
 
-### 6. Create Test
+**Arg routing**: `self` = injected from `this`, `param` = passed by the caller, `computed` = built from a template at call time, `selfArray` = `[this.field]` wrapped as array.
+
+**Response projections**: Structured `ProjectionStep[]` arrays validated against `outputSchema`. Use `index` for single items, `each` for arrays. Empty `[]` = direct return.
+
+**Cache**: Methods can specify a `cache` with a structured `projection` to check `this.data` before calling the API:
+```json
+{
+  "cache": { "projection": [{ "prop": "htmlCode" }, { "prop": "downloadUrl" }], "description": "Use cached download URL from generation response" }
+}
+```
+
+---
+
+## Dual Modality
+
+The SDK serves two distinct consumers with different needs:
+
+### Agent Modality — `StitchToolClient`
+
+For AI agents and orchestration scripts. Raw tool pipe. The agent receives tool schemas, constructs JSON, sends it, gets JSON back. No domain knowledge required.
 
 ```typescript
-// core/test/unit/methods/{domain}/{operation}.test.ts
-import { describe, it, expect, vi } from 'vitest';
-import { MyOperationHandler } from '../../../../src/methods/{domain}/{operation}/handler.js';
-
-describe('MyOperationHandler', () => {
-  it('returns success with expected data', async () => {
-    const mockClient = {
-      callTool: vi.fn().mockResolvedValue({ /* mock response */ }),
-    };
-
-    const handler = new MyOperationHandler(mockClient as any);
-    const result = await handler.execute({ projectId: 'test' });
-
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data).toBeDefined();
-    }
-  });
-
-  it('returns failure on error', async () => {
-    const mockClient = {
-      callTool: vi.fn().mockRejectedValue(new Error('API error')),
-    };
-
-    const handler = new MyOperationHandler(mockClient as any);
-    const result = await handler.execute({ projectId: 'test' });
-
-    expect(result.success).toBe(false);
-  });
+const client = new StitchToolClient();
+const tools = await client.listTools();
+const result = await client.callTool("generate_screen_from_text", {
+  projectId: "123", prompt: "A login page"
 });
 ```
 
-## Running Tests
+### SDK Modality — Generated Domain Classes
 
-```bash
-# All tests
-npm test
-
-# Specific test file
-npx vitest run test/unit/methods/stitch/connect.test.ts
-```
-
-## Building
-
-```bash
-npm run build
-```
-
-## Key Patterns
-
-### Result Type
-
-Always return `Result<T>`, never throw:
+For humans writing precise, programmatic scripts. Generated domain facade over `callTool`. Typed parameters, domain objects returned, `StitchError` thrown on failure.
 
 ```typescript
-import { ok, fail, failFromError } from '../../../result.js';
-
-// Success
-return ok(data);
-
-// Known error
-return fail({ code: 'NOT_FOUND', message: 'Project not found', recoverable: false });
-
-// Unknown error
-return failFromError(error);
+const project = await stitch.createProject("My App");
+const screen = await project.generate("A login page");
+const html = await screen.getHtml();
 ```
 
-### Thin Wrappers
+Both modalities share `StitchToolClient` underneath. The domain classes are a typed layer over `callTool`.
 
-Public classes delegate to handlers:
+### Error Handling — Throws at the Boundary
+
+All generated methods use `throw StitchError` for error handling. No `Result<T>` pattern.
 
 ```typescript
-class Screen {
-  private _getHtml: GetScreenHtmlHandler;
-
-  async getHtml(): Promise<Result<string>> {
-    return this._getHtml.execute({ projectId: this.projectId, screenId: this.id });
-  }
+// Generated method pattern (inside each method):
+try {
+  const raw = await this.client.callTool<any>("tool_name", args);
+  return /* extracted result */;
+} catch (error) {
+  throw StitchError.fromUnknown(error);
 }
 ```
 
-### Import Paths
+`StitchError.fromUnknown()` ensures all errors are normalized to `StitchError` with a code, message, and recoverability hint.
+
+### Infrastructure (Handwritten)
+
+These components remain handwritten as they provide foundational plumbing:
+
+- `StitchToolClient` — MCP transport, auth, tool invocation
+- `StitchError` — typed error class with codes, messages, recovery hints
+- `StitchProxy` — MCP proxy server for re-exposing Stitch to other agents
+- `singleton.ts` — lazy proxy for `stitch` export with env var config
+
+---
+
+## Traffic Light Implementation (Red → Green → Yellow)
+
+When implementing a new feature or fixing a bug, follow the Traffic Light pattern:
+
+### 🔴 Red — Write Breaking Tests
+
+Write the test first. It must fail. This defines the contract before any implementation exists.
+
+```bash
+# Unit tests for generated classes
+npx vitest run test/unit/sdk.test.ts
+# → FAIL (new method doesn't exist yet)
+
+# E2E test for the public API
+bun scripts/e2e-test.ts
+# → FAIL (method doesn't exist yet)
+```
+
+### 🟢 Green — Implement
+
+1. Add a binding to `domain-map.json` (Stage 2)
+2. Run `bun scripts/generate-sdk.ts` (Stage 3)
+3. Update tests to verify correct behavior
+
+```bash
+npx vitest run  # All tests pass
+bun scripts/e2e-test.ts  # E2E passes
+```
+
+### 🟡 Yellow — Refactor / Refine / Revisit
+
+With passing tests as your safety net:
+
+- Refactor for clarity (extract helpers, simplify args)
+- Add edge case tests
+- Run `npx tsc` to verify type safety
+- Run `bun scripts/validate-generated.ts` to verify pipeline integrity
+
+---
+
+## Orienting in the Codebase
+
+Discover the current state by reading the codebase directly. The key entry points:
+
+- **Public surface**: Start at `core/src/index.ts` — every public export is listed here
+- **Generated classes**: `core/generated/src/` — Stitch, Project, Screen
+- **Pipeline artifacts**: `core/generated/domain-map.json`, `core/generated/tools-manifest.json`
+- **Infrastructure**: `core/src/client.ts`, `core/src/spec/errors.ts`, `core/src/singleton.ts`
+- **Test structure**: `core/test/unit/` for unit tests, `core/test/integration/` for live tests
+- **Available commands**: Read the `scripts` field in `package.json`
+
+Do not rely on cached descriptions of files or directory trees. Read the source.
+
+## Import Convention
 
 Use `.js` extensions for ESM compatibility:
-
 ```typescript
-import { ok } from '../../../result.js';  // ✓
-import { ok } from '../../../result';     // ✗
+import { StitchError } from '../../src/spec/errors.js';  // ✓
+import { StitchError } from '../../src/spec/errors';     // ✗
 ```
