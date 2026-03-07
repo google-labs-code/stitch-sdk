@@ -26,8 +26,8 @@ import { stitch } from '@google/stitch-sdk';
 
 const project = await stitch.createProject("My App");
 const screen = await project.generate("A settings page with dark theme");
-const html = await screen.getHtml();
-console.log(html); // Full HTML document
+const html = await screen.getHtml();     // download URL for the HTML
+const imageUrl = await screen.getImage(); // download URL for the screenshot
 ```
 
 The `stitch` singleton reads `STITCH_API_KEY` from the environment and connects on first use — no setup code required.
@@ -40,11 +40,11 @@ import { stitch } from '@google/stitch-sdk';
 // List all projects
 const projects = await stitch.projects();
 
-// Access a specific project by ID (no network call)
-const project = stitch.project("projects/123");
+// Reference a project by ID (no network call)
+const project = stitch.project("4044680601076201931");
 
 // Create a new project
-const project = await stitch.createProject("My App");
+const newProject = await stitch.createProject("My App");
 ```
 
 ## Generating and Iterating on Screens
@@ -57,16 +57,20 @@ const screen = await project.generate("Login page with email and password fields
 const edited = await screen.edit("Make the background dark and add a subtitle");
 
 // Generate variants of a screen
-const variants = await screen.variants("Try different color schemes", { count: 2 });
+const variants = await screen.variants("Try different color schemes", {
+  variantCount: 2,
+  creativeRange: "EXPLORE",
+  aspects: ["COLOR_SCHEME", "LAYOUT"],
+});
 ```
 
 ## Retrieving Screen Assets
 
 ```typescript
-// Get screen HTML
+// Get screen HTML download URL
 const html = await screen.getHtml();
 
-// Get screen image URL
+// Get screen screenshot download URL
 const imageUrl = await screen.getImage();
 ```
 
@@ -84,6 +88,7 @@ const tools = await client.listTools();
 const result = await client.callTool("generate_screen_from_text", {
   projectId: "123", prompt: "A login page"
 });
+await client.close();
 ```
 
 ## Error Handling
@@ -94,7 +99,8 @@ All SDK methods throw `StitchError` on failure. Use try/catch:
 import { stitch, StitchError } from '@google/stitch-sdk';
 
 try {
-  const screen = await project.generate("A dashboard");
+  const project = stitch.project("bad-id");
+  await project.screens();
 } catch (e) {
   if (e instanceof StitchError) {
     console.log(e.code);        // "AUTH_FAILED", "NOT_FOUND", etc.
@@ -111,50 +117,54 @@ Error codes: `AUTH_FAILED`, `NOT_FOUND`, `PERMISSION_DENIED`, `RATE_LIMITED`, `N
 ### Stitch Class
 
 | Method | Returns | Description |
-|--------|---------|-------------|
-| `connect()` | `Promise<void>` | Connect to the Stitch MCP server |
-| `projects()` | `Promise<Project[]>` | List all projects |
-| `project(id)` | `Project` | Get a project handle by ID (no network call) |
+|---|---|---|
 | `createProject(title)` | `Promise<Project>` | Create a new project |
+| `projects()` | `Promise<Project[]>` | List all projects |
+| `project(id)` | `Project` | Reference a project by ID (no network call) |
 
 ### Project Class
 
 | Method | Returns | Description |
-|--------|---------|-------------|
+|---|---|---|
 | `generate(prompt, deviceType?)` | `Promise<Screen>` | Generate a screen from a text prompt |
 | `screens()` | `Promise<Screen[]>` | List all screens in the project |
+| `getScreen(screenId)` | `Promise<Screen>` | Retrieve a specific screen by ID |
+
+`deviceType`: `"MOBILE"` | `"DESKTOP"` | `"TABLET"` | `"AGNOSTIC"`
 
 ### Screen Class
 
 | Method | Returns | Description |
-|--------|---------|-------------|
-| `getHtml()` | `Promise<string>` | Fetch the screen's HTML code |
-| `getImage()` | `Promise<string>` | Fetch the screen's image URL |
-| `edit(prompt)` | `Promise<Screen>` | Edit the screen using a text prompt |
-| `variants(prompt, options?)` | `Promise<Screen[]>` | Generate variants of the screen |
+|---|---|---|
+| `getHtml()` | `Promise<string>` | Get the screen's HTML download URL |
+| `getImage()` | `Promise<string>` | Get the screen's screenshot download URL |
+| `edit(prompt, deviceType?, modelId?)` | `Promise<Screen>` | Edit the screen using a text prompt |
+| `variants(prompt, options, deviceType?, modelId?)` | `Promise<Screen[]>` | Generate variants of the screen |
+
+`modelId`: `"GEMINI_3_PRO"` | `"GEMINI_3_FLASH"`
 
 ### StitchToolClient (for agents)
 
 | Method | Returns | Description |
-|--------|---------|-------------|
-| `connect()` | `Promise<void>` | Establish MCP connection |
+|---|---|---|
 | `callTool(name, args)` | `Promise<T>` | Call any MCP tool by name |
 | `listTools()` | `Promise<Tools>` | Discover available tools |
+| `connect()` | `Promise<void>` | Establish MCP connection (auto-called by callTool) |
 | `close()` | `Promise<void>` | Close the connection |
 
 ### Explicit Configuration
 
 ```typescript
-import { Stitch } from '@google/stitch-sdk';
+import { Stitch, StitchToolClient } from '@google/stitch-sdk';
 
-// API Key
-const stitch = new Stitch({ apiKey: "your-api-key" });
-
-// OAuth
-const stitch = new Stitch({
-  accessToken: "ya29.your-token",
-  projectId: "your-gcp-project-id",
+const client = new StitchToolClient({
+  apiKey: "your-api-key",
+  baseUrl: "https://stitch.googleapis.com/mcp",
+  timeout: 300_000,
 });
+
+const sdk = new Stitch(client);
+const projects = await sdk.projects();
 ```
 
 | Option | Env Variable | Description |

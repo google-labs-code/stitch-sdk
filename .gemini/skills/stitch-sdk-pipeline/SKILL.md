@@ -132,6 +132,34 @@ Verifies that `stitch-sdk.lock` hashes match the actual generated files. Catches
 
 ---
 
+### Stage 9: Skill Audit 🧠 (Agent)
+
+After the pipeline passes, audit agent skills for freshness. Read the current source of truth and update any skills that reference stale methods, args, or examples.
+
+**Inputs**:
+- `core/src/index.ts` (public surface)
+- Generated class files in `core/generated/src/`
+- `core/src/spec/errors.ts` (error codes)
+- `core/src/spec/client.ts` (config schema)
+
+**Skills to audit** (in priority order):
+1. `stitch-sdk-usage` — highest churn, references specific methods and constructor signatures
+2. `stitch-sdk-development` — check cache examples match current domain-map patterns
+3. `stitch-sdk-domain-design` — check code examples in the cache section
+
+**Skills to skip**: `stitch-sdk-readme` (template-based, doesn't enumerate methods), `stitch-sdk-pipeline` (self-referential), `red-green-yellow` (generic methodology).
+
+**What to check**:
+- Every method name in a code example exists on its class
+- Every import in an example matches an export in `index.ts`
+- Constructor signatures match the actual constructors
+- Config fields match `StitchConfigSchema`
+- Error codes match `StitchErrorCode`
+
+**When to skip**: If only infrastructure code changed (`core/src/client.ts`, `core/src/proxy/`) and no public API surface changed.
+
+---
+
 ## Quick Reference
 
 ### Full pipeline (script stages only)
@@ -140,7 +168,7 @@ Verifies that `stitch-sdk.lock` hashes match the actual generated files. Catches
 npm run pipeline
 ```
 
-Runs Stage 1 → 3 → 4 → 5 in sequence. Does **not** include Stage 2 (agent) or Stage 7 (e2e).
+Runs Stage 1 → 3 → 4 → 5 in sequence. Does **not** include Stage 2 (agent), Stage 7 (e2e), or Stage 9 (skill audit).
 
 ### Starting from a specific stage
 
@@ -151,6 +179,7 @@ Runs Stage 1 → 3 → 4 → 5 in sequence. Does **not** include Stage 2 (agent)
 | Changed `ir-schema.ts` or `generate-sdk.ts` | Stage 3 |
 | Changed code in `core/src/` (client, errors) | Stage 4 |
 | Just want to verify everything works | Stage 5 |
+| Public API surface changed | Stage 9 |
 
 ### Key files
 

@@ -94,7 +94,7 @@ When the Stitch MCP server adds a new tool:
 **Cache**: Methods can specify a `cache` with a structured `projection` to check `this.data` before calling the API:
 ```json
 {
-  "cache": { "projection": [{ "prop": "htmlCode" }], "description": "Use cached HTML from generation response if available" }
+  "cache": { "projection": [{ "prop": "htmlCode" }, { "prop": "downloadUrl" }], "description": "Use cached download URL from generation response" }
 }
 ```
 

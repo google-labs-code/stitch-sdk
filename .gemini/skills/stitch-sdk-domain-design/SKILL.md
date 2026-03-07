@@ -122,15 +122,17 @@ Add a `cache` field with a structured `projection` to check `this.data` before c
 ```json
 {
   "cache": {
-    "projection": [{ "prop": "htmlCode" }],
-    "description": "Use cached HTML from generation response if available"
+    "projection": [{ "prop": "htmlCode" }, { "prop": "downloadUrl" }],
+    "description": "Use cached HTML download URL from generation response if available"
   }
 }
 ```
 
+When the cached property is a nested object (like `File` with a `downloadUrl`), use multiple projection steps to drill into it.
+
 Generated code:
 ```typescript
-if (this.data?.htmlCode) return this.data?.htmlCode;
+if (this.data?.htmlCode?.downloadUrl) return this.data?.htmlCode?.downloadUrl;
 // ... else call API
 ```
 
