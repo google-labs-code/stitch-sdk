@@ -251,3 +251,15 @@ try {
 ```
 
 Error codes: `AUTH_FAILED`, `NOT_FOUND`, `PERMISSION_DENIED`, `RATE_LIMITED`, `NETWORK_ERROR`, `VALIDATION_ERROR`, `UNKNOWN_ERROR`.
+
+---
+
+## Disclaimer
+
+This is not an officially supported Google product. This project is not
+eligible for the [Google Open Source Software Vulnerability Rewards
+Program](https://bughunters.google.com/open-source-security).
+
+## License
+
+Apache 2.0 — see [LICENSE](LICENSE) for details.
