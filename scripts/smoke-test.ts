@@ -33,9 +33,7 @@ async function main() {
   assert(existsSync(resolve(DIST_DIR, "src/index.js")), "dist/src/index.js exists");
   assert(existsSync(resolve(DIST_DIR, "src/index.d.ts")), "dist/src/index.d.ts exists");
   assert(existsSync(resolve(DIST_DIR, "src/client.js")), "dist/src/client.js exists");
-  assert(existsSync(resolve(DIST_DIR, "src/sdk.js")), "dist/src/sdk.js exists");
-  assert(existsSync(resolve(DIST_DIR, "src/screen.js")), "dist/src/screen.js exists");
-  assert(existsSync(resolve(DIST_DIR, "src/project.js")), "dist/src/project.js exists");
+  assert(existsSync(resolve(DIST_DIR, "src/singleton.js")), "dist/src/singleton.js exists");
   assert(existsSync(resolve(DIST_DIR, "src/proxy")), "dist/src/proxy/ directory exists");
 
   // ── 2. Verify generated pipeline artifacts ────────────────────
