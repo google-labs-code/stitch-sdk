@@ -56,8 +56,8 @@ Show this as the first code block, with one line noting the env var requirement.
 **Secondary workflows** — reveal depth progressively:
 1. Listing and iterating over existing projects/screens
 2. Editing a screen and generating variants
-3. Explicit configuration (non-singleton)
-4. The tool client for agent usage (`StitchToolClient`)
+3. Tool access via singleton (`stitch.listTools()`, `stitch.callTool()`) — zero setup
+4. Explicit configuration via `StitchToolClient` (custom API key, base URL)
 5. AI SDK integration via `stitchTools()` — show `generateText` with `tools: stitchTools()` and `stepCountIs`
 
 Rules for this section:

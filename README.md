@@ -84,25 +84,60 @@ for (const variant of variants) {
 For agents and orchestration scripts that need direct MCP tool access:
 
 ```ts
-import { StitchToolClient } from "@google/stitch-sdk";
-
-const client = new StitchToolClient({ apiKey: "your-api-key" });
+import { stitch } from "@google/stitch-sdk";
 
 // List available tools
-const { tools } = await client.listTools();
+const { tools } = await stitch.listTools();
 for (const tool of tools) {
   console.log(tool.name, tool.description);
 }
 
 // Call a tool directly
-const result = await client.callTool("create_project", {
+const result = await stitch.callTool("create_project", {
   title: "Agent Project",
 });
+```
 
+For explicit configuration (custom API key, base URL), use `StitchToolClient` directly:
+
+```ts
+import { StitchToolClient } from "@google/stitch-sdk";
+
+const client = new StitchToolClient({ apiKey: "your-api-key" });
+const result = await client.callTool("create_project", { title: "Agent Project" });
 await client.close();
 ```
 
 The client auto-connects on the first `callTool` or `listTools` call. No explicit `connect()` needed.
+
+## AI SDK Integration
+
+Drop Stitch tools directly into the [Vercel AI SDK](https://sdk.vercel.ai/):
+
+```ts
+import { generateText, stepCountIs } from "ai";
+import { google } from "@ai-sdk/google";
+import { stitchTools } from "@google/stitch-sdk";
+
+const { text, steps } = await generateText({
+  model: google("gemini-2.5-flash"),
+  tools: stitchTools(),
+  prompt: "Create a project and generate a modern dashboard with a stat card",
+  stopWhen: stepCountIs(5),
+});
+
+// The model autonomously calls create_project, generate_screen, get_screen
+const toolCalls = steps.flatMap(s => s.toolCalls);
+console.log(`Model called ${toolCalls.length} tools`);
+```
+
+Filter to specific tools:
+
+```ts
+const tools = stitchTools({
+  include: ["create_project", "generate_screen_from_text", "get_screen"],
+});
+```
 
 ## API Reference
 
@@ -170,6 +205,29 @@ await client.close();
 | `listTools()` | — | `Promise<{ tools }>` | List available tools |
 | `connect()` | — | `Promise<void>` | Explicitly connect (auto-called by `callTool`) |
 | `close()` | — | `Promise<void>` | Close the connection |
+
+### `stitchTools()`
+
+Returns all Stitch MCP tools as Vercel AI SDK `dynamicTool` objects. Drop into `generateText()` or `streamText()` — the model calls tools autonomously.
+
+```ts
+import { generateText, stepCountIs } from "ai";
+import { stitchTools } from "@google/stitch-sdk";
+
+const { text } = await generateText({
+  model: yourModel,
+  tools: stitchTools(),
+  prompt: "Create a login page",
+  stopWhen: stepCountIs(5),
+});
+```
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `apiKey` | `string` | `STITCH_API_KEY` | Override env var |
+| `include` | `string[]` | all tools | Only expose specific tool names |
+
+Each tool's `execute` function calls `StitchToolClient.callTool()` under the hood. The client is lazily initialized via the singleton.
 
 ### `StitchProxy`
 
