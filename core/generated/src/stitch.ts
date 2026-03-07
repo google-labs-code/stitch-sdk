@@ -3,8 +3,8 @@
 DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:1f84b31604f9...)
-        domain-map.json     (sha256:17efa9c1fff7...)
-Generated: 2026-03-06T22:31:50.514Z
+        domain-map.json     (sha256:a8c87655b83c...)
+Generated: 2026-03-07T02:32:57.090Z
  */
 import { type StitchToolClient } from "../../src/client.js";
 import { StitchError } from "../../src/spec/errors.js";
@@ -22,19 +22,6 @@ export class Stitch {
     async createProject(title: string): Promise<Project> {
         try {
           const raw = await this.client.callTool<any>("create_project", { title });
-          return new Project(this.client, raw);
-        } catch (error) {
-          throw StitchError.fromUnknown(error);
-        }
-    }
-
-    /**
-     * Retrieves the details of a specific Stitch project using its project name.
-     * Tool: get_project
-     */
-    async getProject(id: string): Promise<Project> {
-        try {
-          const raw = await this.client.callTool<any>("get_project", { name: id });
           return new Project(this.client, raw);
         } catch (error) {
           throw StitchError.fromUnknown(error);

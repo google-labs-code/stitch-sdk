@@ -62,21 +62,6 @@
       }
     },
     {
-      "tool": "get_project",
-      "class": "Stitch",
-      "method": "getProject",
-      "args": {
-        "name": {
-          "from": "param",
-          "rename": "id"
-        }
-      },
-      "returns": {
-        "class": "Project",
-        "projection": []
-      }
-    },
-    {
       "tool": "list_projects",
       "class": "Stitch",
       "method": "projects",

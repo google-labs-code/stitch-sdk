@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
 import { Screen } from "../../generated/src/screen.js";
 import { Project } from "../../generated/src/project.js";
+import { Stitch } from "../../generated/src/stitch.js";
 import { StitchToolClient } from "../../src/client.js";
 
 // Mock the StitchToolClient class
@@ -129,6 +130,20 @@ describe("SDK Unit Tests", () => {
       expect(results[0]).toBeInstanceOf(Screen);
       expect(results[0].id).toBe("var-1");
       expect(results[1].id).toBe("var-2");
+    });
+  });
+
+  describe("Stitch Class (Identity Map)", () => {
+    it("should not have a getProject method — use project(id) instead", () => {
+      const sdk = new Stitch(mockClient);
+      expect(typeof (sdk as any).getProject).toBe("undefined");
+    });
+
+    it("project(id) should return a Project handle with correct ID", () => {
+      const sdk = new Stitch(mockClient);
+      const handle = sdk.project("proj-123");
+      expect(handle).toBeInstanceOf(Project);
+      expect(handle.id).toBe("proj-123");
     });
   });
 
