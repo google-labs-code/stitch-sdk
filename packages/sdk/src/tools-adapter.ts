@@ -40,7 +40,7 @@ import { getOrCreateClient } from "./singleton.js";
 export function stitchTools(options?: {
   apiKey?: string;
   include?: string[];
-}) {
+}): Record<string, ReturnType<typeof dynamicTool>> {
   const client = getOrCreateClient(options);
 
   const filtered = options?.include
