@@ -16,7 +16,7 @@
         "typescript": "^5.5.0",
       },
     },
-    "core": {
+    "packages/sdk": {
       "name": "@google/stitch-sdk",
       "version": "0.0.1",
       "dependencies": {
@@ -108,7 +108,7 @@
 
     "@google-cloud/pubsub": ["@google-cloud/pubsub@5.2.2", "", { "dependencies": { "@google-cloud/paginator": "^6.0.0", "@google-cloud/precise-date": "^5.0.0", "@google-cloud/projectify": "^5.0.0", "@google-cloud/promisify": "^5.0.0", "@opentelemetry/api": "~1.9.0", "@opentelemetry/core": "^1.30.1", "@opentelemetry/semantic-conventions": "~1.34.0", "arrify": "^2.0.0", "extend": "^3.0.2", "google-auth-library": "^10.5.0", "google-gax": "^5.0.5", "heap-js": "^2.6.0", "is-stream-ended": "^0.1.4", "lodash.snakecase": "^4.1.1", "p-defer": "^3.0.0" } }, "sha512-mf26hQnwms46Fe/gQtt+zEO8QpQ3bkHZNzXAVJCQShhYo+xMsYkSMKJdn0aV2yxC4grlxgUrh3Ao8umJ2q1zkA=="],
 
-    "@google/stitch-sdk": ["@google/stitch-sdk@workspace:core"],
+    "@google/stitch-sdk": ["@google/stitch-sdk@workspace:packages/sdk"],
 
     "@googleapis/sqladmin": ["@googleapis/sqladmin@35.0.0", "", { "dependencies": { "googleapis-common": "^8.0.0" } }, "sha512-L9HaDhGBv7ElppWw3Sr+L2fbP+9pnP61bu1ZmfgoztSMMhtihQ3FGb175V1qx1zshiyCorspl0OiunA80G3Xjw=="],
 

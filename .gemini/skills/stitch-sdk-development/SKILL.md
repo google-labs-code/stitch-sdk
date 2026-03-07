@@ -20,11 +20,11 @@ Stage 1: Capture            Stage 2: Domain Design       Stage 3: Generate
 │                  │       │  (the IR)        │        │                  │
 │ Connects to MCP  │       │ Classes, bindings│        │ Deterministic    │
 │ server, calls    │       │ arg routing,     │        │ codegen into     │
-│ tools/list       │       │ cache, extraction│        │ core/generated/  │
+│ tools/list       │       │ cache, extraction│        │ packages/sdk/generated/  │
 └──────────────────┘       └──────────────────┘        └──────────────────┘
         │                          │                           │
         ▼                          ▼                           ▼
- tools-manifest.json        domain-map.json          core/generated/src/*.ts
+ tools-manifest.json        domain-map.json          packages/sdk/generated/src/*.ts
  (raw MCP tool schemas)     (tool→class mapping)     (Stitch, Project, Screen)
 ```
 
@@ -32,7 +32,7 @@ Stage 1: Capture            Stage 2: Domain Design       Stage 3: Generate
 
 **Stage 2** (agent/human): Reads the manifest and produces `domain-map.json` — the intermediate representation. This is where judgment lives: which tool maps to which class, what args come from `self` vs `param` vs `computed`, how to extract the return value, and what data to cache.
 
-**Stage 3** (`bun scripts/generate-sdk.ts`): Deterministic codegen. Reads manifest + domain-map, emits TypeScript classes in `core/generated/src/`. No LLM involved — pure template expansion.
+**Stage 3** (`bun scripts/generate-sdk.ts`): Deterministic codegen. Reads manifest + domain-map, emits TypeScript classes in `packages/sdk/generated/src/`. No LLM involved — pure template expansion.
 
 **Integrity**: `stitch-sdk.lock` records SHA-256 hashes of all inputs and outputs. `bun scripts/validate-generated.ts` verifies consistency. Run in CI to prevent publishing stale code.
 
@@ -199,11 +199,11 @@ With passing tests as your safety net:
 
 Discover the current state by reading the codebase directly. The key entry points:
 
-- **Public surface**: Start at `core/src/index.ts` — every public export is listed here
-- **Generated classes**: `core/generated/src/` — Stitch, Project, Screen
-- **Pipeline artifacts**: `core/generated/domain-map.json`, `core/generated/tools-manifest.json`
-- **Infrastructure**: `core/src/client.ts`, `core/src/spec/errors.ts`, `core/src/singleton.ts`
-- **Test structure**: `core/test/unit/` for unit tests, `core/test/integration/` for live tests
+- **Public surface**: Start at `packages/sdk/src/index.ts` — every public export is listed here
+- **Generated classes**: `packages/sdk/generated/src/` — Stitch, Project, Screen
+- **Pipeline artifacts**: `packages/sdk/generated/domain-map.json`, `packages/sdk/generated/tools-manifest.json`
+- **Infrastructure**: `packages/sdk/src/client.ts`, `packages/sdk/src/spec/errors.ts`, `packages/sdk/src/singleton.ts`
+- **Test structure**: `packages/sdk/test/unit/` for unit tests, `packages/sdk/test/integration/` for live tests
 - **Available commands**: Read the `scripts` field in `package.json`
 
 Do not rely on cached descriptions of files or directory trees. Read the source.

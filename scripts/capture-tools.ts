@@ -13,13 +13,13 @@
 
 import { resolve } from "node:path";
 import { createHash } from "node:crypto";
-import { forwardToStitch, initializeStitchConnection } from "../core/src/proxy/client.js";
-import type { ProxyContext } from "../core/src/proxy/client.js";
+import { forwardToStitch, initializeStitchConnection } from "../packages/sdk/src/proxy/client.js";
+import type { ProxyContext } from "../packages/sdk/src/proxy/client.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 
 const ROOT_DIR = resolve(import.meta.dir, "..");
-const MANIFEST_PATH = resolve(ROOT_DIR, "core/generated/tools-manifest.json");
-const LOCK_PATH = resolve(ROOT_DIR, "core/generated/stitch-sdk.lock");
+const MANIFEST_PATH = resolve(ROOT_DIR, "packages/sdk/generated/tools-manifest.json");
+const LOCK_PATH = resolve(ROOT_DIR, "packages/sdk/generated/stitch-sdk.lock");
 
 async function main() {
   const apiKey = process.env.STITCH_API_KEY;

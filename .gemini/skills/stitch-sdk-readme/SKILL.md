@@ -15,14 +15,14 @@ Do not hard-code the API surface. Read it from the codebase at invocation time:
 
 | What you need | Where to find it |
 |---|---|
-| Public exports (full surface) | `core/src/index.ts` |
+| Public exports (full surface) | `packages/sdk/src/index.ts` |
 | Domain class methods + signatures | Source files for each exported class (`sdk.ts`, `project.ts`, `screen.ts`) |
-| Generated method bindings | `core/generated/domain-map.json` → `bindings[]` array |
+| Generated method bindings | `packages/sdk/generated/domain-map.json` → `bindings[]` array |
 | Handwritten methods | Methods in class source files that aren't in domain-map bindings (e.g. `Screen.edit`, `Screen.variants`) |
-| Tool client methods | `core/src/client.ts` |
-| Error codes | `core/src/spec/errors.ts` → `StitchErrorCode` |
-| Config options | `core/src/spec/client.ts` → `StitchConfigSchema` |
-| Proxy config | `core/src/proxy/core.ts` |
+| Tool client methods | `packages/sdk/src/client.ts` |
+| Error codes | `packages/sdk/src/spec/errors.ts` → `StitchErrorCode` |
+| Config options | `packages/sdk/src/spec/client.ts` → `StitchConfigSchema` |
+| Proxy config | `packages/sdk/src/proxy/core.ts` |
 
 After reading these files, you have the complete API surface. Structure it using the Bookstore Test template below.
 

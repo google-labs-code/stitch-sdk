@@ -33,9 +33,9 @@ This skill orchestrates the full SDK generation pipeline — from capturing MCP 
 npm run capture
 ```
 
-Connects to the Stitch MCP server, calls `tools/list`, and writes the raw schemas to `core/generated/tools-manifest.json`. Updates the manifest section of `stitch-sdk.lock`.
+Connects to the Stitch MCP server, calls `tools/list`, and writes the raw schemas to `packages/sdk/generated/tools-manifest.json`. Updates the manifest section of `stitch-sdk.lock`.
 
-**Output**: `core/generated/tools-manifest.json` (includes `inputSchema` + `outputSchema` for every tool)
+**Output**: `packages/sdk/generated/tools-manifest.json` (includes `inputSchema` + `outputSchema` for every tool)
 
 **When to skip**: If `tools-manifest.json` is already up to date and no server-side changes occurred.
 
@@ -45,7 +45,7 @@ Connects to the Stitch MCP server, calls `tools/list`, and writes the raw schema
 
 **Use the `stitch-sdk-domain-design` skill for this stage.**
 
-Read `tools-manifest.json` and edit `core/generated/domain-map.json` to map tools → classes → methods.
+Read `tools-manifest.json` and edit `packages/sdk/generated/domain-map.json` to map tools → classes → methods.
 
 Key decisions at this stage:
 - Which class owns each tool?
@@ -54,7 +54,7 @@ Key decisions at this stage:
 - Should the method cache data from the construction response?
 
 **Input**: `tools-manifest.json` + `scripts/ir-schema.ts` (the canonical IR contract)
-**Output**: `core/generated/domain-map.json`
+**Output**: `packages/sdk/generated/domain-map.json`
 
 **When to skip**: If `domain-map.json` already has the correct bindings and you only changed `ir-schema.ts` or `generate-sdk.ts`.
 
@@ -67,9 +67,9 @@ Key decisions at this stage:
 npm run generate
 ```
 
-Validates the IR (Zod schema) and every projection (against `outputSchema`), then emits TypeScript files via ts-morph into `core/generated/src/`.
+Validates the IR (Zod schema) and every projection (against `outputSchema`), then emits TypeScript files via ts-morph into `packages/sdk/generated/src/`.
 
-**Output**: `core/generated/src/*.ts` + updated `stitch-sdk.lock`
+**Output**: `packages/sdk/generated/src/*.ts` + updated `stitch-sdk.lock`
 
 If this fails with a projection error, go back to Stage 2 and fix `domain-map.json`.
 
@@ -82,7 +82,7 @@ If this fails with a projection error, go back to Stage 2 and fix `domain-map.js
 npm run build
 ```
 
-TypeScript compilation: `core/` → `core/dist/`.
+TypeScript compilation: `packages/sdk/` → `packages/sdk/dist/`.
 
 ---
 
@@ -137,10 +137,10 @@ Verifies that `stitch-sdk.lock` hashes match the actual generated files. Catches
 After the pipeline passes, audit agent skills for freshness. Read the current source of truth and update any skills that reference stale methods, args, or examples.
 
 **Inputs**:
-- `core/src/index.ts` (public surface)
-- Generated class files in `core/generated/src/`
-- `core/src/spec/errors.ts` (error codes)
-- `core/src/spec/client.ts` (config schema)
+- `packages/sdk/src/index.ts` (public surface)
+- Generated class files in `packages/sdk/generated/src/`
+- `packages/sdk/src/spec/errors.ts` (error codes)
+- `packages/sdk/src/spec/client.ts` (config schema)
 
 **Skills to audit** (in priority order):
 1. `stitch-sdk-usage` — highest churn, references specific methods and constructor signatures
@@ -156,7 +156,7 @@ After the pipeline passes, audit agent skills for freshness. Read the current so
 - Config fields match `StitchConfigSchema`
 - Error codes match `StitchErrorCode`
 
-**When to skip**: If only infrastructure code changed (`core/src/client.ts`, `core/src/proxy/`) and no public API surface changed.
+**When to skip**: If only infrastructure code changed (`packages/sdk/src/client.ts`, `packages/sdk/src/proxy/`) and no public API surface changed.
 
 ---
 
@@ -177,7 +177,7 @@ Runs Stage 1 → 3 → 4 → 5 in sequence. Does **not** include Stage 2 (agent)
 | New tool added to MCP server | Stage 1 |
 | Need to change how a tool maps to a method | Stage 2 |
 | Changed `ir-schema.ts` or `generate-sdk.ts` | Stage 3 |
-| Changed code in `core/src/` (client, errors) | Stage 4 |
+| Changed code in `packages/sdk/src/` (client, errors) | Stage 4 |
 | Just want to verify everything works | Stage 5 |
 | Public API surface changed | Stage 9 |
 
@@ -185,9 +185,9 @@ Runs Stage 1 → 3 → 4 → 5 in sequence. Does **not** include Stage 2 (agent)
 
 | File | Location | Role |
 |---|---|---|
-| `tools-manifest.json` | `core/generated/` | Raw MCP tool schemas (Stage 1 output) |
-| `domain-map.json` | `core/generated/` | IR: tool → class → method mappings (Stage 2 output) |
+| `tools-manifest.json` | `packages/sdk/generated/` | Raw MCP tool schemas (Stage 1 output) |
+| `domain-map.json` | `packages/sdk/generated/` | IR: tool → class → method mappings (Stage 2 output) |
 | `ir-schema.ts` | `scripts/` | Zod schema defining valid IR structure |
 | `tool-schema.ts` | `scripts/` | TypeScript types for JSON Schema |
 | `generate-sdk.ts` | `scripts/` | ts-morph codegen (Stage 3) |
-| `stitch-sdk.lock` | `core/generated/` | Integrity hashes for drift detection |
+| `stitch-sdk.lock` | `packages/sdk/generated/` | Integrity hashes for drift detection |

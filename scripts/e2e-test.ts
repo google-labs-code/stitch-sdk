@@ -18,7 +18,7 @@ if (!process.env.STITCH_API_KEY) {
 }
 
 // Import from built package — same as a consumer would
-const { stitch, StitchError } = await import("../core/dist/src/index.js");
+const { stitch, StitchError } = await import("../packages/sdk/dist/src/index.js");
 
 let failures = 0;
 let passed = 0;

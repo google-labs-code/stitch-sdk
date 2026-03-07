@@ -14,7 +14,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 
 const ROOT_DIR = resolve(import.meta.dir, "..");
-const GENERATED_DIR_BASE = resolve(ROOT_DIR, "core/generated");
+const GENERATED_DIR_BASE = resolve(ROOT_DIR, "packages/sdk/generated");
 const MANIFEST_PATH = resolve(GENERATED_DIR_BASE, "tools-manifest.json");
 const DOMAIN_MAP_PATH = resolve(GENERATED_DIR_BASE, "domain-map.json");
 const GENERATED_DIR = resolve(GENERATED_DIR_BASE, "src");

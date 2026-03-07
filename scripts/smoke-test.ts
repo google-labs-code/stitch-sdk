@@ -3,7 +3,7 @@
  * 
  * Verifies:
  * 1. dist/ output exists after build
- * 2. Generated pipeline artifacts are co-located in core/generated/
+ * 2. Generated pipeline artifacts are co-located in packages/sdk/generated/
  * 3. Entry point (dist/src/index.js) is importable
  * 4. All public exports are present
  * 5. Internal exports are NOT leaked
@@ -12,7 +12,7 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
-const CORE_DIR = resolve(process.cwd(), "core");
+const CORE_DIR = resolve(process.cwd(), "packages/sdk");
 const DIST_DIR = resolve(CORE_DIR, "dist");
 const GENERATED_DIR = resolve(CORE_DIR, "generated");
 
@@ -38,13 +38,13 @@ async function main() {
 
   // ── 2. Verify generated pipeline artifacts ────────────────────
   console.log("\n📂 Checking generated pipeline artifacts...");
-  assert(existsSync(resolve(GENERATED_DIR, "stitch-sdk.lock")), "core/generated/stitch-sdk.lock exists");
-  assert(existsSync(resolve(GENERATED_DIR, "tools-manifest.json")), "core/generated/tools-manifest.json exists");
-  assert(existsSync(resolve(GENERATED_DIR, "domain-map.json")), "core/generated/domain-map.json exists");
-  assert(existsSync(resolve(GENERATED_DIR, "src/stitch.ts")), "core/generated/src/stitch.ts exists");
-  assert(existsSync(resolve(GENERATED_DIR, "src/project.ts")), "core/generated/src/project.ts exists");
-  assert(existsSync(resolve(GENERATED_DIR, "src/screen.ts")), "core/generated/src/screen.ts exists");
-  assert(existsSync(resolve(GENERATED_DIR, "src/index.ts")), "core/generated/src/index.ts exists");
+  assert(existsSync(resolve(GENERATED_DIR, "stitch-sdk.lock")), "packages/sdk/generated/stitch-sdk.lock exists");
+  assert(existsSync(resolve(GENERATED_DIR, "tools-manifest.json")), "packages/sdk/generated/tools-manifest.json exists");
+  assert(existsSync(resolve(GENERATED_DIR, "domain-map.json")), "packages/sdk/generated/domain-map.json exists");
+  assert(existsSync(resolve(GENERATED_DIR, "src/stitch.ts")), "packages/sdk/generated/src/stitch.ts exists");
+  assert(existsSync(resolve(GENERATED_DIR, "src/project.ts")), "packages/sdk/generated/src/project.ts exists");
+  assert(existsSync(resolve(GENERATED_DIR, "src/screen.ts")), "packages/sdk/generated/src/screen.ts exists");
+  assert(existsSync(resolve(GENERATED_DIR, "src/index.ts")), "packages/sdk/generated/src/index.ts exists");
 
   // ── 3. Verify compiled generated output ───────────────────────
   console.log("\n🔧 Checking compiled generated output...");

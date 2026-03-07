@@ -4,12 +4,12 @@
   "type": "module",
   "version": "0.1.0",
   "workspaces": [
-    "core"
+    "packages/*"
   ],
   "scripts": {
     "capture": "bun scripts/capture-tools.ts",
     "generate": "bun scripts/generate-sdk.ts",
-    "pipeline": "bun scripts/capture-tools.ts && bun scripts/generate-sdk.ts && bun run build && cd core && npx vitest run",
+    "pipeline": "bun scripts/capture-tools.ts && bun scripts/generate-sdk.ts && bun run build && cd packages/sdk && npx vitest run",
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",

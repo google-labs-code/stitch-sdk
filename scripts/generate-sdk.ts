@@ -3,7 +3,7 @@
  * Stage 3: Generate SDK
  *
  * Reads tools-manifest.json + domain-map.json and emits TypeScript
- * files into core/generated/src/. Deterministic — no LLM involved.
+ * files into packages/sdk/generated/src/. Deterministic — no LLM involved.
  *
  * Validates the binding IR (domain-map) against its Zod schema and
  * verifies response projections against the tool output schemas.
@@ -21,10 +21,10 @@ import { DomainMap, type ProjectionStep, type Binding, type ArgSpec } from "./ir
 import type { Tool, ToolSchema } from "./tool-schema.js";
 
 const ROOT_DIR = resolve(import.meta.dir, "..");
-const MANIFEST_PATH = resolve(ROOT_DIR, "core/generated/tools-manifest.json");
-const DOMAIN_MAP_PATH = resolve(ROOT_DIR, "core/generated/domain-map.json");
-const GENERATED_DIR = resolve(ROOT_DIR, "core/generated/src");
-const LOCK_PATH = resolve(ROOT_DIR, "core/generated/stitch-sdk.lock");
+const MANIFEST_PATH = resolve(ROOT_DIR, "packages/sdk/generated/tools-manifest.json");
+const DOMAIN_MAP_PATH = resolve(ROOT_DIR, "packages/sdk/generated/domain-map.json");
+const GENERATED_DIR = resolve(ROOT_DIR, "packages/sdk/generated/src");
+const LOCK_PATH = resolve(ROOT_DIR, "packages/sdk/generated/stitch-sdk.lock");
 
 function sha256(content: string): string {
   return createHash("sha256").update(content).digest("hex");
@@ -610,7 +610,7 @@ async function main() {
   await Bun.write(resolve(GENERATED_DIR, "index.ts"), indexFile.getFullText());
   fileCount++;
 
-  console.log(`\n📦 Generated ${fileCount} files in core/generated/src/`);
+  console.log(`\n📦 Generated ${fileCount} files in packages/sdk/generated/src/`);
 
   // Update stitch-sdk.lock
   const generatedHash = hashDirectory(GENERATED_DIR);
