@@ -12,15 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 /**
  * TDD Cycle 1: Singleton Delegation
- * 
+ *
  * The `stitch` singleton must expose both domain methods (from Stitch class)
  * and tool methods (from StitchToolClient): listTools, callTool, close.
+ *
+ * A dummy API key is set so the config Zod schema passes in CI.
  */
 describe("stitch singleton", () => {
+  beforeEach(() => {
+    vi.stubEnv("STITCH_API_KEY", "test-dummy-key");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("stitch.listTools is a function", async () => {
     const { stitch } = await import("../../src/singleton.js");
     expect(typeof stitch.listTools).toBe("function");
