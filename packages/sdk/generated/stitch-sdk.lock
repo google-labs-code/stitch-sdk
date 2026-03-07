@@ -7,14 +7,14 @@
     "serverUrl": "https://stitch.googleapis.com/mcp"
   },
   "generated": {
-    "generatedAt": "2026-03-07T15:46:01.252Z",
-    "sourceHash": "sha256:4165670fa9f7ec5cdf0ef45e66952bfdcd516d5748d5179c1a58364c51d138d5",
+    "generatedAt": "2026-03-07T18:51:17.229Z",
+    "sourceHash": "sha256:c63309d4ea3bb44fd1fcceadb839d467348fc013ebdc259c5b9e62e504cd9f74",
     "manifestHash": "sha256:1f84b31604f95580325952f0c150a3e045543fad2596e9a4d8ed15c07e0cbf9b",
     "domainMapHash": "sha256:a8c87655b83cf6010f174b762dadb0a5e3b340fc401c528ddfa3e14d44deee36",
-    "fileCount": 4
+    "fileCount": 5
   },
   "domainMap": {
-    "generatedAt": "2026-03-07T15:46:01.252Z",
+    "generatedAt": "2026-03-07T18:51:17.229Z",
     "sourceHash": "sha256:a8c87655b83cf6010f174b762dadb0a5e3b340fc401c528ddfa3e14d44deee36",
     "manifestHash": "sha256:1f84b31604f95580325952f0c150a3e045543fad2596e9a4d8ed15c07e0cbf9b",
     "classCount": 3,

@@ -11,3 +11,4 @@ dist
 .vscode
 *.log
 gen
+.stitch/

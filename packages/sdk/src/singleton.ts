@@ -15,33 +15,66 @@
 import { Stitch } from "../generated/src/stitch.js";
 import { StitchToolClient } from "./client.js";
 
+/** Lazily-initialized default client */
+let _client: StitchToolClient | null = null;
+
+/** Get or create the shared StitchToolClient instance. */
+export function getOrCreateClient(config?: { apiKey?: string }): StitchToolClient {
+  if (!_client) {
+    _client = new StitchToolClient({
+      apiKey: config?.apiKey || process.env.STITCH_API_KEY,
+      baseUrl: process.env.STITCH_HOST || "https://stitch.googleapis.com/mcp",
+    });
+  }
+  return _client;
+}
+
 /** Lazily-initialized default Stitch instance */
 let _stitch: Stitch | null = null;
 
 function getStitchInstance(): Stitch {
   if (!_stitch) {
-    const client = new StitchToolClient({
-      apiKey: process.env.STITCH_API_KEY,
-      baseUrl: process.env.STITCH_HOST || "https://stitch.googleapis.com/mcp",
-    });
-    _stitch = new Stitch(client);
+    _stitch = new Stitch(getOrCreateClient());
   }
   return _stitch;
 }
+
+/** Methods that delegate to StitchToolClient instead of Stitch domain class. */
+const CLIENT_METHODS = new Set(['listTools', 'callTool', 'close']);
 
 /**
  * Default Stitch instance using environment variables.
  * Lazily initialized on first access.
  * 
+ * Exposes both domain methods (from Stitch class) and tool methods
+ * (listTools, callTool, close from StitchToolClient).
+ * 
  * @example
  * import { stitch } from '@google/stitch-sdk';
+ * 
+ * // Domain API
  * const projects = await stitch.projects();
+ * 
+ * // Tool API
+ * const tools = await stitch.listTools();
+ * await stitch.callTool("create_project", { title: "My App" });
  */
-export const stitch = new Proxy<Stitch>({} as Stitch, {
+export const stitch = new Proxy<
+  Stitch & Pick<StitchToolClient, 'listTools' | 'callTool' | 'close'>
+>({} as any, {
   get(_target, prop: string | symbol) {
+    // Client methods → delegate to StitchToolClient
+    if (typeof prop === 'string' && CLIENT_METHODS.has(prop)) {
+      const client = getOrCreateClient();
+      const value = client[prop as keyof StitchToolClient];
+      if (typeof value === 'function') {
+        return value.bind(client);
+      }
+      return value;
+    }
+    // Domain methods → delegate to Stitch instance
     const instance = getStitchInstance();
     const value = instance[prop as keyof Stitch];
-    // Bind methods to preserve `this` context
     if (typeof value === 'function') {
       return value.bind(instance);
     }

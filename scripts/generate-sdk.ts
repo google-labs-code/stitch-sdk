@@ -612,6 +612,38 @@ async function main() {
     fileCount++;
   }
 
+  // Generate tool definitions (for stitchTools() adapter)
+  console.log(`  📄 tool-definitions.ts (${manifest.length} tools)`);
+  const toolDefsFile = tsProject.createSourceFile("tool-definitions.ts");
+  toolDefsFile.addStatements(`/**\n * ${headerComment}\n */\n`);
+  toolDefsFile.addInterface({
+    name: "ToolDefinition",
+    isExported: true,
+    docs: ["Static tool definition from the Stitch MCP server manifest."],
+    properties: [
+      { name: "name", type: "string", docs: ['MCP tool name, e.g. "create_project"'] },
+      { name: "description", type: "string", docs: ["Human-readable description of what the tool does"] },
+      { name: "inputSchema", type: "Record<string, unknown>", docs: ["JSON Schema for the tool's input parameters"] },
+    ],
+  });
+  // Use ts-morph for the declaration, but inject the JSON data directly.
+  // (addStatements chokes on very large JSON literals, so we build the output string.)
+  const toolDefsJson = JSON.stringify(
+    manifest.map(t => ({
+      name: t.name,
+      description: t.description || "",
+      inputSchema: t.inputSchema || {},
+    })),
+    null,
+    2,
+  );
+  const toolDefsOutput =
+    toolDefsFile.getFullText() +
+    `\n/** All tools available on the Stitch MCP server, generated from tools-manifest.json. */\n` +
+    `export const toolDefinitions: ToolDefinition[] = ${toolDefsJson};\n`;
+  await Bun.write(resolve(GENERATED_DIR, "tool-definitions.ts"), toolDefsOutput);
+  fileCount++;
+
   // Generate barrel export
   const indexFile = tsProject.createSourceFile("index.ts");
   indexFile.addStatements(`/**\n * ${headerComment}\n */\n`);
@@ -621,6 +653,10 @@ async function main() {
       namedExports: [className],
     });
   }
+  indexFile.addExportDeclaration({
+    moduleSpecifier: "./tool-definitions.js",
+    namedExports: ["toolDefinitions", { name: "ToolDefinition", isTypeOnly: true }],
+  });
   await Bun.write(resolve(GENERATED_DIR, "index.ts"), indexFile.getFullText());
   fileCount++;
 
