@@ -13,9 +13,8 @@
 
 import { resolve } from "node:path";
 import { createHash } from "node:crypto";
-import { forwardToStitch, initializeStitchConnection } from "../packages/sdk/src/proxy/client.js";
+import { initializeStitchConnection } from "../packages/sdk/src/proxy/client.js";
 import type { ProxyContext } from "../packages/sdk/src/proxy/client.js";
-import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 
 const ROOT_DIR = resolve(import.meta.dir, "..");
 const MANIFEST_PATH = resolve(ROOT_DIR, "packages/sdk/generated/tools-manifest.json");
