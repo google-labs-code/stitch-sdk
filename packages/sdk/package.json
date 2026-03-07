@@ -2,9 +2,39 @@
   "name": "@google/stitch-sdk",
   "version": "0.0.1",
   "type": "module",
-  "description": "The foundational SDK and MCP Client for Stitch",
+  "description": "Generate UI screens from text prompts and extract their HTML and screenshots programmatically.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/google/stitch-sdk.git",
+    "directory": "packages/sdk"
+  },
+  "keywords": [
+    "stitch",
+    "mcp",
+    "ui",
+    "generative-ai",
+    "google"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/src/index.js",
+      "types": "./dist/src/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "registry": "https://wombat-dressing-room.appspot.com",
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
