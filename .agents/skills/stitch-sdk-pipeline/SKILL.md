@@ -114,7 +114,10 @@ Runs contract tests (IR schema acceptance/rejection) and logic tests (expression
 npm run test:e2e
 ```
 
-Live API tests against the built package. Requires `STITCH_API_KEY`. Tests create real projects, generate screens, and verify responses.
+Live API tests against the built package. Requires `STITCH_API_KEY` (and `GEMINI_API_KEY` for AI SDK tests). Two test suites:
+
+- **`live.test.ts`** — Direct SDK calls: create projects, generate screens, verify responses.
+- **`ai-sdk-e2e.test.ts`** — AI SDK integration via `stitchTools()`: Gemini autonomously calls Stitch tools, generates designs, extracts HTML + Tailwind config, produces modular React components, validates via SWC, and scaffolds a Vite preview app at `.stitch/preview/`.
 
 ---
 
@@ -144,10 +147,11 @@ After the pipeline passes, audit agent skills for freshness. Read the current so
 
 **Skills to audit** (in priority order):
 1. `stitch-sdk-usage` — highest churn, references specific methods and constructor signatures
-2. `stitch-sdk-development` — check cache examples match current domain-map patterns
-3. `stitch-sdk-domain-design` — check code examples in the cache section
+2. `stitch-sdk-readme` — must document `stitchTools()` API and AI SDK integration examples
+3. `stitch-sdk-development` — check cache examples match current domain-map patterns
+4. `stitch-sdk-domain-design` — check code examples in the cache section
 
-**Skills to skip**: `stitch-sdk-readme` (template-based, doesn't enumerate methods), `stitch-sdk-pipeline` (self-referential), `red-green-yellow` (generic methodology).
+**Skills to skip**: `stitch-sdk-pipeline` (self-referential), `red-green-yellow` (generic methodology).
 
 **What to check**:
 - Every method name in a code example exists on its class
@@ -179,6 +183,7 @@ Runs Stage 1 → 3 → 4 → 5 in sequence. Does **not** include Stage 2 (agent)
 | Changed `ir-schema.ts` or `generate-sdk.ts` | Stage 3 |
 | Changed code in `packages/sdk/src/` (client, errors) | Stage 4 |
 | Just want to verify everything works | Stage 5 |
+| Changed AI SDK tools adapter or tool definitions | Stage 5 |
 | Public API surface changed | Stage 9 |
 
 ### Key files
@@ -187,7 +192,11 @@ Runs Stage 1 → 3 → 4 → 5 in sequence. Does **not** include Stage 2 (agent)
 |---|---|---|
 | `tools-manifest.json` | `packages/sdk/generated/` | Raw MCP tool schemas (Stage 1 output) |
 | `domain-map.json` | `packages/sdk/generated/` | IR: tool → class → method mappings (Stage 2 output) |
+| `tool-definitions.ts` | `packages/sdk/generated/src/` | Generated JSON Schema tool definitions for AI SDK |
+| `tools-adapter.ts` | `packages/sdk/src/` | `stitchTools()` — AI SDK v6 `dynamicTool()` adapter |
 | `ir-schema.ts` | `scripts/` | Zod schema defining valid IR structure |
 | `tool-schema.ts` | `scripts/` | TypeScript types for JSON Schema |
 | `generate-sdk.ts` | `scripts/` | ts-morph codegen (Stage 3) |
 | `stitch-sdk.lock` | `packages/sdk/generated/` | Integrity hashes for drift detection |
+| `stitch-html.ts` | `packages/sdk/test/helpers/` | Stitch HTML parser (Tailwind config + font extraction) |
+| `component-validator.ts` | `packages/sdk/test/helpers/` | SWC AST validator for generated React components |
