@@ -55,22 +55,20 @@ try {
   const projects = await stitch.projects();
   assert(Array.isArray(projects), `Listed ${projects.length} projects`);
 
-  // ── 2. Create project ───────────────────────────────────────
-  console.log("\n📦 Creating project...");
+  // ── 2. Create project via callTool ────────────────────────────
+  console.log("\n📦 Creating project via callTool...");
   const projectName = `E2E Test ${new Date().toISOString().slice(0, 16)}`;
-  const project = await stitch.createProject(projectName);
-  assert(typeof project.id === "string" && project.id.length > 0, `Created project: ${project.id}`);
-  assert(typeof project.projectId === "string" && project.projectId.length > 0, `Project has bare ID: ${project.projectId}`);
-  assert(!project.projectId.includes("projects/"), "projectId has no prefix");
+  const createResult = await stitch.callTool("create_project", { title: projectName });
+  const createdId = (createResult as any).name?.replace("projects/", "") ?? (createResult as any).projectId;
+  assert(typeof createdId === "string" && createdId.length > 0, `Created project: ${createdId}`);
 
-  // ── 3. Retrieve project by ID (handle pattern) ─────────────
-  console.log("\n🔍 Retrieving project by ID...");
-  const retrieved = stitch.project(project.id);
-  assert(retrieved.id === project.id, `Retrieved project matches: ${retrieved.id}`);
-  assert(retrieved.projectId === project.projectId, "Retrieved project has correct bare ID");
+  // ── 3. Retrieve project by identity map ─────────────────────
+  console.log("\n🔍 Retrieving project by identity map...");
+  const project = stitch.project(createdId);
+  assert(project.id === createdId, `Identity map handle matches: ${project.id}`);
 
   // Prove the handle works by listing screens (should be 0 on new project)
-  const emptyScreens = await retrieved.screens();
+  const emptyScreens = await project.screens();
   assert(Array.isArray(emptyScreens) && emptyScreens.length === 0, "New project has 0 screens");
 
   // ── 4. Generate screen ──────────────────────────────────────

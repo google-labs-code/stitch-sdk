@@ -49,9 +49,9 @@ Immediately show the library in use. Code first, not setup.
 
 **Primary workflow** — the punchline everything in the SDK exists to produce:
 ```
-createProject → generate → getHtml
+project(id) → generate → getHtml
 ```
-Show this as the first code block, with one line noting the env var requirement. Do not show installation, imports, or config before this.
+Show this as the first code block, with one line noting the env var requirement. Do not show installation, imports, or config before this. Show `callTool("create_project", ...)` separately for project creation.
 
 **Secondary workflows** — reveal depth progressively:
 1. Listing and iterating over existing projects/screens

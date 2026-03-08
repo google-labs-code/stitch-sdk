@@ -35,9 +35,17 @@ runIfConfigured("Stitch Live Integration", () => {
     }
   });
 
-  it("should create and retrieve a project", async () => {
-    const project = await sdk.createProject(`Test Project ${Date.now()}`);
-    expect(project.id).toContain("projects/");
-    console.log("Created Project:", project.id);
+  it("should create and retrieve a project via callTool + identity map", async () => {
+    const client = new StitchToolClient();
+    await client.connect();
+    const result = await client.callTool<any>("create_project", { title: `Test Project ${Date.now()}` });
+    const projectId = result.name?.replace("projects/", "") ?? result.projectId;
+    expect(projectId).toBeDefined();
+
+    const project = sdk.project(projectId);
+    expect(project.id).toBe(projectId);
+    const screens = await project.screens();
+    expect(Array.isArray(screens)).toBe(true);
+    console.log("Created & retrieved project via identity map:", project.id);
   }, 30000);
 });

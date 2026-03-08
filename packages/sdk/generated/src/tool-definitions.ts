@@ -3,8 +3,8 @@
 DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:1f84b31604f9...)
-        domain-map.json     (sha256:a8c87655b83c...)
-Generated: 2026-03-07T18:51:17.154Z
+        domain-map.json     (sha256:efa6858b5d46...)
+Generated: 2026-03-08T00:44:24.555Z
  */
 /** Static tool definition from the Stitch MCP server manifest. */
 export interface ToolDefinition {

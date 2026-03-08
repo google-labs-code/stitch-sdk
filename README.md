@@ -10,13 +10,19 @@ Set your API key and generate a screen:
 import { stitch } from "@google/stitch-sdk";
 
 // STITCH_API_KEY must be set in the environment
-const project = await stitch.createProject("My App");
+const project = stitch.project("your-project-id");
 const screen = await project.generate("A login page with email and password fields");
 const html = await screen.getHtml();
 const imageUrl = await screen.getImage();
 ```
 
 `html` is a download URL for the screen's HTML. `imageUrl` is a download URL for the screenshot.
+
+Need to create a project first? Use the tool client:
+
+```ts
+const result = await stitch.callTool("create_project", { title: "My App" });
+```
 
 ## Install
 
@@ -147,7 +153,6 @@ The root class. Manages projects.
 
 | Method | Parameters | Returns | Description |
 |---|---|---|---|
-| `createProject(title)` | `title: string` | `Promise<Project>` | Create a new project |
 | `projects()` | — | `Promise<Project[]>` | List all accessible projects |
 | `project(id)` | `id: string` | `Project` | Reference a project by ID (no API call) |
 

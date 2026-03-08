@@ -48,20 +48,6 @@
   },
   "bindings": [
     {
-      "tool": "create_project",
-      "class": "Stitch",
-      "method": "createProject",
-      "args": {
-        "title": {
-          "from": "param"
-        }
-      },
-      "returns": {
-        "class": "Project",
-        "projection": []
-      }
-    },
-    {
       "tool": "list_projects",
       "class": "Stitch",
       "method": "projects",

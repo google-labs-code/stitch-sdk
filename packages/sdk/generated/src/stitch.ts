@@ -3,8 +3,8 @@
 DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:1f84b31604f9...)
-        domain-map.json     (sha256:a8c87655b83c...)
-Generated: 2026-03-07T18:51:17.154Z
+        domain-map.json     (sha256:efa6858b5d46...)
+Generated: 2026-03-08T00:44:24.555Z
  */
 import { type StitchToolClient } from "../../src/client.js";
 import { StitchError } from "../../src/spec/errors.js";
@@ -13,19 +13,6 @@ import { Project } from "./project.js";
 /** Main entry point. Manages projects. */
 export class Stitch {
     constructor(private client: StitchToolClient) {
-    }
-
-    /**
-     * Creates a new Stitch project. A project is a container for UI designs and frontend code.
-     * Tool: create_project
-     */
-    async createProject(title: string): Promise<Project> {
-        try {
-          const raw = await this.client.callTool<any>("create_project", { title });
-          return new Project(this.client, raw);
-        } catch (error) {
-          throw StitchError.fromUnknown(error);
-        }
     }
 
     /**

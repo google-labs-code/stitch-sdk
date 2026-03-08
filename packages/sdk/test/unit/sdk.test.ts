@@ -153,6 +153,11 @@ describe("SDK Unit Tests", () => {
       expect(typeof (sdk as any).getProject).toBe("undefined");
     });
 
+    it("should not have a createProject method — use callTool or stitchTools() instead", () => {
+      const sdk = new Stitch(mockClient);
+      expect(typeof (sdk as any).createProject).toBe("undefined");
+    });
+
     it("project(id) should return a Project handle with correct ID", () => {
       const sdk = new Stitch(mockClient);
       const handle = sdk.project("proj-123");
