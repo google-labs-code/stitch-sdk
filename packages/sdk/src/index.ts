@@ -26,6 +26,7 @@ export { stitch } from "./singleton.js";
 
 // AI SDK adapter
 export { stitchTools } from "./tools-adapter.js";
+export type { StitchTool } from "./tools-adapter.js";
 
 // Error handling
 export { StitchError, StitchErrorCode } from "./spec/errors.js";

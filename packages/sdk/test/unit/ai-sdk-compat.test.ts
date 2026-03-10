@@ -13,8 +13,9 @@
 // limitations under the License.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { generateText, stepCountIs } from "ai";
+import { generateText, stepCountIs, type Tool } from "ai";
 import { mockResponse, createTextMock, createToolCallMock } from "../helpers/model-helpers.js";
+import type { StitchTool } from "../../src/tools-adapter.js";
 
 const mockCallTool = vi.fn();
 
@@ -24,6 +25,22 @@ vi.mock("../../src/singleton.js", () => ({
     callTool: mockCallTool,
   }),
 }));
+
+/**
+ * Bridge StitchTool → AI SDK Tool for test assertions.
+ *
+ * Our StitchTool uses Symbol.for("vercel.ai.schema") which is runtime-identical
+ * to the AI SDK's internal schemaSymbol, but TypeScript can't verify unique symbol
+ * equality across module boundaries. This targeted assertion narrows to Record<string, Tool>
+ * rather than escaping to `any`.
+ */
+function asToolSet(tools: Record<string, StitchTool>): Record<string, Tool> {
+  // StitchTool uses Symbol.for("vercel.ai.schema") which is the same runtime value
+  // as the AI SDK's internal unique symbol, but TypeScript can't unify unique symbols
+  // across module boundaries. The `unknown` intermediate is the TS-recommended pattern
+  // for this class of cross-boundary type bridge.
+  return tools as unknown as Record<string, Tool>;
+}
 
 /**
  * TDD Cycle 3: AI SDK Compatibility
@@ -38,7 +55,7 @@ describe("AI SDK compatibility", () => {
 
   it("stitchTools() output is accepted by generateText({ tools })", async () => {
     const { stitchTools } = await import("../../src/tools-adapter.js");
-    const tools = stitchTools({ include: ["create_project"] });
+    const tools = asToolSet(stitchTools({ include: ["create_project"] }));
 
     const result = await generateText({
       model: createTextMock("I created a project."),
@@ -49,9 +66,24 @@ describe("AI SDK compatibility", () => {
     expect(result.text).toBe("I created a project.");
   });
 
-  it("mock LLM tool call triggers the correct execute function", async () => {
+  it("each tool satisfies the AI SDK Tool shape", async () => {
     const { stitchTools } = await import("../../src/tools-adapter.js");
     const tools = stitchTools({ include: ["create_project"] });
+
+    // Verify each tool has the structural properties the AI SDK expects.
+    // The generateText() tests are the authoritative conformance tests,
+    // but this validates individual field shapes explicitly.
+    for (const [, tool] of Object.entries(tools)) {
+      expect(tool.type).toBe('dynamic');
+      expect(typeof tool.description).toBe('string');
+      expect(tool.inputSchema).toHaveProperty('jsonSchema');
+      expect(typeof tool.execute).toBe('function');
+    }
+  });
+
+  it("mock LLM tool call triggers the correct execute function", async () => {
+    const { stitchTools } = await import("../../src/tools-adapter.js");
+    const tools = asToolSet(stitchTools({ include: ["create_project"] }));
 
     mockCallTool.mockResolvedValue({ name: "projects/123", title: "Test Project" });
 
@@ -71,7 +103,7 @@ describe("AI SDK compatibility", () => {
 
   it("tool result flows back through the AI SDK pipeline", async () => {
     const { stitchTools } = await import("../../src/tools-adapter.js");
-    const tools = stitchTools({ include: ["create_project"] });
+    const tools = asToolSet(stitchTools({ include: ["create_project"] }));
 
     mockCallTool.mockResolvedValue({ name: "projects/456", title: "My App" });
 
@@ -90,3 +122,4 @@ describe("AI SDK compatibility", () => {
     expect(result.text).toBe("Created project My App with ID 456.");
   });
 });
+

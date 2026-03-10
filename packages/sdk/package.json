@@ -29,6 +29,8 @@
   },
   "files": [
     "dist",
+    "!dist/tsconfig.tsbuildinfo",
+    "!dist/package.json",
     "README.md"
   ],
   "publishConfig": {
@@ -44,11 +46,9 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.23.0",
-    "eventsource": "^2.0.2",
     "zod": "^4.3.5"
   },
   "devDependencies": {
-    "@ai-sdk/google": "^3.0.43",
     "@swc/core": "^1.15.18",
     "@types/node": "^20.0.0",
     "ai": "^6.0.116",
