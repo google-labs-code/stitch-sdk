@@ -36,7 +36,7 @@ jobs:
       - name: Decode private key
         id: decode-key
         run: |
-          echo "${{ secrets.FLEET_APP_PRIVATE_KEY }}" | base64 -d > /tmp/fleet-app-key.pem
+          printf '%s' "${{ secrets.FLEET_APP_PRIVATE_KEY }}" | base64 -d > /tmp/fleet-app-key.pem
           {
             echo "pem<<PEMEOF"
             cat /tmp/fleet-app-key.pem
