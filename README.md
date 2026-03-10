@@ -30,6 +30,12 @@ const result = await stitch.callTool("create_project", { title: "My App" });
 npm install @google/stitch-sdk
 ```
 
+To use `stitchTools()` with the [Vercel AI SDK](https://sdk.vercel.ai/), install `ai` as well:
+
+```bash
+npm install @google/stitch-sdk ai
+```
+
 ## Working with Projects and Screens
 
 ### List existing projects
@@ -123,7 +129,7 @@ Drop Stitch tools directly into the [Vercel AI SDK](https://sdk.vercel.ai/):
 ```ts
 import { generateText, stepCountIs } from "ai";
 import { google } from "@ai-sdk/google";
-import { stitchTools } from "@google/stitch-sdk";
+import { stitchTools } from "@google/stitch-sdk/ai";
 
 const { text, steps } = await generateText({
   model: google("gemini-2.5-flash"),
@@ -213,11 +219,11 @@ await client.close();
 
 ### `stitchTools()`
 
-Returns all Stitch MCP tools as Vercel AI SDK `dynamicTool` objects. Drop into `generateText()` or `streamText()` — the model calls tools autonomously.
+Returns all Stitch MCP tools as Vercel AI SDK `Tool` objects. Import from `@google/stitch-sdk/ai`. Drop into `generateText()` or `streamText()` — the model calls tools autonomously.
 
 ```ts
 import { generateText, stepCountIs } from "ai";
-import { stitchTools } from "@google/stitch-sdk";
+import { stitchTools } from "@google/stitch-sdk/ai";
 
 const { text } = await generateText({
   model: yourModel,

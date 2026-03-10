@@ -14,8 +14,8 @@
 
 import path from "node:path";
 import { describe, it, expect } from "vitest";
-import { generateText, stepCountIs } from "ai";
-import { stitchTools } from "../../src/tools-adapter.js";
+import { generateText, stepCountIs, type Tool } from "ai";
+import { stitchTools } from "../../src/ai.js";
 import { createGeminiModel } from "../helpers/model-helpers.js";
 import { validateComponent } from "../helpers/component-validator.js";
 import { extractStitchAssets, parseGeneratedFiles, writePreviewApp } from "../helpers/stitch-html.js";

@@ -193,7 +193,7 @@ Runs Stage 1 → 3 → 4 → 5 in sequence. Does **not** include Stage 2 (agent)
 | `tools-manifest.json` | `packages/sdk/generated/` | Raw MCP tool schemas (Stage 1 output) |
 | `domain-map.json` | `packages/sdk/generated/` | IR: tool → class → method mappings (Stage 2 output) |
 | `tool-definitions.ts` | `packages/sdk/generated/src/` | Generated JSON Schema tool definitions for AI SDK |
-| `tools-adapter.ts` | `packages/sdk/src/` | `stitchTools()` — AI SDK v6 `dynamicTool()` adapter |
+| `tools-adapter.ts` | `packages/sdk/src/` | `stitchTools()` — AI SDK v6 adapter (imported via `@google/stitch-sdk/ai`) |
 | `ir-schema.ts` | `scripts/` | Zod schema defining valid IR structure |
 | `tool-schema.ts` | `scripts/` | TypeScript types for JSON Schema |
 | `generate-sdk.ts` | `scripts/` | ts-morph codegen (Stage 3) |

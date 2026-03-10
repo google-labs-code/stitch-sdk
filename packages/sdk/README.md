@@ -24,6 +24,12 @@ const imageUrl = await screen.getImage();
 npm install @google/stitch-sdk
 ```
 
+To use `stitchTools()` with the [Vercel AI SDK](https://sdk.vercel.ai/), install `ai` as well:
+
+```bash
+npm install @google/stitch-sdk ai
+```
+
 ## Working with Projects and Screens
 
 ### List existing projects

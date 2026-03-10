@@ -12,34 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import type { Tool } from "ai";
 import { toolDefinitions } from "../generated/src/tool-definitions.js";
 import { getOrCreateClient } from "./singleton.js";
 
 /**
  * Well-known symbol used by the Vercel AI SDK to identify schema objects.
  * Using Symbol.for() ensures we match the exact same symbol the SDK uses
- * internally, without importing it.
+ * internally, without importing any runtime code from `ai`.
  */
 const schemaSymbol = Symbol.for("vercel.ai.schema");
-
-/**
- * A Stitch tool definition compatible with the Vercel AI SDK's Tool interface.
- *
- * This type is structurally equivalent to `Tool<unknown, unknown> & { type: 'dynamic' }`
- * from the `ai` package. We define it locally to avoid a hard runtime dependency.
- * Conformance is verified by tests that pass these objects into `generateText()`.
- */
-export interface StitchTool {
-  type: 'dynamic';
-  description: string;
-  inputSchema: {
-    [key: symbol]: true;
-    _type: unknown;
-    readonly jsonSchema: unknown;
-    readonly validate?: undefined;
-  };
-  execute: (args: unknown) => Promise<unknown>;
-}
 
 /**
  * Returns Stitch tools in Vercel AI SDK format.
@@ -65,7 +47,7 @@ export interface StitchTool {
 export function stitchTools(options?: {
   apiKey?: string;
   include?: string[];
-}): Record<string, StitchTool> {
+}): Record<string, Tool> {
   const client = getOrCreateClient(options);
 
   const filtered = options?.include
@@ -75,18 +57,22 @@ export function stitchTools(options?: {
   return Object.fromEntries(
     filtered.map(t => [
       t.name,
+      // Construct a plain object that is runtime-identical to what
+      // dynamicTool() + jsonSchema() would produce. The `ai` package
+      // is NOT imported at runtime — only the type is used above.
       {
         type: 'dynamic' as const,
         description: t.description,
         inputSchema: {
-          [schemaSymbol]: true as const,
+          [schemaSymbol]: true,
           _type: undefined as unknown,
           validate: undefined,
           get jsonSchema() { return t.inputSchema; },
         },
         execute: async (args: unknown) =>
           client.callTool(t.name, args as Record<string, any>),
-      } satisfies StitchTool,
+      } as unknown as Tool,
     ])
   );
 }
+

@@ -19,7 +19,7 @@ Do not hard-code the API surface. Read it from the codebase at invocation time:
 | Domain class methods + signatures | Source files for each exported class (`sdk.ts`, `project.ts`, `screen.ts`) |
 | Generated method bindings | `packages/sdk/generated/domain-map.json` → `bindings[]` array |
 | Handwritten methods | Methods in class source files that aren't in domain-map bindings (e.g. `Screen.edit`, `Screen.variants`) |
-| AI SDK tools adapter | `packages/sdk/src/tools-adapter.ts` → `stitchTools()` function |
+| AI SDK tools adapter | `packages/sdk/src/ai.ts` → subpath entry for `stitchTools()` |
 | Generated tool definitions | `packages/sdk/generated/src/tool-definitions.ts` → JSON Schema for each tool |
 | Tool client methods | `packages/sdk/src/client.ts` |
 | Error codes | `packages/sdk/src/spec/errors.ts` → `StitchErrorCode` |
@@ -58,10 +58,11 @@ Show this as the first code block, with one line noting the env var requirement.
 2. Editing a screen and generating variants
 3. Tool access via singleton (`stitch.listTools()`, `stitch.callTool()`) — zero setup
 4. Explicit configuration via `StitchToolClient` (custom API key, base URL)
-5. AI SDK integration via `stitchTools()` — show `generateText` with `tools: stitchTools()` and `stepCountIs`
+5. AI SDK integration via `stitchTools()` — import from `@google/stitch-sdk/ai`, show `generateText` with `tools: stitchTools()` and `stepCountIs`
 
 Rules for this section:
 - **No setup first.** One line mentioning `STITCH_API_KEY` is enough before the first example.
+- **Dual install paths.** Show `npm install @google/stitch-sdk` first (core SDK, standalone). Then show `npm install @google/stitch-sdk ai` for AI SDK users. The `ai` package is only needed when importing from `@google/stitch-sdk/ai`.
 - **Straightforward language.** No "powerful", "seamless", "robust", "enterprise-grade".
 - **Working examples.** Every code block must be valid, runnable code — not fragments with `// ...` elisions.
 - **Progressive complexity.** Simplest invocation first, then deeper capabilities.

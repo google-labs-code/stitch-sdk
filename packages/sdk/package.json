@@ -2,11 +2,12 @@
   "name": "@google/stitch-sdk",
   "version": "0.0.1",
   "type": "module",
+  "private": false,
   "description": "Generate UI screens from text prompts and extract their HTML and screenshots programmatically.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/google/stitch-sdk.git",
+    "url": "https://github.com/google-labs-code/stitch-sdk.git",
     "directory": "packages/sdk"
   },
   "keywords": [
@@ -25,6 +26,10 @@
     ".": {
       "import": "./dist/src/index.js",
       "types": "./dist/src/index.d.ts"
+    },
+    "./ai": {
+      "import": "./dist/src/ai.js",
+      "types": "./dist/src/ai.d.ts"
     }
   },
   "files": [
