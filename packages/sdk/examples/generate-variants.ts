@@ -37,7 +37,7 @@ if (!targetScreen || !targetProject) {
 console.log(`✅ Found base screen ${targetScreen.id} in project ${targetProject.id}`);
 
 const variantsPrompt = "Change the button style to outline";
-const variantOptions = { numVariants: 3 };
+const variantOptions = { variantCount: 3 };
 
 console.log(`\n🎨 Generating variants with prompt: "${variantsPrompt}"...`);
 console.log("   (This may take up to a minute)");
