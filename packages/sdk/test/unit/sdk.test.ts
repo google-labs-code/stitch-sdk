@@ -172,9 +172,20 @@ describe("SDK Unit Tests", () => {
       expect(typeof (sdk as any).getProject).toBe("undefined");
     });
 
-    it("should not have a createProject method — use callTool or stitchTools() instead", () => {
+    it("createProject should call create_project and return a Project", async () => {
       const sdk = new Stitch(mockClient);
-      expect(typeof (sdk as any).createProject).toBe("undefined");
+      (mockClient.callTool as Mock).mockResolvedValue({
+        name: "projects/new-proj-123",
+        title: "My Dashboard",
+      });
+
+      const project = await sdk.createProject("My Dashboard");
+
+      expect(mockClient.callTool).toHaveBeenCalledWith("create_project", {
+        title: "My Dashboard",
+      });
+      expect(project).toBeInstanceOf(Project);
+      expect(project.id).toBe("new-proj-123");
     });
 
     it("project(id) should return a Project handle with correct ID", () => {

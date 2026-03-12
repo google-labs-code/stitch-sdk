@@ -1,6 +1,6 @@
 {
   "name": "@google/stitch-sdk",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "private": false,
   "description": "Generate UI screens from text prompts and extract their HTML and screenshots programmatically.",

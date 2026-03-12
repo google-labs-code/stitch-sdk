@@ -63,6 +63,21 @@
       }
     },
     {
+      "tool": "create_project",
+      "class": "Stitch",
+      "method": "createProject",
+      "args": {
+        "title": {
+          "from": "param",
+          "optional": true
+        }
+      },
+      "returns": {
+        "class": "Project",
+        "projection": []
+      }
+    },
+    {
       "tool": "generate_screen_from_text",
       "class": "Project",
       "method": "generate",
