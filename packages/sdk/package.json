@@ -43,7 +43,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "bun scripts/inject-version.ts && tsc",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

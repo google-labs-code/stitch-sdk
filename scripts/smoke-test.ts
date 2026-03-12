@@ -23,7 +23,7 @@
  * 5. Internal exports are NOT leaked
  */
 
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const CORE_DIR = resolve(process.cwd(), "packages/sdk");
@@ -48,7 +48,18 @@ async function main() {
   assert(existsSync(resolve(DIST_DIR, "src/index.d.ts")), "dist/src/index.d.ts exists");
   assert(existsSync(resolve(DIST_DIR, "src/client.js")), "dist/src/client.js exists");
   assert(existsSync(resolve(DIST_DIR, "src/singleton.js")), "dist/src/singleton.js exists");
+  assert(existsSync(resolve(DIST_DIR, "src/version.js")), "dist/src/version.js exists (build-time generated)");
   assert(existsSync(resolve(DIST_DIR, "src/proxy")), "dist/src/proxy/ directory exists");
+
+  // Verify version.ts was generated and matches package.json
+  const srcVersion = resolve(CORE_DIR, "src/version.ts");
+  assert(existsSync(srcVersion), "src/version.ts exists (build-time generated)");
+  const pkg = JSON.parse(readFileSync(resolve(CORE_DIR, "package.json"), "utf8"));
+  const versionContent = readFileSync(srcVersion, "utf8");
+  assert(
+    versionContent.includes(`'${pkg.version}'`),
+    `src/version.ts contains version '${pkg.version}' matching package.json`,
+  );
 
   // ── 2. Verify generated pipeline artifacts ────────────────────
   console.log("\n📂 Checking generated pipeline artifacts...");

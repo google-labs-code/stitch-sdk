@@ -6,8 +6,7 @@
   },
   "include": [
     "src/**/*",
-    "generated/src/**/*",
-    "package.json"
+    "generated/src/**/*"
   ],
   "exclude": [
     "src/**/*.test.ts",

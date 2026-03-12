@@ -16,7 +16,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { StitchConfigSchema, StitchConfig, StitchToolClientSpec } from './spec/client.js';
 import { StitchError, StitchErrorCode } from './spec/errors.js';
-import pkg from '../package.json' with { type: 'json' };
+import { SDK_VERSION } from './version.js';
 
 /**
  * Authenticated tool pipe for the Stitch MCP Server.
@@ -48,7 +48,7 @@ export class StitchToolClient implements StitchToolClientSpec {
     this.config = StitchConfigSchema.parse(rawConfig);
 
     this.client = new Client(
-      { name: "stitch-core-client", version: pkg.version },
+      { name: "stitch-core-client", version: SDK_VERSION },
       { capabilities: {} }
     );
   }
