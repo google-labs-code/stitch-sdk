@@ -3,8 +3,8 @@
 DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:1f84b31604f9...)
-        domain-map.json     (sha256:efa6858b5d46...)
-Generated: 2026-03-08T00:44:24.555Z
+        domain-map.json     (sha256:49ed76857ca3...)
+Generated: 2026-03-12T15:11:01.420Z
  */
 import { type StitchToolClient } from "../../src/client.js";
 import { StitchError } from "../../src/spec/errors.js";
@@ -34,9 +34,9 @@ export class Project {
      * Generates a new screen within a project from a text prompt.
      * Tool: generate_screen_from_text
      */
-    async generate(prompt: string, deviceType?: "DEVICE_TYPE_UNSPECIFIED" | "MOBILE" | "DESKTOP" | "TABLET" | "AGNOSTIC"): Promise<Screen> {
+    async generate(prompt: string, deviceType?: "DEVICE_TYPE_UNSPECIFIED" | "MOBILE" | "DESKTOP" | "TABLET" | "AGNOSTIC", modelId?: "MODEL_ID_UNSPECIFIED" | "GEMINI_3_PRO" | "GEMINI_3_FLASH"): Promise<Screen> {
         try {
-          const raw = await this.client.callTool<any>("generate_screen_from_text", { projectId: this.projectId, prompt, deviceType });
+          const raw = await this.client.callTool<any>("generate_screen_from_text", { projectId: this.projectId, prompt, deviceType, modelId });
           return new Screen(this.client, { ...raw.outputComponents[0].design.screens[0], projectId: this.projectId });
         } catch (error) {
           throw StitchError.fromUnknown(error);

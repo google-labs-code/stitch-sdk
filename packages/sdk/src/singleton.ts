@@ -14,6 +14,7 @@
 
 import { Stitch } from "../generated/src/stitch.js";
 import { StitchToolClient } from "./client.js";
+import { DEFAULT_STITCH_API_URL } from "./constants.js";
 
 /** Lazily-initialized default client */
 let _client: StitchToolClient | null = null;
@@ -23,7 +24,7 @@ export function getOrCreateClient(config?: { apiKey?: string }): StitchToolClien
   if (!_client) {
     _client = new StitchToolClient({
       apiKey: config?.apiKey || process.env.STITCH_API_KEY,
-      baseUrl: process.env.STITCH_HOST || "https://stitch.googleapis.com/mcp",
+      baseUrl: process.env.STITCH_HOST || DEFAULT_STITCH_API_URL,
     });
   }
   return _client;

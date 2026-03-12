@@ -127,14 +127,44 @@ describe("StitchToolClient", () => {
       return client;
     }
 
-    it("should throw on isError response with tool name", async () => {
+    it("should throw UNKNOWN_ERROR on generic isError response with tool name", async () => {
       const client = createConnectedClient();
       client["client"].callTool = vi.fn().mockResolvedValue({
         isError: true,
         content: [{ type: "text", text: "something went wrong" }],
       });
       await expect(client.callTool("bad_tool", {}))
-        .rejects.toThrow("Tool Call Failed [bad_tool]");
+        .rejects.toMatchObject({
+          code: 'UNKNOWN_ERROR',
+          message: expect.stringContaining("Tool Call Failed [bad_tool]"),
+          recoverable: false,
+        });
+    });
+
+    it("should throw NOT_FOUND on 'project not found' error", async () => {
+      const client = createConnectedClient();
+      client["client"].callTool = vi.fn().mockResolvedValue({
+        isError: true,
+        content: [{ type: "text", text: "project not found" }],
+      });
+      await expect(client.callTool("bad_tool", {}))
+        .rejects.toMatchObject({
+          code: 'NOT_FOUND',
+          recoverable: false,
+        });
+    });
+
+    it("should throw RATE_LIMITED on 'rate limit exceeded' error", async () => {
+      const client = createConnectedClient();
+      client["client"].callTool = vi.fn().mockResolvedValue({
+        isError: true,
+        content: [{ type: "text", text: "rate limit exceeded" }],
+      });
+      await expect(client.callTool("bad_tool", {}))
+        .rejects.toMatchObject({
+          code: 'RATE_LIMITED',
+          recoverable: true,
+        });
     });
 
     it("should return structuredContent when present", async () => {

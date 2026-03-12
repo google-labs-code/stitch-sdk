@@ -14,6 +14,7 @@
 
 import { z } from 'zod';
 import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import { DEFAULT_STITCH_API_URL } from '../constants.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. INPUT SCHEMA
@@ -23,13 +24,16 @@ export const StitchProxyConfigSchema = z.object({
   apiKey: z.string().optional(),
 
   /** Target Stitch MCP URL. Default: https://stitch.googleapis.com/mcp */
-  url: z.string().default('https://stitch.googleapis.com/mcp'),
+  url: z.string().default(DEFAULT_STITCH_API_URL),
 
   /** Name of the local proxy server. Default: stitch-proxy */
   name: z.string().default('stitch-proxy'),
 
   /** Version of the local proxy server. Default: 1.0.0 */
   version: z.string().default('1.0.0'),
+
+  /** Protocol version to use for Stitch JSON-RPC connection. Default: '2024-11-05' */
+  protocolVersion: z.string().default('2024-11-05'),
 });
 
 export type StitchProxyConfig = z.infer<typeof StitchProxyConfigSchema>;

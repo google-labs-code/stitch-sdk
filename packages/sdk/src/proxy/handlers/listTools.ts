@@ -29,6 +29,11 @@ export function registerListToolsHandler(
       await refreshTools(ctx);
     } catch (err) {
       console.error('[stitch-proxy] Failed to refresh tools:', err);
+      if (ctx.remoteTools.length === 0) {
+        throw err;
+      } else {
+        console.warn('[stitch-proxy] Warning: Using stale tools due to refresh failure');
+      }
     }
     return { tools: ctx.remoteTools };
   });

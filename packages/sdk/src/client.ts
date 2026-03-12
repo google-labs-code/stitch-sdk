@@ -15,6 +15,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { StitchConfigSchema, StitchConfig, StitchToolClientSpec } from './spec/client.js';
+import { StitchError, StitchErrorCode } from './spec/errors.js';
 import pkg from '../package.json' with { type: 'json' };
 
 /**
@@ -70,6 +71,44 @@ export class StitchToolClient implements StitchToolClientSpec {
     return headers;
   }
 
+  private parseToolResponse<T>(result: any, name: string): T {
+    if (result.isError) {
+      const errorText = (result.content as any[]).map((c: any) => (c.type === 'text' ? c.text : '')).join('');
+
+      let code: StitchErrorCode = 'UNKNOWN_ERROR';
+      const lowerErrorText = errorText.toLowerCase();
+
+      if (lowerErrorText.includes('rate limit') || lowerErrorText.includes('429')) {
+        code = 'RATE_LIMITED';
+      } else if (lowerErrorText.includes('not found') || lowerErrorText.includes('404')) {
+        code = 'NOT_FOUND';
+      } else if (lowerErrorText.includes('permission') || lowerErrorText.includes('403')) {
+        code = 'PERMISSION_DENIED';
+      }
+
+      throw new StitchError({
+        code,
+        message: `Tool Call Failed [${name}]: ${errorText}`,
+        recoverable: code === 'RATE_LIMITED',
+      });
+    }
+
+    // Stitch specific parsing: Check structuredContent first, then JSON in text
+    const anyResult = result as any;
+    if (anyResult.structuredContent) return anyResult.structuredContent as T;
+
+    const textContent = (result.content as any[]).find((c: any) => c.type === 'text');
+    if (textContent && textContent.type === 'text') {
+      try {
+        return JSON.parse(textContent.text) as T;
+      } catch {
+        return textContent.text as unknown as T;
+      }
+    }
+
+    return anyResult as T;
+  }
+
   async connect() {
     if (this.isConnected) return;
 
@@ -104,25 +143,7 @@ export class StitchToolClient implements StitchToolClientSpec {
       { timeout: this.config.timeout }
     );
 
-    if (result.isError) {
-      const errorText = (result.content as any[]).map(c => (c.type === 'text' ? c.text : '')).join('');
-      throw new Error(`Tool Call Failed [${name}]: ${errorText}`);
-    }
-
-    // Stitch specific parsing: Check structuredContent first, then JSON in text
-    const anyResult = result as any;
-    if (anyResult.structuredContent) return anyResult.structuredContent as T;
-
-    const textContent = (result.content as any[]).find(c => c.type === 'text');
-    if (textContent && textContent.type === 'text') {
-      try {
-        return JSON.parse(textContent.text) as T;
-      } catch {
-        return textContent.text as unknown as T;
-      }
-    }
-
-    return anyResult as T;
+    return this.parseToolResponse<T>(result, name);
   }
 
   async listTools() {

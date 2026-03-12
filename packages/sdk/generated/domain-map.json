@@ -77,6 +77,10 @@
           "from": "param",
           "optional": true,
           "default": "DESKTOP"
+        },
+        "modelId": {
+          "from": "param",
+          "optional": true
         }
       },
       "returns": {
@@ -199,6 +203,24 @@
           }
         ],
         "array": true
+      }
+    },
+    {
+      "tool": "get_project",
+      "class": "Stitch",
+      "method": "getProject",
+      "args": {
+        "projectId": {
+          "from": "param"
+        },
+        "name": {
+          "from": "computed",
+          "template": "projects/{projectId}"
+        }
+      },
+      "returns": {
+        "class": "Project",
+        "projection": []
       }
     },
     {

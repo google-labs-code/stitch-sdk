@@ -38,15 +38,20 @@ export async function forwardToStitch(
     id: Date.now(),
   };
 
-  const response = await fetch(config.url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'X-Goog-Api-Key': config.apiKey!,
-    },
-    body: JSON.stringify(request),
-  });
+  let response: Response;
+  try {
+    response = await fetch(config.url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-Goog-Api-Key': config.apiKey!,
+      },
+      body: JSON.stringify(request),
+    });
+  } catch (err: any) {
+    throw new Error(`Network failure connecting to Stitch API: ${err.message}`);
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -73,7 +78,7 @@ export async function initializeStitchConnection(
 ): Promise<void> {
   // Send initialize request
   await forwardToStitch(ctx.config, 'initialize', {
-    protocolVersion: '2024-11-05',
+    protocolVersion: ctx.config.protocolVersion || '2024-11-05',
     capabilities: {},
     clientInfo: {
       name: ctx.config.name,
