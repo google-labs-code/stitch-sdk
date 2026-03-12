@@ -266,7 +266,7 @@ describe('Proxy Handlers', () => {
 
     expect(result.isError).toBe(true);
     expect(result.content[0].type).toBe('text');
-    expect(result.content[0].text).toContain('Error calling test_tool: RPC failed');
-    expect(console.error).toHaveBeenCalledWith('[stitch-proxy] Tool call failed: RPC failed');
+    expect(result.content[0].text).toContain('Error calling test_tool: Network failure connecting to Stitch API: RPC failed');
+    expect(console.error).toHaveBeenCalledWith('[stitch-proxy] Tool call failed: Network failure connecting to Stitch API: RPC failed');
   });
 });
