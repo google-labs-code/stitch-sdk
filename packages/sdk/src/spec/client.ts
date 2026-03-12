@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import { z } from 'zod';
+import { DEFAULT_STITCH_API_URL } from '../constants.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. INPUT SCHEMA - What the client receives for configuration
@@ -28,7 +29,7 @@ export const StitchConfigSchema = z.object({
   projectId: z.string().optional(),
 
   /** Base URL for the Stitch MCP server. */
-  baseUrl: z.string().default('https://stitch.googleapis.com/mcp'),
+  baseUrl: z.string().default(DEFAULT_STITCH_API_URL),
 
   /** Request timeout in milliseconds. Default: 300000 (5 min). */
   timeout: z.number().default(300_000),

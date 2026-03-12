@@ -77,6 +77,10 @@
           "from": "param",
           "optional": true,
           "default": "DESKTOP"
+        },
+        "modelId": {
+          "from": "param",
+          "optional": true
         }
       },
       "returns": {

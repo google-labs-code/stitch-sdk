@@ -87,6 +87,25 @@ describe("SDK Unit Tests", () => {
       expect(result).toBe("https://api.example.com/image.png");
     });
 
+
+    it("getHtml should fallback to empty string when raw.htmlCode.downloadUrl is missing", async () => {
+      const screen = new Screen(mockClient, { id: "screen-123", name: "Login", projectId });
+
+      // Mock missing htmlCode / downloadUrl
+      (mockClient.callTool as Mock).mockResolvedValue({
+        htmlCode: {}
+      });
+
+      const result = await screen.getHtml();
+
+      expect(mockClient.callTool).toHaveBeenCalledWith("get_screen", {
+        projectId: projectId,
+        screenId: "screen-123",
+        name: "projects/proj-123/screens/screen-123",
+      });
+      expect(result).toBe("");
+    });
+
     it("getHtml should throw StitchError on failure", async () => {
       const screen = new Screen(mockClient, { id: "screen-123", name: "Login", projectId });
       (mockClient.callTool as Mock).mockRejectedValue(new Error("Network failure"));
@@ -190,12 +209,36 @@ describe("SDK Unit Tests", () => {
       expect(mockClient.callTool).toHaveBeenCalledWith("generate_screen_from_text", {
         projectId: projectId,
         prompt: prompt,
-        deviceType: undefined
+        deviceType: undefined,
+        modelId: undefined
       });
 
       expect(result).toBeInstanceOf(Screen);
       expect(result.id).toBe("new-screen-1");
       expect(result.projectId).toBe(projectId);
+    });
+
+
+    it("generate should handle missing design.screens in outputComponents gracefully", async () => {
+      const project = new Project(mockClient, projectId);
+
+      // Mock with missing screens array
+      (mockClient.callTool as Mock).mockResolvedValue({
+        outputComponents: [
+          {
+            design: {
+              // screens is missing
+            },
+          },
+        ],
+        projectId: projectId,
+        sessionId: "session-1",
+      });
+
+      // Based on the Screen class constructor, if it's passed undefined, it might throw
+      // or if it tries to access missing screens it might throw TypeError.
+      // The generated code in project.ts wraps the try block and throws StitchError.
+      await expect(project.generate("test")).rejects.toThrow();
     });
 
     it("screens should list screens and return Screen instances", async () => {
@@ -219,6 +262,22 @@ describe("SDK Unit Tests", () => {
       expect(result[0]).toBeInstanceOf(Screen);
       expect(result[1]).toBeInstanceOf(Screen);
       expect(result[0].id).toBe("s1");
+    });
+
+
+    it("screens should return [] when returned data has no screens array", async () => {
+      const project = new Project(mockClient, projectId);
+
+      // Mock with missing screens array
+      (mockClient.callTool as Mock).mockResolvedValue({});
+
+      const result = await project.screens();
+
+      expect(mockClient.callTool).toHaveBeenCalledWith("list_screens", {
+        projectId: projectId
+      });
+
+      expect(result).toEqual([]);
     });
 
     it("generate should throw StitchError on failure", async () => {
