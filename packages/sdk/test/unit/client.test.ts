@@ -39,12 +39,12 @@ describe("StitchToolClient", () => {
   });
 
   // --- NEW DUAL-AUTH TESTS ---
-  it('should create client with API key only', () => {
-    const client = new StitchToolClient({ apiKey: 'test-key' });
+  it("should create client with API key only", () => {
+    const client = new StitchToolClient({ apiKey: "test-key" });
     expect(client).toBeDefined();
   });
 
-  it('should throw ZodError if no credentials provided', () => {
+  it("should throw ZodError if no credentials provided", () => {
     // Ensure no env vars are set that could satisfy the validation
     delete process.env.STITCH_API_KEY;
     delete process.env.STITCH_ACCESS_TOKEN;
@@ -54,44 +54,48 @@ describe("StitchToolClient", () => {
     expect(() => new StitchToolClient()).toThrow(ZodError);
   });
 
-  it('should throw if accessToken is provided without projectId', () => {
+  it("should throw if accessToken is provided without projectId", () => {
     delete process.env.STITCH_API_KEY;
     delete process.env.STITCH_ACCESS_TOKEN;
     delete process.env.GOOGLE_CLOUD_PROJECT;
 
-    expect(() => new StitchToolClient({ accessToken: 'test-token' })).toThrow(ZodError);
+    expect(() => new StitchToolClient({ accessToken: "test-token" })).toThrow(
+      ZodError,
+    );
   });
 
-  it('should use STITCH_API_KEY env var as a fallback', () => {
-    process.env.STITCH_API_KEY = 'env-key';
+  it("should use STITCH_API_KEY env var as a fallback", () => {
+    process.env.STITCH_API_KEY = "env-key";
     const client = new StitchToolClient();
     expect(client).toBeDefined();
   });
 
-  it('should use STITCH_ACCESS_TOKEN and GOOGLE_CLOUD_PROJECT env vars', () => {
-    process.env.STITCH_ACCESS_TOKEN = 'env-token';
-    process.env.GOOGLE_CLOUD_PROJECT = 'env-project';
+  it("should use STITCH_ACCESS_TOKEN and GOOGLE_CLOUD_PROJECT env vars", () => {
+    process.env.STITCH_ACCESS_TOKEN = "env-token";
+    process.env.GOOGLE_CLOUD_PROJECT = "env-project";
     const client = new StitchToolClient();
     expect(client).toBeDefined();
   });
 
-  it('should store API key config for transport header injection', () => {
-    const client = new StitchToolClient({ apiKey: 'test-key' });
+  it("should store API key config for transport header injection", () => {
+    const client = new StitchToolClient({ apiKey: "test-key" });
 
     // Verify API key is stored for transport header injection
-    expect(client['config'].apiKey).toBe('test-key');
+    expect(client["config"].apiKey).toBe("test-key");
   });
-
 
   // --- EXISTING OAUTH TESTS (ADAPTED) ---
   it("should validate token on connect with OAuth", async () => {
     delete process.env.STITCH_API_KEY;
 
-    const client = new StitchToolClient({ accessToken: 'initial_token', projectId: 'test-project' });
+    const client = new StitchToolClient({
+      accessToken: "initial_token",
+      projectId: "test-project",
+    });
 
     // Verify OAuth credentials are stored for transport header injection
-    expect(client['config'].accessToken).toBe('initial_token');
-    expect(client['config'].projectId).toBe('test-project');
+    expect(client["config"].accessToken).toBe("initial_token");
+    expect(client["config"].projectId).toBe("test-project");
   });
 
   // ─── Cycle 2: buildAuthHeaders ──────────────────────────────────
@@ -105,7 +109,10 @@ describe("StitchToolClient", () => {
 
     it("should set Bearer token and project for OAuth auth", () => {
       delete process.env.STITCH_API_KEY;
-      const client = new StitchToolClient({ accessToken: "ya29.token", projectId: "proj-1" });
+      const client = new StitchToolClient({
+        accessToken: "ya29.token",
+        projectId: "proj-1",
+      });
       const headers = client["buildAuthHeaders"]();
       expect(headers["Authorization"]).toBe("Bearer ya29.token");
       expect(headers["X-Goog-User-Project"]).toBe("proj-1");
@@ -133,12 +140,11 @@ describe("StitchToolClient", () => {
         isError: true,
         content: [{ type: "text", text: "something went wrong" }],
       });
-      await expect(client.callTool("bad_tool", {}))
-        .rejects.toMatchObject({
-          code: 'UNKNOWN_ERROR',
-          message: expect.stringContaining("Tool Call Failed [bad_tool]"),
-          recoverable: false,
-        });
+      await expect(client.callTool("bad_tool", {})).rejects.toMatchObject({
+        code: "UNKNOWN_ERROR",
+        message: expect.stringContaining("Tool Call Failed [bad_tool]"),
+        recoverable: false,
+      });
     });
 
     it("should throw NOT_FOUND on 'project not found' error", async () => {
@@ -147,11 +153,39 @@ describe("StitchToolClient", () => {
         isError: true,
         content: [{ type: "text", text: "project not found" }],
       });
-      await expect(client.callTool("bad_tool", {}))
-        .rejects.toMatchObject({
-          code: 'NOT_FOUND',
-          recoverable: false,
-        });
+      await expect(client.callTool("bad_tool", {})).rejects.toMatchObject({
+        code: "NOT_FOUND",
+        recoverable: false,
+      });
+    });
+
+    it("should throw AUTH_FAILED on 'unauthorized' error", async () => {
+      const client = createConnectedClient();
+      client["client"].callTool = vi.fn().mockResolvedValue({
+        isError: true,
+        content: [
+          {
+            type: "text",
+            text: "Request had invalid authentication credentials",
+          },
+        ],
+      });
+      await expect(client.callTool("bad_tool", {})).rejects.toMatchObject({
+        code: "AUTH_FAILED",
+        recoverable: false,
+      });
+    });
+
+    it("should throw AUTH_FAILED on '401' error", async () => {
+      const client = createConnectedClient();
+      client["client"].callTool = vi.fn().mockResolvedValue({
+        isError: true,
+        content: [{ type: "text", text: "HTTP 401: Unauthenticated" }],
+      });
+      await expect(client.callTool("bad_tool", {})).rejects.toMatchObject({
+        code: "AUTH_FAILED",
+        recoverable: false,
+      });
     });
 
     it("should throw RATE_LIMITED on 'rate limit exceeded' error", async () => {
@@ -160,11 +194,10 @@ describe("StitchToolClient", () => {
         isError: true,
         content: [{ type: "text", text: "rate limit exceeded" }],
       });
-      await expect(client.callTool("bad_tool", {}))
-        .rejects.toMatchObject({
-          code: 'RATE_LIMITED',
-          recoverable: true,
-        });
+      await expect(client.callTool("bad_tool", {})).rejects.toMatchObject({
+        code: "RATE_LIMITED",
+        recoverable: true,
+      });
     });
 
     it("should return structuredContent when present", async () => {
