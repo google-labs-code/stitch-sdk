@@ -28,6 +28,7 @@ export function getOrCreateClient(config?: {
 
   // Invalidate cache when an explicit apiKey differs from the cached one
   if (_client && apiKey && apiKey !== _clientApiKey) {
+    _client.close().catch(() => {});
     _client = null;
     _stitch = null;
   }
