@@ -14,9 +14,13 @@
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { StitchConfigSchema, StitchConfig, StitchToolClientSpec } from './spec/client.js';
-import { StitchError, StitchErrorCode } from './spec/errors.js';
-import { SDK_VERSION } from './version.js';
+import {
+  StitchConfigSchema,
+  StitchConfig,
+  StitchToolClientSpec,
+} from "./spec/client.js";
+import { StitchError, StitchErrorCode } from "./spec/errors.js";
+import { SDK_VERSION } from "./version.js";
 
 /**
  * Authenticated tool pipe for the Stitch MCP Server.
@@ -29,13 +33,15 @@ import { SDK_VERSION } from './version.js';
  *   const result = await client.callTool("generate_screen_from_text", { ... });
  */
 export class StitchToolClient implements StitchToolClientSpec {
-  name: 'stitch-tool-client' = 'stitch-tool-client';
-  description: 'Authenticated tool pipe for Stitch MCP Server' = 'Authenticated tool pipe for Stitch MCP Server';
+  name: "stitch-tool-client" = "stitch-tool-client";
+  description: "Authenticated tool pipe for Stitch MCP Server" =
+    "Authenticated tool pipe for Stitch MCP Server";
 
   private client: Client;
   private transport: StreamableHTTPClientTransport | null = null;
   private config: StitchConfig;
   private isConnected: boolean = false;
+  private connectPromise: Promise<void> | null = null;
 
   constructor(inputConfig?: Partial<StitchConfig>) {
     const rawConfig = {
@@ -49,7 +55,7 @@ export class StitchToolClient implements StitchToolClientSpec {
 
     this.client = new Client(
       { name: "stitch-core-client", version: SDK_VERSION },
-      { capabilities: {} }
+      { capabilities: {} },
     );
   }
 
@@ -58,14 +64,14 @@ export class StitchToolClient implements StitchToolClientSpec {
    */
   private buildAuthHeaders(): Record<string, string> {
     const headers: Record<string, string> = {
-      'Accept': 'application/json, text/event-stream',
+      Accept: "application/json, text/event-stream",
     };
 
     if (this.config.apiKey) {
-      headers['X-Goog-Api-Key'] = this.config.apiKey;
+      headers["X-Goog-Api-Key"] = this.config.apiKey;
     } else {
-      headers['Authorization'] = `Bearer ${this.config.accessToken}`;
-      headers['X-Goog-User-Project'] = this.config.projectId!;
+      headers["Authorization"] = `Bearer ${this.config.accessToken}`;
+      headers["X-Goog-User-Project"] = this.config.projectId!;
     }
 
     return headers;
@@ -73,23 +79,34 @@ export class StitchToolClient implements StitchToolClientSpec {
 
   private parseToolResponse<T>(result: any, name: string): T {
     if (result.isError) {
-      const errorText = (result.content as any[]).map((c: any) => (c.type === 'text' ? c.text : '')).join('');
+      const errorText = (result.content as any[])
+        .map((c: any) => (c.type === "text" ? c.text : ""))
+        .join("");
 
-      let code: StitchErrorCode = 'UNKNOWN_ERROR';
+      let code: StitchErrorCode = "UNKNOWN_ERROR";
       const lowerErrorText = errorText.toLowerCase();
 
-      if (lowerErrorText.includes('rate limit') || lowerErrorText.includes('429')) {
-        code = 'RATE_LIMITED';
-      } else if (lowerErrorText.includes('not found') || lowerErrorText.includes('404')) {
-        code = 'NOT_FOUND';
-      } else if (lowerErrorText.includes('permission') || lowerErrorText.includes('403')) {
-        code = 'PERMISSION_DENIED';
+      if (
+        lowerErrorText.includes("rate limit") ||
+        lowerErrorText.includes("429")
+      ) {
+        code = "RATE_LIMITED";
+      } else if (
+        lowerErrorText.includes("not found") ||
+        lowerErrorText.includes("404")
+      ) {
+        code = "NOT_FOUND";
+      } else if (
+        lowerErrorText.includes("permission") ||
+        lowerErrorText.includes("403")
+      ) {
+        code = "PERMISSION_DENIED";
       }
 
       throw new StitchError({
         code,
         message: `Tool Call Failed [${name}]: ${errorText}`,
-        recoverable: code === 'RATE_LIMITED',
+        recoverable: code === "RATE_LIMITED",
       });
     }
 
@@ -97,8 +114,10 @@ export class StitchToolClient implements StitchToolClientSpec {
     const anyResult = result as any;
     if (anyResult.structuredContent) return anyResult.structuredContent as T;
 
-    const textContent = (result.content as any[]).find((c: any) => c.type === 'text');
-    if (textContent && textContent.type === 'text') {
+    const textContent = (result.content as any[]).find(
+      (c: any) => c.type === "text",
+    );
+    if (textContent && textContent.type === "text") {
       try {
         return JSON.parse(textContent.text) as T;
       } catch {
@@ -111,7 +130,17 @@ export class StitchToolClient implements StitchToolClientSpec {
 
   async connect() {
     if (this.isConnected) return;
+    if (this.connectPromise) return this.connectPromise;
 
+    this.connectPromise = this.doConnect();
+    try {
+      await this.connectPromise;
+    } finally {
+      this.connectPromise = null;
+    }
+  }
+
+  private async doConnect() {
     // Create transport with auth headers injected per-instance (no global fetch mutation)
     this.transport = new StreamableHTTPClientTransport(
       new URL(this.config.baseUrl),
@@ -119,7 +148,7 @@ export class StitchToolClient implements StitchToolClientSpec {
         requestInit: {
           headers: this.buildAuthHeaders(),
         },
-      }
+      },
     );
 
     this.transport.onerror = (err) => {
@@ -140,7 +169,7 @@ export class StitchToolClient implements StitchToolClientSpec {
     const result = await this.client.callTool(
       { name, arguments: args },
       undefined,
-      { timeout: this.config.timeout }
+      { timeout: this.config.timeout },
     );
 
     return this.parseToolResponse<T>(result, name);
