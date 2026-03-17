@@ -101,6 +101,13 @@ export class StitchToolClient implements StitchToolClientSpec {
         lowerErrorText.includes("403")
       ) {
         code = "PERMISSION_DENIED";
+      } else if (
+        lowerErrorText.includes("unauthorized") ||
+        lowerErrorText.includes("unauthenticated") ||
+        lowerErrorText.includes("invalid authentication") ||
+        lowerErrorText.includes("401")
+      ) {
+        code = "AUTH_FAILED";
       }
 
       throw new StitchError({

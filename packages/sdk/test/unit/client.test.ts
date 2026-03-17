@@ -159,6 +159,35 @@ describe("StitchToolClient", () => {
       });
     });
 
+    it("should throw AUTH_FAILED on 'unauthorized' error", async () => {
+      const client = createConnectedClient();
+      client["client"].callTool = vi.fn().mockResolvedValue({
+        isError: true,
+        content: [
+          {
+            type: "text",
+            text: "Request had invalid authentication credentials",
+          },
+        ],
+      });
+      await expect(client.callTool("bad_tool", {})).rejects.toMatchObject({
+        code: "AUTH_FAILED",
+        recoverable: false,
+      });
+    });
+
+    it("should throw AUTH_FAILED on '401' error", async () => {
+      const client = createConnectedClient();
+      client["client"].callTool = vi.fn().mockResolvedValue({
+        isError: true,
+        content: [{ type: "text", text: "HTTP 401: Unauthenticated" }],
+      });
+      await expect(client.callTool("bad_tool", {})).rejects.toMatchObject({
+        code: "AUTH_FAILED",
+        recoverable: false,
+      });
+    });
+
     it("should throw RATE_LIMITED on 'rate limit exceeded' error", async () => {
       const client = createConnectedClient();
       client["client"].callTool = vi.fn().mockResolvedValue({
