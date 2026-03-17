@@ -29,6 +29,7 @@ export { StitchError, StitchErrorCode } from "./spec/errors.js";
 
 // Types (config + data interfaces)
 export type { StitchConfig, StitchConfigInput } from "./spec/client.js";
+export { StitchProxyConfigSchema } from "./spec/proxy.js";
 export type {
   ProjectData,
   GenerateScreenParams,
