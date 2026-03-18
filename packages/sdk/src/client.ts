@@ -168,6 +168,17 @@ export class StitchToolClient implements StitchToolClientSpec {
   }
 
   /**
+   * Tools that should NOT be retried on network errors because they trigger
+   * non-idempotent operations on the server.
+   */
+  private static readonly NON_RETRYABLE_TOOLS = new Set([
+    "generate_screen_from_text",
+    "edit_screens",
+    "generate_variants",
+    "create_project",
+  ]);
+
+  /**
    * Check if an error is a transient network failure (not an application error).
    */
   private isNetworkError(error: unknown): boolean {
@@ -185,7 +196,8 @@ export class StitchToolClient implements StitchToolClientSpec {
 
   /**
    * Generic tool caller with type support and error parsing.
-   * Retries once on transient network errors by reconnecting.
+   * Retries once on transient network errors for idempotent (read) operations.
+   * Non-idempotent tools (generate, edit, create) are not retried.
    */
   async callTool<T>(name: string, args: Record<string, any>): Promise<T> {
     if (!this.isConnected) await this.connect();
@@ -198,9 +210,14 @@ export class StitchToolClient implements StitchToolClientSpec {
       );
       return this.parseToolResponse<T>(result, name);
     } catch (error) {
-      if (!this.isNetworkError(error)) throw error;
+      if (
+        !this.isNetworkError(error) ||
+        StitchToolClient.NON_RETRYABLE_TOOLS.has(name)
+      ) {
+        throw error;
+      }
 
-      // Reconnect and retry once
+      // Reconnect and retry once for idempotent operations
       this.isConnected = false;
       await this.connect();
 

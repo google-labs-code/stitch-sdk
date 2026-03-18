@@ -308,6 +308,35 @@ describe("StitchToolClient", () => {
       expect(client["client"].callTool).toHaveBeenCalledTimes(1);
     });
 
+    it("should not retry non-idempotent tools like generate_screen_from_text", async () => {
+      const client = new StitchToolClient({ apiKey: "k" });
+      client["isConnected"] = true;
+
+      client["client"].callTool = vi.fn(async () => {
+        throw new TypeError("fetch failed");
+      });
+
+      await expect(
+        client.callTool("generate_screen_from_text", { prompt: "test" }),
+      ).rejects.toThrow("fetch failed");
+      // Should only call once — generate is non-idempotent
+      expect(client["client"].callTool).toHaveBeenCalledTimes(1);
+    });
+
+    it("should not retry create_project on network error", async () => {
+      const client = new StitchToolClient({ apiKey: "k" });
+      client["isConnected"] = true;
+
+      client["client"].callTool = vi.fn(async () => {
+        throw new TypeError("fetch failed");
+      });
+
+      await expect(
+        client.callTool("create_project", { title: "test" }),
+      ).rejects.toThrow("fetch failed");
+      expect(client["client"].callTool).toHaveBeenCalledTimes(1);
+    });
+
     it("should throw after retry also fails", async () => {
       const client = new StitchToolClient({ apiKey: "k" });
       client["isConnected"] = true;
