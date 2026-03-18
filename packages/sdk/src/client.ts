@@ -168,18 +168,49 @@ export class StitchToolClient implements StitchToolClientSpec {
   }
 
   /**
+   * Check if an error is a transient network failure (not an application error).
+   */
+  private isNetworkError(error: unknown): boolean {
+    if (error instanceof StitchError) return false;
+    const msg =
+      error instanceof Error ? error.message.toLowerCase() : String(error);
+    return (
+      msg.includes("fetch failed") ||
+      msg.includes("econnrefused") ||
+      msg.includes("econnreset") ||
+      msg.includes("socket") ||
+      msg.includes("network")
+    );
+  }
+
+  /**
    * Generic tool caller with type support and error parsing.
+   * Retries once on transient network errors by reconnecting.
    */
   async callTool<T>(name: string, args: Record<string, any>): Promise<T> {
     if (!this.isConnected) await this.connect();
 
-    const result = await this.client.callTool(
-      { name, arguments: args },
-      undefined,
-      { timeout: this.config.timeout },
-    );
+    try {
+      const result = await this.client.callTool(
+        { name, arguments: args },
+        undefined,
+        { timeout: this.config.timeout },
+      );
+      return this.parseToolResponse<T>(result, name);
+    } catch (error) {
+      if (!this.isNetworkError(error)) throw error;
 
-    return this.parseToolResponse<T>(result, name);
+      // Reconnect and retry once
+      this.isConnected = false;
+      await this.connect();
+
+      const result = await this.client.callTool(
+        { name, arguments: args },
+        undefined,
+        { timeout: this.config.timeout },
+      );
+      return this.parseToolResponse<T>(result, name);
+    }
   }
 
   async listTools() {

@@ -262,4 +262,68 @@ describe("StitchToolClient", () => {
       expect(connectCount).toBe(1);
     });
   });
+
+  // ─── Cycle 5: network retry on transient failure ────────────
+  describe("network retry", () => {
+    it("should retry once after a network error and reconnect", async () => {
+      const client = new StitchToolClient({ apiKey: "k" });
+      client["isConnected"] = true;
+
+      let callCount = 0;
+      client["client"].callTool = vi.fn(async () => {
+        callCount++;
+        if (callCount === 1) {
+          // Simulate transport-level network failure (socket closed)
+          throw new TypeError("fetch failed");
+        }
+        return {
+          isError: false,
+          content: [{ type: "text", text: '{"ok":true}' }],
+        };
+      });
+
+      // Mock reconnect
+      client["doConnect"] = vi.fn(async () => {
+        client["isConnected"] = true;
+      });
+
+      const result = await client.callTool("some_tool", {});
+      expect(result).toEqual({ ok: true });
+      expect(callCount).toBe(2);
+    });
+
+    it("should not retry on StitchError (application-level error)", async () => {
+      const client = new StitchToolClient({ apiKey: "k" });
+      client["isConnected"] = true;
+
+      client["client"].callTool = vi.fn().mockResolvedValue({
+        isError: true,
+        content: [{ type: "text", text: "project not found" }],
+      });
+
+      await expect(client.callTool("bad_tool", {})).rejects.toMatchObject({
+        code: "NOT_FOUND",
+      });
+      // Should only call once — no retry for application errors
+      expect(client["client"].callTool).toHaveBeenCalledTimes(1);
+    });
+
+    it("should throw after retry also fails", async () => {
+      const client = new StitchToolClient({ apiKey: "k" });
+      client["isConnected"] = true;
+
+      client["client"].callTool = vi.fn(async () => {
+        throw new TypeError("fetch failed");
+      });
+
+      client["doConnect"] = vi.fn(async () => {
+        client["isConnected"] = true;
+      });
+
+      await expect(client.callTool("some_tool", {})).rejects.toThrow(
+        "fetch failed",
+      );
+      expect(client["client"].callTool).toHaveBeenCalledTimes(2);
+    });
+  });
 });
