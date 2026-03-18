@@ -23,6 +23,12 @@ export const StitchProxyConfigSchema = z.object({
   /** API key for Stitch authentication. Falls back to STITCH_API_KEY. */
   apiKey: z.string().optional(),
 
+  /** OAuth access token for user-authenticated requests. Falls back to STITCH_ACCESS_TOKEN. */
+  accessToken: z.string().optional(),
+
+  /** Google Cloud project ID. Required for OAuth, optional for API Key. Falls back to GOOGLE_CLOUD_PROJECT. */
+  projectId: z.string().optional(),
+
   /** Target Stitch MCP URL. Default: https://stitch.googleapis.com/mcp */
   url: z.string().default(DEFAULT_STITCH_API_URL),
 
@@ -34,7 +40,14 @@ export const StitchProxyConfigSchema = z.object({
 
   /** Protocol version to use for Stitch JSON-RPC connection. Default: '2024-11-05' */
   protocolVersion: z.string().default('2024-11-05'),
-});
+}).refine(
+  (data) => {
+    const hasApiKey = !!data.apiKey;
+    const hasOAuth = !!data.accessToken && !!data.projectId;
+    return hasApiKey || hasOAuth;
+  },
+  { message: "Provide either 'apiKey' OR ('accessToken' + 'projectId') for authentication." }
+);
 
 export type StitchProxyConfig = z.infer<typeof StitchProxyConfigSchema>;
 

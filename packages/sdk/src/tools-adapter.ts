@@ -70,7 +70,7 @@ export function stitchTools(options?: {
           get jsonSchema() { return t.inputSchema; },
         },
         execute: async (args: unknown) =>
-          client.callTool(t.name, args as Record<string, any>),
+          client.callTool(t.name, args as Record<string, unknown>),
       } as unknown as Tool,
     ])
   );

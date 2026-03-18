@@ -48,19 +48,18 @@ describe("stitchTools()", () => {
     const tools = stitchTools();
 
     for (const [, def] of Object.entries(tools)) {
-      const d = def as any;
-      expect(typeof d.description).toBe("string");
-      expect(d.inputSchema).toBeDefined();
-      expect(typeof d.execute).toBe("function");
+      expect(typeof def.description).toBe("string");
+      expect("inputSchema" in def).toBe(true);
+      expect(typeof def.execute).toBe("function");
     }
   });
 
   it("execute() delegates to callTool", async () => {
     const { stitchTools } = await import("../../src/tools-adapter.js");
     const tools = stitchTools();
-    const createProject = tools["create_project"] as any;
+    const createProject = tools["create_project"];
 
-    await createProject.execute({ title: "Test Project" });
+    await createProject.execute!({ title: "Test Project" }, { messages: [], toolCallId: "test" });
 
     expect(mockCallTool).toHaveBeenCalledWith("create_project", { title: "Test Project" });
   });

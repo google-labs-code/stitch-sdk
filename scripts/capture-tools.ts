@@ -51,6 +51,7 @@ async function main() {
       url: baseUrl,
       name: "stitch-sdk-capture",
       version: "1.0.0",
+      protocolVersion: "2024-11-05",
     },
     remoteTools: [],
   };

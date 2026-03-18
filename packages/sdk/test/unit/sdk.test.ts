@@ -169,7 +169,7 @@ describe("SDK Unit Tests", () => {
   describe("Stitch Class (Identity Map)", () => {
     it("should not have a getProject method — use project(id) instead", () => {
       const sdk = new Stitch(mockClient);
-      expect(typeof (sdk as any).getProject).toBe("undefined");
+      expect(typeof (sdk as unknown as Record<string, unknown>).getProject).toBe("undefined");
     });
 
     it("createProject should call create_project and return a Project", async () => {

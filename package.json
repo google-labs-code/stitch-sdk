@@ -28,6 +28,7 @@
     "validate:release": "bun scripts/validate-release.ts"
   },
   "devDependencies": {
+    "@ai-sdk/google": "^3.0.43",
     "@types/bun": "^1.3.10",
     "@types/react": "^18.3.0",
     "firebase-tools": "^14.26.0",

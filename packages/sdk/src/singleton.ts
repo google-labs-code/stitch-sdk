@@ -76,7 +76,7 @@ const CLIENT_METHODS = new Set(["listTools", "callTool", "close"]);
  */
 export const stitch = new Proxy<
   Stitch & Pick<StitchToolClient, "listTools" | "callTool" | "close"> & { toolMap: ReadonlyMap<string, ToolInfo> }
->({} as any, {
+>({} as Stitch & Pick<StitchToolClient, "listTools" | "callTool" | "close"> & { toolMap: ReadonlyMap<string, ToolInfo> }, {
   get(_target, prop: string | symbol) {
     // Static properties — no auth or lazy init needed
     if (prop === "toolMap") return toolMap;

@@ -14,6 +14,7 @@
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import type { CallToolResult, CompatibilityCallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import {
   StitchConfigSchema,
   StitchConfig,
@@ -77,10 +78,21 @@ export class StitchToolClient implements StitchToolClientSpec {
     return headers;
   }
 
-  private parseToolResponse<T>(result: any, name: string): T {
+  private asCallToolResult(result: CompatibilityCallToolResult): CallToolResult {
+    if (Array.isArray((result as CallToolResult).content)) {
+      return result as CallToolResult;
+    }
+    // Legacy protocol format — wrap toolResult as text content
+    const legacy = result as { toolResult: unknown };
+    return {
+      content: [{ type: "text", text: JSON.stringify(legacy.toolResult ?? null) }],
+    };
+  }
+
+  private parseToolResponse<T>(result: CallToolResult, name: string): T {
     if (result.isError) {
-      const errorText = (result.content as any[])
-        .map((c: any) => (c.type === "text" ? c.text : ""))
+      const errorText = result.content
+        .map((c) => (c.type === "text" ? c.text : ""))
         .join("");
 
       let code: StitchErrorCode = "UNKNOWN_ERROR";
@@ -118,12 +130,9 @@ export class StitchToolClient implements StitchToolClientSpec {
     }
 
     // Stitch specific parsing: Check structuredContent first, then JSON in text
-    const anyResult = result as any;
-    if (anyResult.structuredContent) return anyResult.structuredContent as T;
+    if (result.structuredContent) return result.structuredContent as T;
 
-    const textContent = (result.content as any[]).find(
-      (c: any) => c.type === "text",
-    );
+    const textContent = result.content.find((c) => c.type === "text");
     if (textContent && textContent.type === "text") {
       try {
         return JSON.parse(textContent.text) as T;
@@ -132,7 +141,7 @@ export class StitchToolClient implements StitchToolClientSpec {
       }
     }
 
-    return anyResult as T;
+    return result as unknown as T;
   }
 
   async connect() {
@@ -148,6 +157,11 @@ export class StitchToolClient implements StitchToolClientSpec {
   }
 
   private async doConnect() {
+    // Close existing transport before creating a new one to prevent resource leaks
+    if (this.transport) {
+      await this.transport.close().catch(() => {});
+    }
+
     // Create transport with auth headers injected per-instance (no global fetch mutation)
     this.transport = new StreamableHTTPClientTransport(
       new URL(this.config.baseUrl),
@@ -168,18 +182,73 @@ export class StitchToolClient implements StitchToolClientSpec {
   }
 
   /**
-   * Generic tool caller with type support and error parsing.
+   * Tools that are safe to retry on network errors (idempotent read operations).
+   * Unknown tools default to NOT retrying — safer than the reverse.
    */
-  async callTool<T>(name: string, args: Record<string, any>): Promise<T> {
+  private static readonly RETRYABLE_TOOLS = new Set([
+    "list_projects",
+    "get_project",
+    "list_screens",
+    "get_screen",
+  ]);
+
+  /**
+   * Check if an error is a transient network failure (not an application error).
+   * Uses message substring matching — fragile across Node/Bun versions,
+   * but no reliable error codes exist for these transport-level failures.
+   */
+  private isNetworkError(error: unknown): boolean {
+    if (error instanceof StitchError) return false;
+    const msg =
+      error instanceof Error ? error.message.toLowerCase() : String(error);
+    return (
+      msg.includes("fetch failed") ||
+      msg.includes("econnrefused") ||
+      msg.includes("econnreset") ||
+      msg.includes("etimedout") ||
+      msg.includes("socket hang up") ||
+      msg.includes("other side closed")
+    );
+  }
+
+  /**
+   * Generic tool caller with type support and error parsing.
+   * Retries once on transient network errors for idempotent (read) operations.
+   * Non-idempotent tools (generate, edit, create) are not retried.
+   */
+  async callTool<T>(name: string, args: Record<string, unknown>): Promise<T> {
     if (!this.isConnected) await this.connect();
 
-    const result = await this.client.callTool(
-      { name, arguments: args },
-      undefined,
-      { timeout: this.config.timeout },
-    );
+    try {
+      const result = await this.client.callTool(
+        { name, arguments: args },
+        undefined,
+        { timeout: this.config.timeout },
+      );
+      return this.parseToolResponse<T>(this.asCallToolResult(result), name);
+    } catch (error) {
+      if (
+        !this.isNetworkError(error) ||
+        !StitchToolClient.RETRYABLE_TOOLS.has(name)
+      ) {
+        throw error;
+      }
 
-    return this.parseToolResponse<T>(result, name);
+      // Reconnect and retry once for idempotent operations
+      this.isConnected = false;
+      await this.connect();
+
+      try {
+        const result = await this.client.callTool(
+          { name, arguments: args },
+          undefined,
+          { timeout: this.config.timeout },
+        );
+        return this.parseToolResponse<T>(this.asCallToolResult(result), name);
+      } catch (_retryError: unknown) {
+        throw error; // throw the original error, not the retry error
+      }
+    }
   }
 
   async listTools() {

@@ -32,6 +32,8 @@ export class StitchProxy implements StitchProxySpec {
   constructor(inputConfig?: Partial<StitchProxyConfig>) {
     const rawConfig = {
       apiKey: inputConfig?.apiKey || process.env.STITCH_API_KEY,
+      accessToken: inputConfig?.accessToken || process.env.STITCH_ACCESS_TOKEN,
+      projectId: inputConfig?.projectId || process.env.GOOGLE_CLOUD_PROJECT,
       url: inputConfig?.url || process.env.STITCH_MCP_URL,
       name: inputConfig?.name,
       version: inputConfig?.version,
@@ -39,10 +41,6 @@ export class StitchProxy implements StitchProxySpec {
 
     // Validate config
     this.config = StitchProxyConfigSchema.parse(rawConfig);
-
-    if (!this.config.apiKey) {
-      throw new Error('StitchProxy requires an API key (STITCH_API_KEY)');
-    }
 
     this.server = new McpServer(
       {

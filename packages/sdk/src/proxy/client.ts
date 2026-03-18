@@ -23,6 +23,29 @@ export interface ProxyContext {
   remoteTools: Tool[];
 }
 
+let nextRequestId = 1;
+
+/**
+ * Build auth headers based on proxy config (API key or OAuth).
+ */
+function buildProxyAuthHeaders(config: StitchProxyConfig): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+
+  if (config.apiKey) {
+    headers['X-Goog-Api-Key'] = config.apiKey;
+  } else if (config.accessToken) {
+    headers['Authorization'] = `Bearer ${config.accessToken}`;
+    if (config.projectId) {
+      headers['X-Goog-User-Project'] = config.projectId;
+    }
+  }
+
+  return headers;
+}
+
 /**
  * Forward a JSON-RPC request to Stitch.
  */
@@ -35,22 +58,19 @@ export async function forwardToStitch(
     jsonrpc: '2.0',
     method,
     params: params ?? {},
-    id: Date.now(),
+    id: nextRequestId++,
   };
 
   let response: Response;
   try {
     response = await fetch(config.url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        'X-Goog-Api-Key': config.apiKey!,
-      },
+      headers: buildProxyAuthHeaders(config),
       body: JSON.stringify(request),
     });
-  } catch (err: any) {
-    throw new Error(`Network failure connecting to Stitch API: ${err.message}`);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`Network failure connecting to Stitch API: ${msg}`);
   }
 
   if (!response.ok) {
@@ -86,21 +106,19 @@ export async function initializeStitchConnection(
     },
   });
 
-  // Send initialized notification (fire and forget)
-  fetch(ctx.config.url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'X-Goog-Api-Key': ctx.config.apiKey!,
-    },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      method: 'notifications/initialized',
-    }),
-  }).catch((err) => {
+  // Send initialized notification and await it before proceeding
+  try {
+    await fetch(ctx.config.url, {
+      method: 'POST',
+      headers: buildProxyAuthHeaders(ctx.config),
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'notifications/initialized',
+      }),
+    });
+  } catch (err) {
     console.error('[stitch-proxy] Failed to send initialized notification:', err);
-  });
+  }
 
   await refreshTools(ctx);
   console.error(
