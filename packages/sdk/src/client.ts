@@ -148,6 +148,11 @@ export class StitchToolClient implements StitchToolClientSpec {
   }
 
   private async doConnect() {
+    // Close existing transport before creating a new one to prevent resource leaks
+    if (this.transport) {
+      await this.transport.close().catch(() => {});
+    }
+
     // Create transport with auth headers injected per-instance (no global fetch mutation)
     this.transport = new StreamableHTTPClientTransport(
       new URL(this.config.baseUrl),

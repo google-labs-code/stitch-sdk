@@ -338,6 +338,30 @@ describe("StitchToolClient", () => {
       expect(client["client"].callTool).toHaveBeenCalledTimes(1);
     });
 
+    it("should close old transport before reconnecting", async () => {
+      const client = new StitchToolClient({ apiKey: "k" });
+      client["isConnected"] = true;
+
+      // Set up a mock old transport with a close spy
+      const oldTransportClose = vi.fn().mockResolvedValue(undefined);
+      client["transport"] = { close: oldTransportClose } as any;
+
+      let callCount = 0;
+      client["client"].callTool = vi.fn().mockImplementation(async () => {
+        callCount++;
+        if (callCount === 1) {
+          throw new TypeError("fetch failed");
+        }
+        return {
+          isError: false,
+          content: [{ type: "text", text: '{"ok":true}' }],
+        };
+      });
+
+      await client.callTool("list_projects", {});
+      expect(oldTransportClose).toHaveBeenCalledTimes(1);
+    });
+
     it("should throw after retry also fails", async () => {
       const client = new StitchToolClient({ apiKey: "k" });
       client["isConnected"] = true;
