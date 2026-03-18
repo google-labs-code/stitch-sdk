@@ -270,7 +270,7 @@ describe("StitchToolClient", () => {
       client["isConnected"] = true;
 
       let callCount = 0;
-      client["client"].callTool = vi.fn(async () => {
+      const mockCallTool = vi.fn().mockImplementation(async () => {
         callCount++;
         if (callCount === 1) {
           // Simulate transport-level network failure (socket closed)
@@ -281,6 +281,7 @@ describe("StitchToolClient", () => {
           content: [{ type: "text", text: '{"ok":true}' }],
         };
       });
+      client["client"].callTool = mockCallTool;
 
       // Mock reconnect
       client["doConnect"] = vi.fn(async () => {
@@ -312,7 +313,7 @@ describe("StitchToolClient", () => {
       const client = new StitchToolClient({ apiKey: "k" });
       client["isConnected"] = true;
 
-      client["client"].callTool = vi.fn(async () => {
+      client["client"].callTool = vi.fn().mockImplementation(async () => {
         throw new TypeError("fetch failed");
       });
 
@@ -327,7 +328,7 @@ describe("StitchToolClient", () => {
       const client = new StitchToolClient({ apiKey: "k" });
       client["isConnected"] = true;
 
-      client["client"].callTool = vi.fn(async () => {
+      client["client"].callTool = vi.fn().mockImplementation(async () => {
         throw new TypeError("fetch failed");
       });
 
@@ -341,7 +342,7 @@ describe("StitchToolClient", () => {
       const client = new StitchToolClient({ apiKey: "k" });
       client["isConnected"] = true;
 
-      client["client"].callTool = vi.fn(async () => {
+      client["client"].callTool = vi.fn().mockImplementation(async () => {
         throw new TypeError("fetch failed");
       });
 
