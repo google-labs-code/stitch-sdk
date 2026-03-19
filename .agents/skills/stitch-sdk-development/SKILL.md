@@ -116,6 +116,17 @@ const result = await client.callTool("generate_screen_from_text", {
 });
 ```
 
+`stitch.toolMap` provides O(1) tool lookup with pre-parsed params — static, auth-free, no network call:
+
+```typescript
+const tool = stitch.toolMap.get("create_project");
+tool.params;                              // ToolParam[] — flat, pre-parsed
+tool.params.filter(p => p.required);      // required params only
+tool.inputSchema;                         // raw ToolInputSchema still available
+```
+
+The raw `toolDefinitions` array and standalone `toolMap` are also exported from the main entry point.
+
 ### SDK Modality — Generated Domain Classes
 
 For humans writing precise, programmatic scripts. Generated domain facade over `callTool`. Typed parameters, domain objects returned, `StitchError` thrown on failure.

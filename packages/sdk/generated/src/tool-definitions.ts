@@ -4,16 +4,46 @@ DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:1f84b31604f9...)
         domain-map.json     (sha256:99b823ad9306...)
-Generated: 2026-03-12T20:26:37.843Z
+Generated: 2026-03-19T18:56:19.253Z
  */
+/** JSON Schema property descriptor for a tool parameter. */
+export interface ToolPropertySchema {
+    /** Additional JSON Schema properties */
+    [key: string]: unknown;
+    /** JSON Schema type (string, integer, array, etc.) */
+    type?: string;
+    /** Human-readable parameter description */
+    description?: string;
+    /** Allowed values for constrained parameters */
+    enum?: string[];
+    /** Schema for array items */
+    items?: ToolPropertySchema;
+    /** Whether the parameter is deprecated */
+    deprecated?: boolean;
+}
+
+/** Typed JSON Schema for a tool's input parameters. */
+export interface ToolInputSchema {
+    /** Additional JSON Schema properties */
+    [key: string]: unknown;
+    /** Always 'object' for tool inputs */
+    type: "object";
+    /** Schema-level description */
+    description?: string;
+    /** Map of parameter names to their schemas */
+    properties: Record<string, ToolPropertySchema>;
+    /** Names of required parameters */
+    required?: string[];
+}
+
 /** Static tool definition from the Stitch MCP server manifest. */
 export interface ToolDefinition {
     /** MCP tool name, e.g. "create_project" */
     name: string;
     /** Human-readable description of what the tool does */
     description: string;
-    /** JSON Schema for the tool's input parameters */
-    inputSchema: Record<string, unknown>;
+    /** Typed JSON Schema for the tool's input parameters */
+    inputSchema: ToolInputSchema;
 }
 
 /** All tools available on the Stitch MCP server, generated from tools-manifest.json. */

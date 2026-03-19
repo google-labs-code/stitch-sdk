@@ -201,6 +201,35 @@ import { stitch } from "@google/stitch-sdk";
 const projects = await stitch.projects();
 ```
 
+### `toolMap`
+
+Static tool schemas with pre-parsed parameters. Available on `stitch.toolMap` or as a standalone export. No network call or API key needed.
+
+```ts
+import { stitch } from "@google/stitch-sdk";
+
+// Look up a tool
+const tool = stitch.toolMap.get("generate_screen_from_text");
+if (tool) {
+  // Pre-parsed params — no JSON Schema parsing needed
+  const required = tool.params.filter(p => p.required);
+  const optional = tool.params.filter(p => !p.required);
+  console.log(required.map(p => p.name)); // ["projectId", "prompt"]
+  console.log(optional.map(p => p.name)); // ["deviceType", "modelId"]
+}
+
+// Iterate all tools
+for (const [name, tool] of stitch.toolMap) {
+  for (const param of tool.params) {
+    console.log(param.name, param.type, param.required);
+  }
+}
+```
+
+Each `ToolParam` has: `name`, `type`, `description`, `required`, and `enum` (for constrained values).
+
+The raw `inputSchema` (`ToolInputSchema`) is also available on each entry. Standalone exports: `toolMap`, `toolDefinitions`, `ToolInfo`, `ToolParam`, `ToolDefinition`, `ToolInputSchema`, `ToolPropertySchema`.
+
 ## Configuration
 
 ### Environment Variables

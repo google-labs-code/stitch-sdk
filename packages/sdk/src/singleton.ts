@@ -15,6 +15,7 @@
 import { Stitch } from "../generated/src/stitch.js";
 import { StitchToolClient } from "./client.js";
 import { DEFAULT_STITCH_API_URL } from "./constants.js";
+import { toolMap, type ToolInfo } from "./tool-map.js";
 
 /** Lazily-initialized default client */
 let _client: StitchToolClient | null = null;
@@ -74,9 +75,12 @@ const CLIENT_METHODS = new Set(["listTools", "callTool", "close"]);
  * await stitch.callTool("create_project", { title: "My App" });
  */
 export const stitch = new Proxy<
-  Stitch & Pick<StitchToolClient, "listTools" | "callTool" | "close">
+  Stitch & Pick<StitchToolClient, "listTools" | "callTool" | "close"> & { toolMap: ReadonlyMap<string, ToolInfo> }
 >({} as any, {
   get(_target, prop: string | symbol) {
+    // Static properties — no auth or lazy init needed
+    if (prop === "toolMap") return toolMap;
+
     // Client methods → delegate to StitchToolClient
     if (typeof prop === "string" && CLIENT_METHODS.has(prop)) {
       const client = getOrCreateClient();

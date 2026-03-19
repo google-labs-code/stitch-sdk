@@ -617,13 +617,38 @@ async function main() {
   const toolDefsFile = tsProject.createSourceFile("tool-definitions.ts");
   toolDefsFile.addStatements(`/**\n * ${headerComment}\n */\n`);
   toolDefsFile.addInterface({
+    name: "ToolPropertySchema",
+    isExported: true,
+    docs: ["JSON Schema property descriptor for a tool parameter."],
+    properties: [
+      { name: "type", type: "string", hasQuestionToken: true, docs: ["JSON Schema type (string, integer, array, etc.)"] },
+      { name: "description", type: "string", hasQuestionToken: true, docs: ["Human-readable parameter description"] },
+      { name: "enum", type: "string[]", hasQuestionToken: true, docs: ["Allowed values for constrained parameters"] },
+      { name: "items", type: "ToolPropertySchema", hasQuestionToken: true, docs: ["Schema for array items"] },
+      { name: "deprecated", type: "boolean", hasQuestionToken: true, docs: ["Whether the parameter is deprecated"] },
+    ],
+    indexSignatures: [{ keyName: "key", keyType: "string", returnType: "unknown", docs: ["Additional JSON Schema properties"] }],
+  });
+  toolDefsFile.addInterface({
+    name: "ToolInputSchema",
+    isExported: true,
+    docs: ["Typed JSON Schema for a tool's input parameters."],
+    properties: [
+      { name: "type", type: '"object"', docs: ["Always 'object' for tool inputs"] },
+      { name: "description", type: "string", hasQuestionToken: true, docs: ["Schema-level description"] },
+      { name: "properties", type: "Record<string, ToolPropertySchema>", docs: ["Map of parameter names to their schemas"] },
+      { name: "required", type: "string[]", hasQuestionToken: true, docs: ["Names of required parameters"] },
+    ],
+    indexSignatures: [{ keyName: "key", keyType: "string", returnType: "unknown", docs: ["Additional JSON Schema properties"] }],
+  });
+  toolDefsFile.addInterface({
     name: "ToolDefinition",
     isExported: true,
     docs: ["Static tool definition from the Stitch MCP server manifest."],
     properties: [
       { name: "name", type: "string", docs: ['MCP tool name, e.g. "create_project"'] },
       { name: "description", type: "string", docs: ["Human-readable description of what the tool does"] },
-      { name: "inputSchema", type: "Record<string, unknown>", docs: ["JSON Schema for the tool's input parameters"] },
+      { name: "inputSchema", type: "ToolInputSchema", docs: ["Typed JSON Schema for the tool's input parameters"] },
     ],
   });
   // Use ts-morph for the declaration, but inject the JSON data directly.
@@ -655,7 +680,12 @@ async function main() {
   }
   indexFile.addExportDeclaration({
     moduleSpecifier: "./tool-definitions.js",
-    namedExports: ["toolDefinitions", { name: "ToolDefinition", isTypeOnly: true }],
+    namedExports: [
+      "toolDefinitions",
+      { name: "ToolDefinition", isTypeOnly: true },
+      { name: "ToolInputSchema", isTypeOnly: true },
+      { name: "ToolPropertySchema", isTypeOnly: true },
+    ],
   });
   await Bun.write(resolve(GENERATED_DIR, "index.ts"), indexFile.getFullText());
   fileCount++;

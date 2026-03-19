@@ -92,6 +92,14 @@ async function main() {
   assert(typeof sdk.stitch === "object", "stitch singleton exported");
   assert(typeof sdk.StitchErrorCode === "object", "StitchErrorCode exported");
   assert(typeof sdk.StitchError === "function", "StitchError class exported");
+  assert(Array.isArray(sdk.toolDefinitions), "toolDefinitions array exported");
+  assert(sdk.toolDefinitions.length > 0, "toolDefinitions is non-empty");
+  assert(sdk.toolMap instanceof Map, "toolMap is a Map");
+  assert(sdk.toolMap.size === sdk.toolDefinitions.length, "toolMap has same size as toolDefinitions");
+  assert(sdk.toolMap.get("create_project") !== undefined, "toolMap.get('create_project') works");
+  const entry = sdk.toolMap.get("create_project");
+  assert(Array.isArray(entry.params), "toolMap entry has params array");
+  assert(entry.params.length > 0, "toolMap entry params is non-empty");
 
   // ── 6. Verify internal exports are NOT leaked ─────────────────
   console.log("\n🔒 Checking internal exports are hidden...");

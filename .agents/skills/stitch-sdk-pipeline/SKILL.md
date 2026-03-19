@@ -147,7 +147,7 @@ After the pipeline passes, audit agent skills for freshness. Read the current so
 
 **Skills to audit** (in priority order):
 1. `stitch-sdk-usage` — highest churn, references specific methods and constructor signatures
-2. `stitch-sdk-readme` — must document `stitchTools()` API and AI SDK integration examples
+2. `stitch-sdk-readme` — must document `stitchTools()`, `toolDefinitions`, and AI SDK integration examples
 3. `stitch-sdk-development` — check cache examples match current domain-map patterns
 4. `stitch-sdk-domain-design` — check code examples in the cache section
 

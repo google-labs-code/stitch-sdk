@@ -27,6 +27,10 @@ export { stitch } from "./singleton.js";
 // Error handling
 export { StitchError, StitchErrorCode } from "./spec/errors.js";
 
+// Tool catalog (generated)
+export { toolDefinitions, type ToolDefinition, type ToolInputSchema, type ToolPropertySchema } from "../generated/src/tool-definitions.js";
+export { toolMap, type ToolParam, type ToolInfo } from "./tool-map.js";
+
 // Types (config + data interfaces)
 export type { StitchConfig, StitchConfigInput } from "./spec/client.js";
 export type {

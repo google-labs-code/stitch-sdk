@@ -71,7 +71,7 @@ Rules for this section:
 
 The reader is committed. Document the full API as a reference.
 
-Structure by class in this order: `Stitch` → `Project` → `Screen` → `StitchToolClient` → `stitchTools()` (AI SDK) → `StitchProxy` → `stitch` singleton.
+Structure by class in this order: `Stitch` → `Project` → `Screen` → `StitchToolClient` → `toolDefinitions` / `toolMap` → `stitchTools()` (AI SDK) → `StitchProxy` → `stitch` singleton.
 
 Each entry should have:
 - What it does (one line)
