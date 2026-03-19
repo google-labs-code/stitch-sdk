@@ -15,13 +15,13 @@ The domain layer is **fully generated**. No handwritten domain classes. The pipe
 
 ```
 Stage 1: Capture            Stage 2: Domain Design       Stage 3: Generate
-┌──────────────────┐       ┌──────────────────┐        ┌──────────────────┐
-│ capture-tools.ts │──────▶│  domain-map.json │───────▶│ generate-sdk.ts  │
-│                  │       │  (the IR)        │        │                  │
-│ Connects to MCP  │       │ Classes, bindings│        │ Deterministic    │
-│ server, calls    │       │ arg routing,     │        │ codegen into     │
+┌──────────────────┐       ┌──────────────────┐        ┌──────────────────────────┐
+│ capture-tools.ts │──────▶│  domain-map.json │───────▶│ generate-sdk.ts          │
+│                  │       │  (the IR)        │        │                          │
+│ Connects to MCP  │       │ Classes, bindings│        │ Deterministic            │
+│ server, calls    │       │ arg routing,     │        │ codegen into             │
 │ tools/list       │       │ cache, extraction│        │ packages/sdk/generated/  │
-└──────────────────┘       └──────────────────┘        └──────────────────┘
+└──────────────────┘       └──────────────────┘        └──────────────────────────┘
         │                          │                           │
         ▼                          ▼                           ▼
  tools-manifest.json        domain-map.json          packages/sdk/generated/src/*.ts
@@ -108,13 +108,63 @@ The SDK serves two distinct consumers with different needs:
 
 For AI agents and orchestration scripts. Raw tool pipe. The agent receives tool schemas, constructs JSON, sends it, gets JSON back. No domain knowledge required.
 
+#### Quick Start (Singleton)
+
+The `stitch` singleton exposes both domain methods and tool methods via a `Proxy`. No instantiation needed — it lazily creates a `StitchToolClient` from env vars on first access.
+
 ```typescript
-const client = new StitchToolClient();
+import { stitch } from '@google/stitch-sdk';
+
+// Discover available tools
+const { tools } = await stitch.listTools();
+
+// Call any tool by name with a JSON payload
+const result = await stitch.callTool("generate_screen_from_text", {
+  projectId: "123",
+  prompt: "A login page",
+});
+
+// Clean up when done
+await stitch.close();
+```
+
+The singleton reads `STITCH_API_KEY` (or `STITCH_ACCESS_TOKEN` + `GOOGLE_CLOUD_PROJECT`) from the environment. Set `STITCH_HOST` to override the server URL.
+
+#### Direct Instantiation
+
+For explicit control (multiple clients, custom config, testing), instantiate `StitchToolClient` directly:
+
+```typescript
+import { StitchToolClient } from '@google/stitch-sdk';
+
+const client = new StitchToolClient({ apiKey: 'my-key' });
 const tools = await client.listTools();
-const result = await client.callTool("generate_screen_from_text", {
-  projectId: "123", prompt: "A login page"
+const result = await client.callTool("create_project", { title: "My App" });
+await client.close();
+```
+
+**Config resolution**: Constructor params → env vars → defaults. Auth requires either `apiKey` or `accessToken` + `projectId` (validated via Zod at construction time).
+
+**Connection**: `callTool` and `listTools` auto-connect on first call. Concurrent calls safely share the connection via a promise-based lock.
+
+#### AI SDK Adapter — `stitchTools()`
+
+For agents built on the [Vercel AI SDK](https://sdk.vercel.ai/). Transforms MCP tool schemas into AI SDK-compatible tool definitions, enabling plug-and-play with `generateText()`.
+
+```typescript
+import { stitchTools } from '@google/stitch-sdk/ai';
+import { generateText } from 'ai';
+import { google } from '@ai-sdk/google';
+
+const result = await generateText({
+  model: google("gemini-2.0-flash"),
+  tools: stitchTools(),                          // all tools
+  // or: stitchTools({ include: ["create_project"] })  // filtered
+  prompt: "Create a project called My App",
 });
 ```
+
+`stitchTools()` is exported from the `/ai` subpath to keep the `ai` dependency optional. It uses the same shared `StitchToolClient` singleton internally.
 
 ### SDK Modality — Generated Domain Classes
 
