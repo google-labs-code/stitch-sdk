@@ -232,34 +232,95 @@ describe("StitchToolClient", () => {
     });
   });
 
+  // ─── Cycle: custom fetch support (Bun timeout fix) ─────────────
+  describe("custom fetch", () => {
+    it("should accept a fetch option in config", () => {
+      const customFetch = vi.fn() as unknown as typeof globalThis.fetch;
+      const client = new StitchToolClient({ apiKey: "k", fetch: customFetch });
+      expect(client).toBeDefined();
+      expect(client["customFetch"]).toBe(customFetch);
+    });
+
+    it("should pass custom fetch to StreamableHTTPClientTransport on connect", async () => {
+      const customFetch = vi.fn() as unknown as typeof globalThis.fetch;
+      const client = new StitchToolClient({ apiKey: "k", fetch: customFetch });
+      try {
+        await client.connect();
+      } catch {
+        // Expected to fail (no real server)
+      }
+      const transport = client["transport"];
+      expect(transport).toBeDefined();
+      expect(transport?.["_fetch"]).toBe(customFetch);
+    });
+  });
+
+  // ─── Cycle: auto-reconnect on ECONNRESET ───────────────────────
+  describe("ECONNRESET retry", () => {
+    it("should retry once on ECONNRESET and succeed", async () => {
+      const client = new StitchToolClient({ apiKey: "k" });
+      client["isConnected"] = true;
+
+      let callCount = 0;
+      client["client"].callTool = vi.fn(async () => {
+        callCount++;
+        if (callCount === 1) {
+          throw new Error("The socket connection was closed unexpectedly");
+        }
+        return {
+          isError: false,
+          content: [{ type: "text", text: '{"ok":true}' }],
+        };
+      });
+
+      client["doConnect"] = vi.fn(async () => {
+        client["isConnected"] = true;
+        client["client"].callTool = vi.fn().mockResolvedValue({
+          isError: false,
+          content: [{ type: "text", text: '{"ok":true}' }],
+        });
+      });
+
+      const result = await client.callTool("test_tool", {});
+      expect(result).toEqual({ ok: true });
+      expect(client["doConnect"]).toHaveBeenCalledTimes(1);
+    });
+
+    it("should NOT retry on non-connection errors", async () => {
+      const client = new StitchToolClient({ apiKey: "k" });
+      client["isConnected"] = true;
+      client["client"].callTool = vi.fn().mockRejectedValue(
+        new Error("Invalid argument: bad param"),
+      );
+
+      await expect(client.callTool("test_tool", {})).rejects.toThrow(
+        "Invalid argument",
+      );
+    });
+  });
+
   // ─── Cycle 4: connect() race condition ──────────────────────────
   describe("connect race condition", () => {
     it("should only connect once when multiple callTool run concurrently", async () => {
       const client = new StitchToolClient({ apiKey: "k" });
-      let connectCount = 0;
+      let doConnectCount = 0;
 
-      // Mock connect to track how many times it's actually called
-      const originalConnect = client["client"].connect.bind(client["client"]);
-      client["client"].connect = vi.fn(async (transport) => {
-        connectCount++;
-        // Simulate async delay to widen the race window
+      client["doConnect"] = vi.fn(async () => {
+        doConnectCount++;
         await new Promise((resolve) => setTimeout(resolve, 10));
-        return originalConnect(transport);
+        client["isConnected"] = true;
+        client["client"].callTool = vi.fn().mockResolvedValue({
+          isError: false,
+          content: [{ type: "text", text: '{"ok":true}' }],
+        });
       });
 
-      // Mock callTool to avoid real network
-      client["client"].callTool = vi.fn().mockResolvedValue({
-        isError: false,
-        content: [{ type: "text", text: '{"ok":true}' }],
-      });
-
-      // Fire two concurrent callTool — both see isConnected=false
       await Promise.allSettled([
         client.callTool("tool_a", {}),
         client.callTool("tool_b", {}),
       ]);
 
-      expect(connectCount).toBe(1);
+      expect(doConnectCount).toBe(1);
     });
   });
 });

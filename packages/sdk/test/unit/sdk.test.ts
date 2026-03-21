@@ -135,6 +135,25 @@ describe("SDK Unit Tests", () => {
       expect(edited.id).toBe("edited-screen");
     });
 
+    it("should cache designMarkdown from generate response and expose via getDesignMarkdown()", async () => {
+      const dataWithDesignMd = {
+        id: "screen-with-md",
+        projectId: "proj-123",
+        htmlCode: { downloadUrl: "https://example.com/html" },
+        theme: { designMd: "# Design System\n\nPrimary color: blue" },
+      };
+      const screen = new Screen(mockClient, dataWithDesignMd);
+      const md = await screen.getDesignMarkdown();
+      expect(mockClient.callTool).not.toHaveBeenCalled();
+      expect(md).toBe("# Design System\n\nPrimary color: blue");
+    });
+
+    it("getDesignMarkdown should return empty string when no design markdown cached", async () => {
+      const screen = new Screen(mockClient, { id: "screen-no-md", projectId: "proj-123" });
+      const md = await screen.getDesignMarkdown();
+      expect(md).toBe("");
+    });
+
     it("variants should call generate_variants and return Screen[]", async () => {
       const screen = new Screen(mockClient, screenData);
 

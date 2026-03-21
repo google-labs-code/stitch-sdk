@@ -61,6 +61,22 @@ describe("Generated toolDefinitions", () => {
     }
   });
 
+  it("modelId enum should include GEMINI_3_1_PRO and deprecate GEMINI_3_PRO", () => {
+    const genTool = toolDefinitions.find(t => t.name === "generate_screen_from_text")!;
+    const modelIdProp = genTool.inputSchema.properties["modelId"];
+    expect(modelIdProp.enum).toContain("GEMINI_3_1_PRO");
+    expect(modelIdProp.enum).toContain("GEMINI_3_PRO");
+  });
+
+  it("all generation tools should support GEMINI_3_1_PRO", () => {
+    const genTools = ["generate_screen_from_text", "edit_screens", "generate_variants"];
+    for (const toolName of genTools) {
+      const tool = toolDefinitions.find(t => t.name === toolName)!;
+      const modelIdProp = tool.inputSchema.properties["modelId"];
+      expect(modelIdProp.enum, `${toolName} missing GEMINI_3_1_PRO`).toContain("GEMINI_3_1_PRO");
+    }
+  });
+
   it("ToolDefinition type matches the shape", () => {
     // TypeScript structural check — if this compiles, the type is correct
     const def: ToolDefinition = toolDefinitions[0];

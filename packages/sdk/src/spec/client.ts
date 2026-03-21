@@ -45,6 +45,12 @@ export type StitchConfig = z.infer<typeof StitchConfigSchema>;
 /** Input type for StitchConfig - fields with defaults are optional */
 export type StitchConfigInput = z.input<typeof StitchConfigSchema>;
 
+/** Extended config that includes non-serializable options like custom fetch. */
+export interface StitchClientOptions extends Partial<StitchConfigInput> {
+  /** Custom fetch implementation. Use this to configure runtime-specific timeouts (e.g. Bun). */
+  fetch?: typeof globalThis.fetch;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. OUTPUT SCHEMAS - What the client produces
 // ─────────────────────────────────────────────────────────────────────────────

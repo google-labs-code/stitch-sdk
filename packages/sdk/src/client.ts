@@ -18,6 +18,7 @@ import {
   StitchConfigSchema,
   StitchConfig,
   StitchToolClientSpec,
+  type StitchClientOptions,
 } from "./spec/client.js";
 import { StitchError, StitchErrorCode } from "./spec/errors.js";
 import { SDK_VERSION } from "./version.js";
@@ -40,10 +41,11 @@ export class StitchToolClient implements StitchToolClientSpec {
   private client: Client;
   private transport: StreamableHTTPClientTransport | null = null;
   private config: StitchConfig;
+  private customFetch?: typeof globalThis.fetch;
   private isConnected: boolean = false;
   private connectPromise: Promise<void> | null = null;
 
-  constructor(inputConfig?: Partial<StitchConfig>) {
+  constructor(inputConfig?: StitchClientOptions) {
     const rawConfig = {
       accessToken: inputConfig?.accessToken || process.env.STITCH_ACCESS_TOKEN,
       apiKey: inputConfig?.apiKey || process.env.STITCH_API_KEY,
@@ -52,6 +54,7 @@ export class StitchToolClient implements StitchToolClientSpec {
       timeout: inputConfig?.timeout,
     };
     this.config = StitchConfigSchema.parse(rawConfig);
+    this.customFetch = inputConfig?.fetch;
 
     this.client = new Client(
       { name: "stitch-core-client", version: SDK_VERSION },
@@ -148,38 +151,76 @@ export class StitchToolClient implements StitchToolClientSpec {
   }
 
   private async doConnect() {
-    // Create transport with auth headers injected per-instance (no global fetch mutation)
+    // Close stale transport if any
+    if (this.transport) {
+      try { await this.transport.close(); } catch { /* ignore */ }
+    }
+
+    // Create fresh client + transport (MCP Client binds to one transport, so both must be new)
+    this.client = new Client(
+      { name: "stitch-core-client", version: SDK_VERSION },
+      { capabilities: {} },
+    );
+
     this.transport = new StreamableHTTPClientTransport(
       new URL(this.config.baseUrl),
       {
         requestInit: {
           headers: this.buildAuthHeaders(),
         },
+        fetch: this.customFetch,
       },
     );
 
-    this.transport.onerror = (err) => {
-      console.error("Stitch Transport Error:", err);
-      this.isConnected = false;
-    };
+    // Don't set isConnected=false on transport errors — the SSE notification channel
+    // can reset independently of POST request/response. Let callTool handle its own errors.
+    this.transport.onerror = () => {};
 
     await this.client.connect(this.transport);
     this.isConnected = true;
   }
 
+  /** Detect connection-level errors that warrant a retry. */
+  private isConnectionResetError(error: unknown): boolean {
+    if (error instanceof Error) {
+      const msg = error.message.toLowerCase();
+      return msg.includes("econnreset") ||
+        msg.includes("socket connection was closed") ||
+        msg.includes("fetch failed") ||
+        msg.includes("network error");
+    }
+    return false;
+  }
+
   /**
-   * Generic tool caller with type support and error parsing.
+   * Generic tool caller with type support, error parsing, and auto-reconnect.
+   * Retries up to 2 times on connection reset (ECONNRESET) with exponential backoff.
    */
   async callTool<T>(name: string, args: Record<string, any>): Promise<T> {
-    if (!this.isConnected) await this.connect();
+    const MAX_RETRIES = 2;
 
-    const result = await this.client.callTool(
-      { name, arguments: args },
-      undefined,
-      { timeout: this.config.timeout },
-    );
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        // Both connect() and callTool() can throw ECONNRESET — wrap both
+        if (!this.isConnected) await this.connect();
 
-    return this.parseToolResponse<T>(result, name);
+        const result = await this.client.callTool(
+          { name, arguments: args },
+          undefined,
+          { timeout: this.config.timeout },
+        );
+        return this.parseToolResponse<T>(result, name);
+      } catch (error) {
+        if (attempt < MAX_RETRIES && this.isConnectionResetError(error)) {
+          this.isConnected = false;
+          await new Promise(resolve => setTimeout(resolve, 2000 * (attempt + 1)));
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    throw new StitchError({ code: "UNKNOWN_ERROR", message: "Retry loop exhausted", recoverable: false });
   }
 
   async listTools() {
