@@ -4,7 +4,7 @@ DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:1f84b31604f9...)
         domain-map.json     (sha256:99b823ad9306...)
-Generated: 2026-03-19T18:56:19.253Z
+Generated: 2026-03-21T00:17:24.039Z
  */
 import { type StitchToolClient } from "../../src/client.js";
 import { StitchError } from "../../src/spec/errors.js";
@@ -37,7 +37,9 @@ export class Project {
     async generate(prompt: string, deviceType?: "DEVICE_TYPE_UNSPECIFIED" | "MOBILE" | "DESKTOP" | "TABLET" | "AGNOSTIC", modelId?: "MODEL_ID_UNSPECIFIED" | "GEMINI_3_PRO" | "GEMINI_3_FLASH"): Promise<Screen> {
         try {
           const raw = await this.client.callTool<any>("generate_screen_from_text", { projectId: this.projectId, prompt, deviceType, modelId });
-          return new Screen(this.client, { ...raw.outputComponents[0].design.screens[0], projectId: this.projectId });
+          const _projected = raw?.outputComponents?.[0]?.design?.screens?.[0];
+          if (!_projected) throw new StitchError({ code: "UNKNOWN_ERROR", message: "Incomplete API response from generate_screen_from_text: expected object at projection path", recoverable: false });
+          return new Screen(this.client, { ..._projected, projectId: this.projectId })
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }
@@ -50,7 +52,7 @@ export class Project {
     async screens(): Promise<Screen[]> {
         try {
           const raw = await this.client.callTool<any>("list_screens", { projectId: this.projectId });
-          return (raw.screens || []).map((item: any) => new Screen(this.client, { ...item, projectId: this.projectId }));
+          return (raw?.screens || []).map((item: any) => new Screen(this.client, { ...item, projectId: this.projectId }));
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }

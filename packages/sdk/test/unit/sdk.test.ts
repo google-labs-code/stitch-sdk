@@ -17,6 +17,7 @@ import { Screen } from "../../generated/src/screen.js";
 import { Project } from "../../generated/src/project.js";
 import { Stitch } from "../../generated/src/stitch.js";
 import { StitchToolClient } from "../../src/client.js";
+import { StitchError } from "../../src/spec/errors.js";
 
 // Mock the StitchToolClient class
 vi.mock("../../src/client");
@@ -135,6 +136,30 @@ describe("SDK Unit Tests", () => {
       expect(edited.id).toBe("edited-screen");
     });
 
+    it("edit should throw StitchError (not TypeError) when response has no screens", async () => {
+      const screen = new Screen(mockClient, screenData);
+
+      (mockClient.callTool as Mock).mockResolvedValue({
+        outputComponents: [{ design: {} }],
+        projectId,
+      });
+
+      const err = await screen.edit("Make it dark").catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(StitchError);
+      expect((err as StitchError).code).toBe("UNKNOWN_ERROR");
+      expect((err as StitchError).message).toContain("edit_screens");
+    });
+
+    it("edit should throw StitchError when outputComponents is empty", async () => {
+      const screen = new Screen(mockClient, screenData);
+
+      (mockClient.callTool as Mock).mockResolvedValue({ outputComponents: [] });
+
+      const err = await screen.edit("Make it dark").catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(StitchError);
+      expect((err as StitchError).message).toContain("edit_screens");
+    });
+
     it("variants should call generate_variants and return Screen[]", async () => {
       const screen = new Screen(mockClient, screenData);
 
@@ -230,26 +255,41 @@ describe("SDK Unit Tests", () => {
     });
 
 
-    it("generate should handle missing design.screens in outputComponents gracefully", async () => {
+    it("generate should throw StitchError (not TypeError) when response has no screens", async () => {
       const project = new Project(mockClient, projectId);
 
-      // Mock with missing screens array
       (mockClient.callTool as Mock).mockResolvedValue({
-        outputComponents: [
-          {
-            design: {
-              // screens is missing
-            },
-          },
-        ],
+        outputComponents: [{ design: { /* screens missing */ } }],
         projectId: projectId,
-        sessionId: "session-1",
       });
 
-      // Based on the Screen class constructor, if it's passed undefined, it might throw
-      // or if it tries to access missing screens it might throw TypeError.
-      // The generated code in project.ts wraps the try block and throws StitchError.
-      await expect(project.generate("test")).rejects.toThrow();
+      const err = await project.generate("test").catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(StitchError);
+      expect((err as StitchError).code).toBe("UNKNOWN_ERROR");
+      expect((err as StitchError).message).toContain("generate_screen_from_text");
+    });
+
+    it("generate should throw StitchError when outputComponents is empty", async () => {
+      const project = new Project(mockClient, projectId);
+
+      (mockClient.callTool as Mock).mockResolvedValue({
+        outputComponents: [],
+        projectId: projectId,
+      });
+
+      const err = await project.generate("test").catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(StitchError);
+      expect((err as StitchError).message).toContain("generate_screen_from_text");
+    });
+
+    it("generate should throw StitchError when outputComponents is missing", async () => {
+      const project = new Project(mockClient, projectId);
+
+      (mockClient.callTool as Mock).mockResolvedValue({ projectId: projectId });
+
+      const err = await project.generate("test").catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(StitchError);
+      expect((err as StitchError).message).toContain("generate_screen_from_text");
     });
 
     it("screens should list screens and return Screen instances", async () => {

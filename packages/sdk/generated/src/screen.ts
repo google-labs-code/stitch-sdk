@@ -4,7 +4,7 @@ DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:1f84b31604f9...)
         domain-map.json     (sha256:99b823ad9306...)
-Generated: 2026-03-19T18:56:19.253Z
+Generated: 2026-03-21T00:17:24.039Z
  */
 import { type StitchToolClient } from "../../src/client.js";
 import { StitchError } from "../../src/spec/errors.js";
@@ -38,7 +38,9 @@ export class Screen {
     async edit(prompt: string, deviceType?: "DEVICE_TYPE_UNSPECIFIED" | "MOBILE" | "DESKTOP" | "TABLET" | "AGNOSTIC", modelId?: "MODEL_ID_UNSPECIFIED" | "GEMINI_3_PRO" | "GEMINI_3_FLASH"): Promise<Screen> {
         try {
           const raw = await this.client.callTool<any>("edit_screens", { projectId: this.projectId, selectedScreenIds: [this.screenId], prompt, deviceType, modelId });
-          return new Screen(this.client, { ...raw.outputComponents[0].design.screens[0], projectId: this.projectId });
+          const _projected = raw?.outputComponents?.[0]?.design?.screens?.[0];
+          if (!_projected) throw new StitchError({ code: "UNKNOWN_ERROR", message: "Incomplete API response from edit_screens: expected object at projection path", recoverable: false });
+          return new Screen(this.client, { ..._projected, projectId: this.projectId })
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }
@@ -67,7 +69,7 @@ export class Screen {
         
         try {
           const raw = await this.client.callTool<any>("get_screen", { projectId: this.projectId, screenId: this.screenId, name: `projects/${this.projectId}/screens/${this.screenId}` });
-          return raw.htmlCode.downloadUrl || "";
+          return raw?.htmlCode?.downloadUrl || "";
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }
@@ -83,7 +85,7 @@ export class Screen {
         
         try {
           const raw = await this.client.callTool<any>("get_screen", { projectId: this.projectId, screenId: this.screenId, name: `projects/${this.projectId}/screens/${this.screenId}` });
-          return raw.screenshot.downloadUrl || "";
+          return raw?.screenshot?.downloadUrl || "";
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }

@@ -166,12 +166,12 @@ export function emitProjection(steps: ProjectionStep[], rawVar: string = "raw"):
     return emitFlatMapProjection(steps, rawVar);
   }
 
-  // Simple chain: raw.prop1[0].prop2.prop3
+  // Simple chain with optional chaining: raw.outputComponents?.[0]?.design?.screens?.[0]
   let code = rawVar;
   for (const step of steps) {
-    code += `.${step.prop}`;
+    code += `?.${step.prop}`;
     if (step.index !== undefined) {
-      code += `[${step.index}]`;
+      code += `?.[${step.index}]`;
     }
   }
   return code;
@@ -330,6 +330,19 @@ function generateReturnExpression(
       return `(${projectionExpr} || []).map((item: any) => new ${binding.returns.class}(this.client, ${itemExpr}))`;
     }
 
+    // Only emit guard when projection has actual steps (not just `raw`)
+    if (projection.length > 0) {
+      const guardVar = "_projected";
+      const dataExpr = parentField
+        ? `{ ...${guardVar}, ${parentField}: this.${parentField} }`
+        : guardVar;
+      const toolName = binding.tool;
+      return `const ${guardVar} = ${projectionExpr};\n` +
+        `  if (!${guardVar}) throw new StitchError({ code: "UNKNOWN_ERROR", message: "Incomplete API response from ${toolName}: expected object at projection path", recoverable: false });\n` +
+        `  return new ${binding.returns.class}(this.client, ${dataExpr})`;
+    }
+
+    // Direct return — projection is empty, raw is the result itself
     const dataExpr = parentField
       ? `{ ...${projectionExpr}, ${parentField}: this.${parentField} }`
       : projectionExpr;
@@ -396,7 +409,13 @@ function buildMethodBody(
 
   statements.push(`try {`);
   statements.push(`  const raw = await this.client.callTool<any>("${binding.tool}", ${generateArgsObject(binding.args)});`);
-  statements.push(`  return ${generateReturnExpression(binding, className, domainMap)};`);
+  const retExpr = generateReturnExpression(binding, className, domainMap);
+  // If retExpr contains newlines, it has guard statements — don't wrap in return
+  if (retExpr.includes("\n")) {
+    statements.push(`  ${retExpr}`);
+  } else {
+    statements.push(`  return ${retExpr};`);
+  }
   statements.push(`} catch (error) {`);
   statements.push(`  throw StitchError.fromUnknown(error);`);
   statements.push(`}`);
