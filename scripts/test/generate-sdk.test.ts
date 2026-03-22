@@ -72,6 +72,18 @@ describe("emitProjection", () => {
     expect(emitProjection(steps)).toBe("raw.a[0].b.c[1]");
   });
 
+  test("find step → .find() pattern", () => {
+    const steps: ProjectionStep[] = [
+      { prop: "outputComponents", find: "design" },
+      { prop: "design" },
+      { prop: "screens", index: 0 },
+    ];
+    const result = emitProjection(steps);
+    expect(result).toContain(".find(");
+    expect(result).toContain("design");
+    expect(result).toContain(".screens[0]");
+  });
+
   test("single each → flatMap pattern", () => {
     const steps: ProjectionStep[] = [
       { prop: "outputComponents", each: true },
@@ -98,7 +110,9 @@ describe("emitCacheProjection", () => {
       { prop: "screenshot" },
       { prop: "downloadUrl" },
     ];
-    expect(emitCacheProjection(steps)).toBe("this.data?.screenshot?.downloadUrl");
+    expect(emitCacheProjection(steps)).toBe(
+      "this.data?.screenshot?.downloadUrl",
+    );
   });
 
   test("empty steps → this.data", () => {
@@ -128,18 +142,26 @@ describe("validateProjection", () => {
 
   test("valid path passes without throwing", () => {
     const steps: ProjectionStep[] = [{ prop: "screens" }];
-    expect(() => validateProjection(steps, outputSchema, "Test.method")).not.toThrow();
+    expect(() =>
+      validateProjection(steps, outputSchema, "Test.method"),
+    ).not.toThrow();
   });
 
   test("valid deep path passes", () => {
     const steps: ProjectionStep[] = [{ prop: "title" }];
-    expect(() => validateProjection(steps, outputSchema, "Test.method")).not.toThrow();
+    expect(() =>
+      validateProjection(steps, outputSchema, "Test.method"),
+    ).not.toThrow();
   });
 
   test("typo throws with available properties", () => {
     const steps: ProjectionStep[] = [{ prop: "screenz" }];
-    expect(() => validateProjection(steps, outputSchema, "Test.method")).toThrow(/screenz/);
-    expect(() => validateProjection(steps, outputSchema, "Test.method")).toThrow(/screens/);
+    expect(() =>
+      validateProjection(steps, outputSchema, "Test.method"),
+    ).toThrow(/screenz/);
+    expect(() =>
+      validateProjection(steps, outputSchema, "Test.method"),
+    ).toThrow(/screens/);
   });
 
   test("null schema skips validation (no throw)", () => {
@@ -164,7 +186,9 @@ describe("validateProjection", () => {
       },
     };
     const steps: ProjectionStep[] = [{ prop: "screen" }, { prop: "htmlCode" }];
-    expect(() => validateProjection(steps, schemaWithRef, "Test.method")).not.toThrow();
+    expect(() =>
+      validateProjection(steps, schemaWithRef, "Test.method"),
+    ).not.toThrow();
   });
 
   test("$ref with invalid nested prop throws", () => {
@@ -183,7 +207,9 @@ describe("validateProjection", () => {
       },
     };
     const steps: ProjectionStep[] = [{ prop: "screen" }, { prop: "bogus" }];
-    expect(() => validateProjection(steps, schemaWithRef, "Test.method")).toThrow(/bogus/);
+    expect(() =>
+      validateProjection(steps, schemaWithRef, "Test.method"),
+    ).toThrow(/bogus/);
   });
 });
 
@@ -230,7 +256,9 @@ describe("jsonSchemaToTs", () => {
   });
 
   test("array of strings → string[]", () => {
-    expect(jsonSchemaToTs({ type: "array", items: { type: "string" } })).toBe("string[]");
+    expect(jsonSchemaToTs({ type: "array", items: { type: "string" } })).toBe(
+      "string[]",
+    );
   });
 
   test("null/missing prop → any", () => {

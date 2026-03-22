@@ -14,9 +14,7 @@
     },
     "Project": {
       "description": "A Stitch project containing screens.",
-      "constructorParams": [
-        "projectId"
-      ],
+      "constructorParams": ["projectId"],
       "fieldMapping": {
         "projectId": {
           "from": "name",
@@ -26,10 +24,7 @@
     },
     "Screen": {
       "description": "A generated UI screen. Provides access to HTML and screenshots.",
-      "constructorParams": [
-        "projectId",
-        "screenId"
-      ],
+      "constructorParams": ["projectId", "screenId"],
       "fieldMapping": {
         "projectId": {
           "from": "projectId"
@@ -43,7 +38,16 @@
         }
       },
       "parentField": "projectId",
-      "idField": "screenId"
+      "idField": "screenId",
+      "accessors": [
+        {
+          "method": "getDesignMarkdown",
+          "returns": "string",
+          "projection": [{ "prop": "theme" }, { "prop": "designMd" }],
+          "fallback": "\"\"",
+          "description": "Returns the cached design system markdown from the generation response.\nOnly available on screens returned by generate() or edit(), not from get_screen."
+        }
+      ]
     }
   },
   "bindings": [
@@ -103,7 +107,7 @@
         "projection": [
           {
             "prop": "outputComponents",
-            "index": 0
+            "find": "design"
           },
           {
             "prop": "design"
@@ -144,7 +148,7 @@
         "projection": [
           {
             "prop": "outputComponents",
-            "index": 0
+            "find": "design"
           },
           {
             "prop": "design"
