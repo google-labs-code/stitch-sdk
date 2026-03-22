@@ -14,9 +14,7 @@
     },
     "Project": {
       "description": "A Stitch project containing screens.",
-      "constructorParams": [
-        "projectId"
-      ],
+      "constructorParams": ["projectId"],
       "fieldMapping": {
         "projectId": {
           "from": "name",
@@ -26,10 +24,7 @@
     },
     "Screen": {
       "description": "A generated UI screen. Provides access to HTML and screenshots.",
-      "constructorParams": [
-        "projectId",
-        "screenId"
-      ],
+      "constructorParams": ["projectId", "screenId"],
       "fieldMapping": {
         "projectId": {
           "from": "projectId"
@@ -103,7 +98,7 @@
         "projection": [
           {
             "prop": "outputComponents",
-            "index": 0
+            "index": 1
           },
           {
             "prop": "design"

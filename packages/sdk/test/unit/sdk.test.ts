@@ -230,6 +230,7 @@ describe("SDK Unit Tests", () => {
 
       (mockClient.callTool as Mock).mockResolvedValue({
         outputComponents: [
+          { designSystem: { name: "ds" } },
           {
             design: {
               screens: [{ id: "new-screen-1", name: "Generated", htmlCode: "<div>test</div>", projectId }],
@@ -259,7 +260,14 @@ describe("SDK Unit Tests", () => {
       const project = new Project(mockClient, projectId);
 
       (mockClient.callTool as Mock).mockResolvedValue({
-        outputComponents: [{ design: { /* screens missing */ } }],
+        outputComponents: [
+          { designSystem: { name: "ds" } },
+          {
+            design: {
+              // screens is missing
+            },
+          },
+        ],
         projectId: projectId,
       });
 
