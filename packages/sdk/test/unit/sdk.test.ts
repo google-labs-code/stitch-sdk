@@ -32,7 +32,13 @@ describe("SDK Unit Tests", () => {
   });
 
   describe("Screen Class", () => {
-    const screenData = { id: "screen-123", name: "Login", htmlCode: { downloadUrl: "https://cached.example.com/html" }, screenshot: { downloadUrl: "https://cached.example.com/img.png" }, projectId: "proj-123" };
+    const screenData = {
+      id: "screen-123",
+      name: "Login",
+      htmlCode: { downloadUrl: "https://cached.example.com/html" },
+      screenshot: { downloadUrl: "https://cached.example.com/img.png" },
+      projectId: "proj-123",
+    };
     const projectId = "proj-123";
 
     it("getHtml should return cached HTML from data if available", async () => {
@@ -45,10 +51,14 @@ describe("SDK Unit Tests", () => {
     });
 
     it("getHtml should call get_screen if no cached htmlCode", async () => {
-      const screen = new Screen(mockClient, { id: "screen-123", name: "Login", projectId });
+      const screen = new Screen(mockClient, {
+        id: "screen-123",
+        name: "Login",
+        projectId,
+      });
 
       (mockClient.callTool as Mock).mockResolvedValue({
-        htmlCode: { downloadUrl: "https://api.example.com/html" }
+        htmlCode: { downloadUrl: "https://api.example.com/html" },
       });
 
       const result = await screen.getHtml();
@@ -71,10 +81,14 @@ describe("SDK Unit Tests", () => {
     });
 
     it("getImage should call get_screen if no cached screenshot", async () => {
-      const screen = new Screen(mockClient, { id: "screen-123", name: "Login", projectId });
+      const screen = new Screen(mockClient, {
+        id: "screen-123",
+        name: "Login",
+        projectId,
+      });
 
       (mockClient.callTool as Mock).mockResolvedValue({
-        screenshot: { downloadUrl: "https://api.example.com/image.png" }
+        screenshot: { downloadUrl: "https://api.example.com/image.png" },
       });
 
       const result = await screen.getImage();
@@ -87,13 +101,16 @@ describe("SDK Unit Tests", () => {
       expect(result).toBe("https://api.example.com/image.png");
     });
 
-
     it("getHtml should fallback to empty string when raw.htmlCode.downloadUrl is missing", async () => {
-      const screen = new Screen(mockClient, { id: "screen-123", name: "Login", projectId });
+      const screen = new Screen(mockClient, {
+        id: "screen-123",
+        name: "Login",
+        projectId,
+      });
 
       // Mock missing htmlCode / downloadUrl
       (mockClient.callTool as Mock).mockResolvedValue({
-        htmlCode: {}
+        htmlCode: {},
       });
 
       const result = await screen.getHtml();
@@ -107,8 +124,14 @@ describe("SDK Unit Tests", () => {
     });
 
     it("getHtml should throw StitchError on failure", async () => {
-      const screen = new Screen(mockClient, { id: "screen-123", name: "Login", projectId });
-      (mockClient.callTool as Mock).mockRejectedValue(new Error("Network failure"));
+      const screen = new Screen(mockClient, {
+        id: "screen-123",
+        name: "Login",
+        projectId,
+      });
+      (mockClient.callTool as Mock).mockRejectedValue(
+        new Error("Network failure"),
+      );
 
       await expect(screen.getHtml()).rejects.toThrow("Network failure");
     });
@@ -117,9 +140,20 @@ describe("SDK Unit Tests", () => {
       const screen = new Screen(mockClient, screenData);
 
       (mockClient.callTool as Mock).mockResolvedValue({
-        outputComponents: [{
-          design: { screens: [{ id: "edited-screen", htmlCode: "<div>Edited</div>", projectId }] },
-        }],
+        outputComponents: [
+          { designSystem: { name: "ds" } },
+          {
+            design: {
+              screens: [
+                {
+                  id: "edited-screen",
+                  htmlCode: "<div>Edited</div>",
+                  projectId,
+                },
+              ],
+            },
+          },
+        ],
         projectId,
         sessionId: "session-1",
       });
@@ -139,14 +173,16 @@ describe("SDK Unit Tests", () => {
       const screen = new Screen(mockClient, screenData);
 
       (mockClient.callTool as Mock).mockResolvedValue({
-        outputComponents: [{
-          design: {
-            screens: [
-              { id: "var-1", htmlCode: "<div>V1</div>", projectId },
-              { id: "var-2", htmlCode: "<div>V2</div>", projectId },
-            ],
+        outputComponents: [
+          {
+            design: {
+              screens: [
+                { id: "var-1", htmlCode: "<div>V1</div>", projectId },
+                { id: "var-2", htmlCode: "<div>V2</div>", projectId },
+              ],
+            },
           },
-        }],
+        ],
         projectId,
         sessionId: "session-1",
       });
@@ -205,9 +241,17 @@ describe("SDK Unit Tests", () => {
 
       (mockClient.callTool as Mock).mockResolvedValue({
         outputComponents: [
+          { designSystem: { name: "ds" } },
           {
             design: {
-              screens: [{ id: "new-screen-1", name: "Generated", htmlCode: "<div>test</div>", projectId }],
+              screens: [
+                {
+                  id: "new-screen-1",
+                  name: "Generated",
+                  htmlCode: "<div>test</div>",
+                  projectId,
+                },
+              ],
             },
           },
         ],
@@ -217,18 +261,20 @@ describe("SDK Unit Tests", () => {
 
       const result = await project.generate(prompt);
 
-      expect(mockClient.callTool).toHaveBeenCalledWith("generate_screen_from_text", {
-        projectId: projectId,
-        prompt: prompt,
-        deviceType: undefined,
-        modelId: undefined
-      });
+      expect(mockClient.callTool).toHaveBeenCalledWith(
+        "generate_screen_from_text",
+        {
+          projectId: projectId,
+          prompt: prompt,
+          deviceType: undefined,
+          modelId: undefined,
+        },
+      );
 
       expect(result).toBeInstanceOf(Screen);
       expect(result.id).toBe("new-screen-1");
       expect(result.projectId).toBe(projectId);
     });
-
 
     it("generate should handle missing design.screens in outputComponents gracefully", async () => {
       const project = new Project(mockClient, projectId);
@@ -236,6 +282,7 @@ describe("SDK Unit Tests", () => {
       // Mock with missing screens array
       (mockClient.callTool as Mock).mockResolvedValue({
         outputComponents: [
+          { designSystem: { name: "ds" } },
           {
             design: {
               // screens is missing
@@ -257,8 +304,8 @@ describe("SDK Unit Tests", () => {
       const mockResponse = {
         screens: [
           { id: "s1", sourceScreen: "S1", projectId },
-          { id: "s2", sourceScreen: "S2", projectId }
-        ]
+          { id: "s2", sourceScreen: "S2", projectId },
+        ],
       };
 
       (mockClient.callTool as Mock).mockResolvedValue(mockResponse);
@@ -266,7 +313,7 @@ describe("SDK Unit Tests", () => {
       const result = await project.screens();
 
       expect(mockClient.callTool).toHaveBeenCalledWith("list_screens", {
-        projectId: projectId
+        projectId: projectId,
       });
 
       expect(result).toHaveLength(2);
@@ -274,7 +321,6 @@ describe("SDK Unit Tests", () => {
       expect(result[1]).toBeInstanceOf(Screen);
       expect(result[0].id).toBe("s1");
     });
-
 
     it("screens should return [] when returned data has no screens array", async () => {
       const project = new Project(mockClient, projectId);
@@ -285,7 +331,7 @@ describe("SDK Unit Tests", () => {
       const result = await project.screens();
 
       expect(mockClient.callTool).toHaveBeenCalledWith("list_screens", {
-        projectId: projectId
+        projectId: projectId,
       });
 
       expect(result).toEqual([]);
@@ -294,9 +340,13 @@ describe("SDK Unit Tests", () => {
     it("generate should throw StitchError on failure", async () => {
       const project = new Project(mockClient, projectId);
 
-      (mockClient.callTool as Mock).mockRejectedValue(new Error("Generation failed"));
+      (mockClient.callTool as Mock).mockRejectedValue(
+        new Error("Generation failed"),
+      );
 
-      await expect(project.generate("test")).rejects.toThrow("Generation failed");
+      await expect(project.generate("test")).rejects.toThrow(
+        "Generation failed",
+      );
     });
   });
 });

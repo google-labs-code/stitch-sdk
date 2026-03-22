@@ -41,7 +41,10 @@ describe("ProjectionStep", () => {
   });
 
   test("accepts step with prop + index", () => {
-    const result = ProjectionStep.safeParse({ prop: "outputComponents", index: 0 });
+    const result = ProjectionStep.safeParse({
+      prop: "outputComponents",
+      index: 0,
+    });
     expect(result.success).toBe(true);
   });
 
@@ -60,8 +63,38 @@ describe("ProjectionStep", () => {
     expect(result.success).toBe(false);
   });
 
+  test("accepts step with prop + find", () => {
+    const result = ProjectionStep.safeParse({
+      prop: "outputComponents",
+      find: "design",
+    });
+    expect(result.success).toBe(true);
+  });
+
   test("rejects step with both index and each", () => {
-    const result = ProjectionStep.safeParse({ prop: "items", index: 0, each: true });
+    const result = ProjectionStep.safeParse({
+      prop: "items",
+      index: 0,
+      each: true,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test("rejects step with both find and index", () => {
+    const result = ProjectionStep.safeParse({
+      prop: "items",
+      find: "design",
+      index: 0,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test("rejects step with both find and each", () => {
+    const result = ProjectionStep.safeParse({
+      prop: "items",
+      find: "design",
+      each: true,
+    });
     expect(result.success).toBe(false);
   });
 
@@ -80,12 +113,19 @@ describe("ArgSpec", () => {
   });
 
   test("accepts param arg with rename", () => {
-    const result = ArgSpec.safeParse({ from: "param", rename: "newName", optional: true });
+    const result = ArgSpec.safeParse({
+      from: "param",
+      rename: "newName",
+      optional: true,
+    });
     expect(result.success).toBe(true);
   });
 
   test("accepts computed arg with template", () => {
-    const result = ArgSpec.safeParse({ from: "computed", template: "projects/{projectId}" });
+    const result = ArgSpec.safeParse({
+      from: "computed",
+      template: "projects/{projectId}",
+    });
     expect(result.success).toBe(true);
   });
 
@@ -170,7 +210,10 @@ describe("FieldMappingSpec", () => {
   });
 
   test("accepts mapping with stripPrefix", () => {
-    const result = FieldMappingSpec.safeParse({ from: "name", stripPrefix: "projects/" });
+    const result = FieldMappingSpec.safeParse({
+      from: "name",
+      stripPrefix: "projects/",
+    });
     expect(result.success).toBe(true);
   });
 

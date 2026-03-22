@@ -14,7 +14,7 @@
 
 /**
  * Binding IR Schema
- * 
+ *
  * Zod schemas defining the structure of domain-map.json.
  * Used by generate-sdk.ts to validate the IR before codegen,
  * and as documentation for the Stage 2 domain design process.
@@ -29,19 +29,34 @@ import { z } from "zod";
  * Replaces string-based extraction paths like ".outputComponents[0].design.screens[0]"
  * with structured, validatable segments.
  */
-export const ProjectionStep = z.object({
-  /** Property name to access on the current object */
-  prop: z.string(),
-  /** Pick nth item from an array (replaces [0], [1], etc.) */
-  index: z.number().int().min(0).optional(),
-  /** Flatten all items via flatMap (replaces [*] glob) */
-  each: z.boolean().optional(),
-  /** Alternate property name if primary is missing */
-  fallback: z.string().optional(),
-}).refine(
-  data => !(data.index !== undefined && data.each),
-  { message: "Cannot use both 'index' and 'each' on the same step" }
-);
+export const ProjectionStep = z
+  .object({
+    /** Property name to access on the current object */
+    prop: z.string(),
+    /** Pick nth item from an array (replaces [0], [1], etc.) */
+    index: z.number().int().min(0).optional(),
+    /** Flatten all items via flatMap (replaces [*] glob) */
+    each: z.boolean().optional(),
+    /**
+     * Find the first array item where the given property exists.
+     * Emits `.find((c: any) => c.<find>)` — resilient to API response ordering changes.
+     * Use instead of `index` when the target item's position in the array is not stable.
+     */
+    find: z.string().optional(),
+    /** Alternate property name if primary is missing */
+    fallback: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      const modes = [
+        data.index !== undefined,
+        !!data.each,
+        data.find !== undefined,
+      ].filter(Boolean).length;
+      return modes <= 1;
+    },
+    { message: "Cannot combine 'index', 'each', or 'find' on the same step" },
+  );
 export type ProjectionStep = z.infer<typeof ProjectionStep>;
 
 // ── Field Mapping ─────────────────────────────────────────────
@@ -52,10 +67,12 @@ export const FieldMappingSpec = z.object({
   /** Strip this prefix from the value (e.g., "projects/" strips resource name prefix) */
   stripPrefix: z.string().optional(),
   /** Fallback: parse from alternate field if primary is missing */
-  fallback: z.object({
-    field: z.string(),
-    splitOn: z.string(),
-  }).optional(),
+  fallback: z
+    .object({
+      field: z.string(),
+      splitOn: z.string(),
+    })
+    .optional(),
 });
 export type FieldMappingSpec = z.infer<typeof FieldMappingSpec>;
 
