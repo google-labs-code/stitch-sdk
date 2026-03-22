@@ -3,8 +3,8 @@
 DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:e65baae51b3c...)
-        domain-map.json     (sha256:99b823ad9306...)
-Generated: 2026-03-21T11:08:36.380Z
+        domain-map.json     (sha256:ec71dbf8ccdf...)
+Generated: 2026-03-22T07:26:45.735Z
  */
 import { type StitchToolClient } from "../../src/client.js";
 import { StitchError } from "../../src/spec/errors.js";
@@ -38,7 +38,7 @@ export class Screen {
     async edit(prompt: string, deviceType?: "DEVICE_TYPE_UNSPECIFIED" | "MOBILE" | "DESKTOP" | "TABLET" | "AGNOSTIC", modelId?: "MODEL_ID_UNSPECIFIED" | "GEMINI_3_PRO" | "GEMINI_3_FLASH" | "GEMINI_3_1_PRO"): Promise<Screen> {
         try {
           const raw = await this.client.callTool<any>("edit_screens", { projectId: this.projectId, selectedScreenIds: [this.screenId], prompt, deviceType, modelId });
-          return new Screen(this.client, { ...raw.outputComponents[0].design.screens[0], projectId: this.projectId });
+          return new Screen(this.client, { ...raw.outputComponents.find((c: any) => c.design).design.screens[0], projectId: this.projectId });
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }
@@ -55,15 +55,6 @@ export class Screen {
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }
-    }
-
-    /**
-     * Returns the cached design system markdown from the generation response.
-     * Only available on screens returned by generate() or edit(), not from get_screen.
-     * See: https://github.com/google-labs-code/stitch-sdk/issues/138
-     */
-    getDesignMarkdown(): string {
-        return this.data?.theme?.designMd || "";
     }
 
     /**
@@ -96,5 +87,13 @@ export class Screen {
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }
+    }
+
+    /**
+     * Returns the cached design system markdown from the generation response.
+     * Only available on screens returned by generate() or edit(), not from get_screen.
+     */
+    getDesignMarkdown(): string {
+        return this.data?.theme?.designMd || "";
     }
 }

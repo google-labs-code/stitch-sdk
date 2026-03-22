@@ -3,8 +3,8 @@
 DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:e65baae51b3c...)
-        domain-map.json     (sha256:99b823ad9306...)
-Generated: 2026-03-21T11:08:36.380Z
+        domain-map.json     (sha256:ec71dbf8ccdf...)
+Generated: 2026-03-22T07:26:45.735Z
  */
 /** JSON Schema property descriptor for a tool parameter. */
 export interface ToolPropertySchema {

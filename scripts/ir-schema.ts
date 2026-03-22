@@ -36,11 +36,16 @@ export const ProjectionStep = z.object({
   index: z.number().int().min(0).optional(),
   /** Flatten all items via flatMap (replaces [*] glob) */
   each: z.boolean().optional(),
+  /** Find the first array element that has this property (replaces brittle index) */
+  find: z.string().optional(),
   /** Alternate property name if primary is missing */
   fallback: z.string().optional(),
 }).refine(
   data => !(data.index !== undefined && data.each),
   { message: "Cannot use both 'index' and 'each' on the same step" }
+).refine(
+  data => !(data.find && data.each),
+  { message: "Cannot use both 'find' and 'each' on the same step" }
 );
 export type ProjectionStep = z.infer<typeof ProjectionStep>;
 
@@ -128,6 +133,21 @@ export const FactorySpec = z.object({
 });
 export type FactorySpec = z.infer<typeof FactorySpec>;
 
+/** A local accessor that reads a value from this.data without an API call. */
+export const AccessorSpec = z.object({
+  /** Method name */
+  method: z.string(),
+  /** Return type (e.g. "string") */
+  returns: z.string(),
+  /** Projection path into this.data */
+  projection: z.array(ProjectionStep),
+  /** Fallback value when projection yields undefined */
+  fallback: z.string().optional(),
+  /** Description for JSDoc */
+  description: z.string().optional(),
+});
+export type AccessorSpec = z.infer<typeof AccessorSpec>;
+
 // ── Class Config ──────────────────────────────────────────────
 
 export const DomainClassConfig = z.object({
@@ -140,6 +160,8 @@ export const DomainClassConfig = z.object({
   idField: z.string().optional(),
   /** Local factory methods that create child instances without API calls */
   factories: z.array(FactorySpec).optional(),
+  /** Local accessor methods that read from this.data without API calls */
+  accessors: z.array(AccessorSpec).optional(),
 });
 export type DomainClassConfig = z.infer<typeof DomainClassConfig>;
 
