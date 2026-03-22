@@ -3,8 +3,8 @@
 DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:1f84b31604f9...)
-        domain-map.json     (sha256:99b823ad9306...)
-Generated: 2026-03-19T18:56:19.253Z
+        domain-map.json     (sha256:ec71dbf8ccdf...)
+Generated: 2026-03-22T08:09:04.914Z
  */
 import { type StitchToolClient } from "../../src/client.js";
 import { StitchError } from "../../src/spec/errors.js";
@@ -37,7 +37,7 @@ export class Project {
     async generate(prompt: string, deviceType?: "DEVICE_TYPE_UNSPECIFIED" | "MOBILE" | "DESKTOP" | "TABLET" | "AGNOSTIC", modelId?: "MODEL_ID_UNSPECIFIED" | "GEMINI_3_PRO" | "GEMINI_3_FLASH"): Promise<Screen> {
         try {
           const raw = await this.client.callTool<any>("generate_screen_from_text", { projectId: this.projectId, prompt, deviceType, modelId });
-          return new Screen(this.client, { ...raw.outputComponents[0].design.screens[0], projectId: this.projectId });
+          return new Screen(this.client, { ...raw.outputComponents.find((c: any) => c.design).design.screens[0], projectId: this.projectId });
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }

@@ -170,7 +170,9 @@ export function emitProjection(steps: ProjectionStep[], rawVar: string = "raw"):
   let code = rawVar;
   for (const step of steps) {
     code += `.${step.prop}`;
-    if (step.index !== undefined) {
+    if (step.find) {
+      code += `.find((c: any) => c.${step.find})`;
+    } else if (step.index !== undefined) {
       code += `[${step.index}]`;
     }
   }
@@ -602,6 +604,20 @@ async function main() {
           parameters: [{ name: "id", type: "string" }],
           docs: [{ description: factory.description || `Create a ${factory.returns} from an ID.` }],
           statements: [`return new ${factory.returns}(this.client, id);`],
+        });
+      }
+    }
+
+    // Accessor methods (read from this.data, no API call)
+    if (config.accessors) {
+      for (const accessor of config.accessors) {
+        const cacheExpr = emitCacheProjection(accessor.projection);
+        const fallback = accessor.fallback !== undefined ? accessor.fallback : '""';
+        cls.addMethod({
+          name: accessor.method,
+          returnType: accessor.returns,
+          docs: [{ description: accessor.description || accessor.method }],
+          statements: [`return ${cacheExpr} || ${fallback};`],
         });
       }
     }

@@ -113,6 +113,25 @@ describe("SDK Unit Tests", () => {
       await expect(screen.getHtml()).rejects.toThrow("Network failure");
     });
 
+    it("edit should find screen when designSystem is at outputComponents[0]", async () => {
+      const screen = new Screen(mockClient, screenData);
+
+      (mockClient.callTool as Mock).mockResolvedValue({
+        outputComponents: [
+          { designSystem: { designSystem: "...", name: "ds", version: "1" } },
+          { design: { screens: [{ id: "edited-real", htmlCode: "<div>Edited</div>", projectId }] } },
+          { text: "Edited your screen" },
+        ],
+        projectId,
+        sessionId: "session-1",
+      });
+
+      const edited = await screen.edit("Make it dark");
+
+      expect(edited).toBeInstanceOf(Screen);
+      expect(edited.id).toBe("edited-real");
+    });
+
     it("edit should call edit_screens and return new Screen", async () => {
       const screen = new Screen(mockClient, screenData);
 
@@ -229,6 +248,27 @@ describe("SDK Unit Tests", () => {
       expect(result.projectId).toBe(projectId);
     });
 
+
+    it("generate should find screen when designSystem is at outputComponents[0]", async () => {
+      const project = new Project(mockClient, projectId);
+
+      (mockClient.callTool as Mock).mockResolvedValue({
+        outputComponents: [
+          { designSystem: { designSystem: "...", name: "ds", version: "1" } },
+          { design: { screens: [{ id: "real-screen-1", htmlCode: { downloadUrl: "https://example.com" }, projectId }], theme: {} } },
+          { text: "Here is your screen" },
+          { suggestion: "Make it dark" },
+        ],
+        projectId,
+        sessionId: "session-1",
+      });
+
+      const result = await project.generate("A card");
+
+      expect(result).toBeInstanceOf(Screen);
+      expect(result.id).toBe("real-screen-1");
+      expect(result.projectId).toBe(projectId);
+    });
 
     it("generate should handle missing design.screens in outputComponents gracefully", async () => {
       const project = new Project(mockClient, projectId);

@@ -72,6 +72,18 @@ describe("emitProjection", () => {
     expect(emitProjection(steps)).toBe("raw.a[0].b.c[1]");
   });
 
+  test("find step → .find() pattern", () => {
+    const steps: ProjectionStep[] = [
+      { prop: "outputComponents", find: "design" },
+      { prop: "design" },
+      { prop: "screens", index: 0 },
+    ];
+    const result = emitProjection(steps);
+    expect(result).toContain(".find(");
+    expect(result).toContain("design");
+    expect(result).toContain(".screens[0]");
+  });
+
   test("single each → flatMap pattern", () => {
     const steps: ProjectionStep[] = [
       { prop: "outputComponents", each: true },

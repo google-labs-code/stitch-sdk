@@ -43,7 +43,19 @@
         }
       },
       "parentField": "projectId",
-      "idField": "screenId"
+      "idField": "screenId",
+      "accessors": [
+        {
+          "method": "getDesignMarkdown",
+          "returns": "string",
+          "projection": [
+            { "prop": "theme" },
+            { "prop": "designMd" }
+          ],
+          "fallback": "\"\"",
+          "description": "Returns the cached design system markdown from the generation response.\nOnly available on screens returned by generate() or edit(), not from get_screen."
+        }
+      ]
     }
   },
   "bindings": [
@@ -103,7 +115,7 @@
         "projection": [
           {
             "prop": "outputComponents",
-            "index": 0
+            "find": "design"
           },
           {
             "prop": "design"
@@ -144,7 +156,7 @@
         "projection": [
           {
             "prop": "outputComponents",
-            "index": 0
+            "find": "design"
           },
           {
             "prop": "design"
