@@ -27,8 +27,16 @@ export { stitch } from "./singleton.js";
 // Error handling
 export { StitchError, StitchErrorCode } from "./spec/errors.js";
 
+// FIFE URL utilities
+export { buildFifeSuffix, type FifeImageOptions } from "./fife.js";
+
 // Tool catalog (generated)
-export { toolDefinitions, type ToolDefinition, type ToolInputSchema, type ToolPropertySchema } from "../generated/src/tool-definitions.js";
+export {
+  toolDefinitions,
+  type ToolDefinition,
+  type ToolInputSchema,
+  type ToolPropertySchema,
+} from "../generated/src/tool-definitions.js";
 export { toolMap, type ToolParam, type ToolInfo } from "./tool-map.js";
 
 // Types (config + data interfaces)
