@@ -1,0 +1,7 @@
+FROM docker.io/library/node:22-alpine
+WORKDIR /app
+COPY package.json .
+RUN npm install --production --silent
+COPY stitch-proxy.mjs .
+USER node
+ENTRYPOINT ["node", "stitch-proxy.mjs"]
