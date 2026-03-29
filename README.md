@@ -1,8 +1,6 @@
 # @google/stitch-sdk
 
 [![npm version](https://img.shields.io/npm/v/@google/stitch-sdk)](https://www.npmjs.com/package/@google/stitch-sdk)
-[![License](https://img.shields.io/npm/l/@google/stitch-sdk)](LICENSE)
-[![Test Status](https://github.com/google-labs-code/stitch-sdk/actions/workflows/test.yml/badge.svg)](https://github.com/google-labs-code/stitch-sdk/actions)
 
 Generate UI screens from text prompts and extract their HTML and screenshots programmatically.
 
