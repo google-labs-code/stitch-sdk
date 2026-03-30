@@ -44,32 +44,32 @@ describe("emitProjection", () => {
     expect(emitProjection([], "result")).toBe("result");
   });
 
-  test("single prop → raw.prop", () => {
+  test("single prop → raw?.prop", () => {
     const steps: ProjectionStep[] = [{ prop: "projects" }];
-    expect(emitProjection(steps)).toBe("raw.projects");
+    expect(emitProjection(steps)).toBe("raw?.projects");
   });
 
-  test("prop with index → raw.prop[0]", () => {
+  test("prop with index → raw?.prop?.[0]", () => {
     const steps: ProjectionStep[] = [{ prop: "outputComponents", index: 0 }];
-    expect(emitProjection(steps)).toBe("raw.outputComponents[0]");
+    expect(emitProjection(steps)).toBe("raw?.outputComponents?.[0]");
   });
 
-  test("deep chain → raw.a.b.c", () => {
+  test("deep chain → raw?.a?.b?.c", () => {
     const steps: ProjectionStep[] = [
       { prop: "a" },
       { prop: "b" },
       { prop: "c" },
     ];
-    expect(emitProjection(steps)).toBe("raw.a.b.c");
+    expect(emitProjection(steps)).toBe("raw?.a?.b?.c");
   });
 
-  test("deep chain with index → raw.a[0].b.c[1]", () => {
+  test("deep chain with index → raw?.a?.[0]?.b?.c?.[1]", () => {
     const steps: ProjectionStep[] = [
       { prop: "a", index: 0 },
       { prop: "b" },
       { prop: "c", index: 1 },
     ];
-    expect(emitProjection(steps)).toBe("raw.a[0].b.c[1]");
+    expect(emitProjection(steps)).toBe("raw?.a?.[0]?.b?.c?.[1]");
   });
 
   test("single each → flatMap pattern", () => {

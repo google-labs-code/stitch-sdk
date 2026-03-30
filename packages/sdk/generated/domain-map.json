@@ -20,7 +20,14 @@
           "from": "name",
           "stripPrefix": "projects/"
         }
-      }
+      },
+      "factories": [
+        {
+          "method": "designSystem",
+          "returns": "DesignSystem",
+          "description": "Create a DesignSystem handle from an existing ID without an API call."
+        }
+      ]
     },
     "Screen": {
       "description": "A generated UI screen. Provides access to HTML and screenshots.",
@@ -39,6 +46,16 @@
       },
       "parentField": "projectId",
       "idField": "screenId"
+    },
+    "DesignSystem": {
+      "description": "Represents a visual theme or branding applied to projects and screens.",
+      "constructorParams": ["projectId", "assetId"],
+      "fieldMapping": {
+        "projectId": { "from": "projectId" },
+        "assetId": { "from": "name", "stripPrefix": "assets/" }
+      },
+      "parentField": "projectId",
+      "idField": "assetId"
     }
   },
   "bindings": [
@@ -88,7 +105,7 @@
           "optional": true,
           "default": "DESKTOP"
         },
-        "modelId": {
+         "modelId": {
           "from": "param",
           "optional": true
         }
@@ -312,6 +329,96 @@
           }
         ],
         "description": "Use cached screenshot URL from generation response"
+      }
+    },
+    {
+      "tool": "create_design_system",
+      "class": "Project",
+      "method": "createDesignSystem",
+      "args": {
+        "projectId": {
+          "from": "self"
+        },
+        "designSystem": {
+          "from": "param"
+        }
+      },
+      "returns": {
+        "class": "DesignSystem",
+        "projection": []
+      }
+    },
+    {
+      "tool": "list_design_systems",
+      "class": "Project",
+      "method": "listDesignSystems",
+      "args": {
+        "projectId": {
+          "from": "self"
+        }
+      },
+      "returns": {
+        "class": "DesignSystem",
+        "projection": [
+          {
+            "prop": "designSystems"
+          }
+        ],
+        "array": true
+      }
+    },
+    {
+      "tool": "update_design_system",
+      "class": "DesignSystem",
+      "method": "update",
+      "args": {
+        "name": {
+          "from": "computed",
+          "template": "assets/{assetId}"
+        },
+        "projectId": {
+          "from": "self"
+        },
+        "designSystem": {
+          "from": "param"
+        }
+      },
+      "returns": {
+        "class": "DesignSystem",
+        "projection": []
+      }
+    },
+    {
+      "tool": "apply_design_system",
+      "class": "DesignSystem",
+      "method": "apply",
+      "args": {
+        "assetId": {
+          "from": "self"
+        },
+        "projectId": {
+          "from": "self"
+        },
+        "selectedScreenInstances": {
+          "from": "param"
+        }
+      },
+      "returns": {
+        "class": "Screen",
+        "projection": [
+          {
+            "prop": "outputComponents",
+            "each": true
+          },
+          {
+            "prop": "design"
+          },
+          {
+            "prop": "screens",
+            "each": true
+          }
+        ],
+        "array": true
       }
     }
   ]

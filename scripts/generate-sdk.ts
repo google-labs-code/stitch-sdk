@@ -299,6 +299,7 @@ export function generateArgsObject(args: Record<string, ArgSpec>): string {
         (_, key) => {
           const argSpec = args[key];
           if (argSpec?.from === "self" || argSpec?.from === "selfArray") return `\${this.${key}}`;
+          if (!argSpec) return `\${this.${key}}`; // Assume it's a field on the class if not in args
           return `\${${argSpec?.from === "param" && argSpec?.rename ? argSpec.rename : key}}`;
         }
       );
@@ -615,12 +616,22 @@ async function main() {
           continue;
         }
 
+        const parentField = factoryClass.parentField;
+        let idKey = "id";
+        const idParam = factoryClass.constructorParams.find(p => p !== parentField);
+        if (idParam && factoryClass.fieldMapping?.[idParam]) {
+          idKey = factoryClass.fieldMapping[idParam].from;
+        }
+        
+        const factoryDataExpr = parentField
+          ? `{ ${idKey}: id, ${parentField}: this.${parentField} }`
+          : "id";
         cls.addMethod({
           name: factory.method,
           returnType: factory.returns,
           parameters: [{ name: "id", type: "string" }],
           docs: [{ description: factory.description || `Create a ${factory.returns} from an ID.` }],
-          statements: [`return new ${factory.returns}(this.client, id);`],
+          statements: [`return new ${factory.returns}(this.client, ${factoryDataExpr});`],
         });
       }
     }
