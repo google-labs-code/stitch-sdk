@@ -47,6 +47,27 @@ const project = stitch.project("4044680601076201931");
 const newProject = await stitch.createProject("My App");
 ```
 
+## Design Systems
+
+```typescript
+// Create a design system for a project
+const ds = await project.createDesignSystem({ displayName: "My Theme" });
+
+// List design systems
+const systems = await project.listDesignSystems();
+
+// Reference by ID (no network call)
+const dsRef = project.designSystem("existing-asset-id");
+
+// Update a design system
+const updated = await ds.update({ displayName: "Updated Theme" });
+
+// Apply to screens (requires SelectedScreenInstance objects from project.data.screenInstances)
+const screens = await ds.apply([
+  { id: "instance-id", sourceScreen: "projects/123/screens/456" }
+]);
+```
+
 ## Generating and Iterating on Screens
 
 ```typescript
@@ -129,8 +150,18 @@ Error codes: `AUTH_FAILED`, `NOT_FOUND`, `PERMISSION_DENIED`, `RATE_LIMITED`, `N
 | `generate(prompt, deviceType?)` | `Promise<Screen>` | Generate a screen from a text prompt |
 | `screens()` | `Promise<Screen[]>` | List all screens in the project |
 | `getScreen(screenId)` | `Promise<Screen>` | Retrieve a specific screen by ID |
+| `createDesignSystem(designSystem)` | `Promise<DesignSystem>` | Create a design system for this project |
+| `listDesignSystems()` | `Promise<DesignSystem[]>` | List all design systems |
+| `designSystem(id)` | `DesignSystem` | Reference by ID (no API call) |
 
 `deviceType`: `"MOBILE"` | `"DESKTOP"` | `"TABLET"` | `"AGNOSTIC"`
+
+### DesignSystem Class
+
+| Method | Returns | Description |
+|---|---|---|
+| `update(designSystem)` | `Promise<DesignSystem>` | Update the design system's theme |
+| `apply(selectedScreenInstances)` | `Promise<Screen[]>` | Apply this design system to screens |
 
 ### Screen Class
 

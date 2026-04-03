@@ -178,6 +178,9 @@ A Stitch project containing screens.
 | `generate(prompt, deviceType?)` | `prompt: string`, `deviceType?: DeviceType` | `Promise<Screen>` | Generate a screen from a text prompt |
 | `screens()` | — | `Promise<Screen[]>` | List all screens in the project |
 | `getScreen(screenId)` | `screenId: string` | `Promise<Screen>` | Retrieve a specific screen by ID |
+| `createDesignSystem(designSystem)` | `designSystem: object` | `Promise<DesignSystem>` | Create a design system for this project |
+| `listDesignSystems()` | — | `Promise<DesignSystem[]>` | List all design systems in this project |
+| `designSystem(id)` | `id: string` | `DesignSystem` | Reference a design system by ID (no API call) |
 
 `DeviceType`: `"MOBILE"` \| `"DESKTOP"` \| `"TABLET"` \| `"AGNOSTIC"`
 
@@ -201,6 +204,23 @@ A generated UI screen. Provides access to HTML and screenshots.
 `getHtml()` and `getImage()` use cached data from the generation response when available. If the screen was loaded from `screens()` or `getScreen()`, they call the `get_screen` API automatically.
 
 `modelId`: `"GEMINI_3_PRO"` \| `"GEMINI_3_FLASH"`
+
+### `DesignSystem`
+
+A visual theme or branding applied to projects and screens.
+
+| Property | Type | Description |
+|---|---|---|
+| `id` | `string` | Alias for `assetId` |
+| `assetId` | `string` | Bare asset ID (no `assets/` prefix) |
+| `projectId` | `string` | Parent project ID |
+
+| Method | Parameters | Returns | Description |
+|---|---|---|---|
+| `update(designSystem)` | `designSystem: object` | `Promise<DesignSystem>` | Update the design system's theme |
+| `apply(selectedScreenInstances)` | `selectedScreenInstances: object[]` | `Promise<Screen[]>` | Apply this design system to screens |
+
+`selectedScreenInstances` is an array of `{ id: string, sourceScreen: string }` objects. Get these from `project.data.screenInstances`.
 
 ### `StitchToolClient`
 

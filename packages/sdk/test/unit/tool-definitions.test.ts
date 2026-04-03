@@ -38,7 +38,11 @@ describe("Generated toolDefinitions", () => {
     expect(names).toContain("generate_screen_from_text");
     expect(names).toContain("edit_screens");
     expect(names).toContain("generate_variants");
-    expect(names).toHaveLength(8);
+    expect(names).toContain("create_design_system");
+    expect(names).toContain("list_design_systems");
+    expect(names).toContain("update_design_system");
+    expect(names).toContain("apply_design_system");
+    expect(names).toHaveLength(12);
   });
 
   it("each definition has name, description, and inputSchema", () => {

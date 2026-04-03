@@ -21,7 +21,7 @@
     "outputSchema": {
       "$defs": {
         "DesignTheme": {
-          "description": "The theme of the design. Next ID: 21 LINT.IfChange",
+          "description": "The theme of the design. Next ID: 23 LINT.IfChange",
           "properties": {
             "backgroundDark": {
               "deprecated": true,
@@ -415,10 +415,24 @@
               "format": "int32",
               "type": "integer"
             },
+            "spacing": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Optional. Spacing units for the design system. Maps spacing names to their values.",
+              "type": "object"
+            },
             "spacingScale": {
               "description": "Optional. The spacing scale level (0=minimal, 1=compact, 2=normal, 3=spacious).",
               "format": "int32",
               "type": "integer"
+            },
+            "typography": {
+              "additionalProperties": {
+                "$ref": "#/$defs/Typography"
+              },
+              "description": "Optional. Typography scale for the design system. Maps level names (e.g. \"display-lg\", \"body-md\") to their Typography token.",
+              "type": "object"
             }
           },
           "type": "object"
@@ -554,6 +568,32 @@
               "description": "Optional. The y position of the screen.",
               "format": "int32",
               "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "Typography": {
+          "description": "A typography style token in a design system, defining the visual properties for a single text level (e.g. \"display-lg\", \"body-md\").",
+          "properties": {
+            "fontFamily": {
+              "description": "Optional. The CSS font-family value (e.g., \"Manrope\", \"Inter\").",
+              "type": "string"
+            },
+            "fontSize": {
+              "description": "Optional. The CSS font-size value (e.g., \"32px\", \"1rem\").",
+              "type": "string"
+            },
+            "fontWeight": {
+              "description": "Optional. The CSS font-weight value (e.g., \"400\", \"700\").",
+              "type": "string"
+            },
+            "letterSpacing": {
+              "description": "Optional. The CSS letter-spacing value (e.g., \"0px\", \"-0.02em\").",
+              "type": "string"
+            },
+            "lineHeight": {
+              "description": "Optional. The CSS line-height value (e.g., \"1.5\", \"40px\").",
+              "type": "string"
             }
           },
           "type": "object"
@@ -760,7 +800,7 @@
     "outputSchema": {
       "$defs": {
         "DesignTheme": {
-          "description": "The theme of the design. Next ID: 21 LINT.IfChange",
+          "description": "The theme of the design. Next ID: 23 LINT.IfChange",
           "properties": {
             "backgroundDark": {
               "deprecated": true,
@@ -1154,10 +1194,24 @@
               "format": "int32",
               "type": "integer"
             },
+            "spacing": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Optional. Spacing units for the design system. Maps spacing names to their values.",
+              "type": "object"
+            },
             "spacingScale": {
               "description": "Optional. The spacing scale level (0=minimal, 1=compact, 2=normal, 3=spacious).",
               "format": "int32",
               "type": "integer"
+            },
+            "typography": {
+              "additionalProperties": {
+                "$ref": "#/$defs/Typography"
+              },
+              "description": "Optional. Typography scale for the design system. Maps level names (e.g. \"display-lg\", \"body-md\") to their Typography token.",
+              "type": "object"
             }
           },
           "type": "object"
@@ -1293,6 +1347,32 @@
               "description": "Optional. The y position of the screen.",
               "format": "int32",
               "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "Typography": {
+          "description": "A typography style token in a design system, defining the visual properties for a single text level (e.g. \"display-lg\", \"body-md\").",
+          "properties": {
+            "fontFamily": {
+              "description": "Optional. The CSS font-family value (e.g., \"Manrope\", \"Inter\").",
+              "type": "string"
+            },
+            "fontSize": {
+              "description": "Optional. The CSS font-size value (e.g., \"32px\", \"1rem\").",
+              "type": "string"
+            },
+            "fontWeight": {
+              "description": "Optional. The CSS font-weight value (e.g., \"400\", \"700\").",
+              "type": "string"
+            },
+            "letterSpacing": {
+              "description": "Optional. The CSS letter-spacing value (e.g., \"0px\", \"-0.02em\").",
+              "type": "string"
+            },
+            "lineHeight": {
+              "description": "Optional. The CSS line-height value (e.g., \"1.5\", \"40px\").",
+              "type": "string"
             }
           },
           "type": "object"
@@ -1494,7 +1574,7 @@
     "outputSchema": {
       "$defs": {
         "DesignTheme": {
-          "description": "The theme of the design. Next ID: 21 LINT.IfChange",
+          "description": "The theme of the design. Next ID: 23 LINT.IfChange",
           "properties": {
             "backgroundDark": {
               "deprecated": true,
@@ -1888,10 +1968,24 @@
               "format": "int32",
               "type": "integer"
             },
+            "spacing": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Optional. Spacing units for the design system. Maps spacing names to their values.",
+              "type": "object"
+            },
             "spacingScale": {
               "description": "Optional. The spacing scale level (0=minimal, 1=compact, 2=normal, 3=spacious).",
               "format": "int32",
               "type": "integer"
+            },
+            "typography": {
+              "additionalProperties": {
+                "$ref": "#/$defs/Typography"
+              },
+              "description": "Optional. Typography scale for the design system. Maps level names (e.g. \"display-lg\", \"body-md\") to their Typography token.",
+              "type": "object"
             }
           },
           "type": "object"
@@ -2155,6 +2249,32 @@
               "description": "Optional. The y position of the screen.",
               "format": "int32",
               "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "Typography": {
+          "description": "A typography style token in a design system, defining the visual properties for a single text level (e.g. \"display-lg\", \"body-md\").",
+          "properties": {
+            "fontFamily": {
+              "description": "Optional. The CSS font-family value (e.g., \"Manrope\", \"Inter\").",
+              "type": "string"
+            },
+            "fontSize": {
+              "description": "Optional. The CSS font-size value (e.g., \"32px\", \"1rem\").",
+              "type": "string"
+            },
+            "fontWeight": {
+              "description": "Optional. The CSS font-weight value (e.g., \"400\", \"700\").",
+              "type": "string"
+            },
+            "letterSpacing": {
+              "description": "Optional. The CSS letter-spacing value (e.g., \"0px\", \"-0.02em\").",
+              "type": "string"
+            },
+            "lineHeight": {
+              "description": "Optional. The CSS line-height value (e.g., \"1.5\", \"40px\").",
+              "type": "string"
             }
           },
           "type": "object"
@@ -2626,6 +2746,10 @@
         "Asset": {
           "description": "An Asset resource.",
           "properties": {
+            "copiedFrom": {
+              "description": "Optional. The resource name of the asset this was copied from, if any. Format: assets/{asset} Tracks the fork history of assets.",
+              "type": "string"
+            },
             "designSystem": {
               "$ref": "#/$defs/DesignSystem",
               "description": "Optional. The design system."
@@ -2784,7 +2908,7 @@
           "type": "object"
         },
         "DesignTheme": {
-          "description": "The theme of the design. Next ID: 21 LINT.IfChange",
+          "description": "The theme of the design. Next ID: 23 LINT.IfChange",
           "properties": {
             "backgroundDark": {
               "deprecated": true,
@@ -3178,10 +3302,24 @@
               "format": "int32",
               "type": "integer"
             },
+            "spacing": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Optional. Spacing units for the design system. Maps spacing names to their values.",
+              "type": "object"
+            },
             "spacingScale": {
               "description": "Optional. The spacing scale level (0=minimal, 1=compact, 2=normal, 3=spacious).",
               "format": "int32",
               "type": "integer"
+            },
+            "typography": {
+              "additionalProperties": {
+                "$ref": "#/$defs/Typography"
+              },
+              "description": "Optional. Typography scale for the design system. Maps level names (e.g. \"display-lg\", \"body-md\") to their Typography token.",
+              "type": "object"
             }
           },
           "type": "object"
@@ -3502,7 +3640,12 @@
                 "HTML",
                 "CODE",
                 "MARKDOWN",
-                "STICKY_NOTE"
+                "STICKY_NOTE",
+                "SVG",
+                "TABLE",
+                "MERMAID",
+                "CHECKLIST",
+                "CHART"
               ],
               "type": "string",
               "x-google-enum-descriptions": [
@@ -3511,7 +3654,12 @@
                 "The screen is displayed as rendered HTML.",
                 "Displays the screen as code.",
                 "Displays the screen as markdown.",
-                "Displays the screen as a sticky note."
+                "Displays the screen as a sticky note.",
+                "Displays the screen as an inline SVG graphic.",
+                "Displays the screen as a data table (CSV).",
+                "Displays the screen as a mermaid diagram.",
+                "Agent only: The document node is displayed as an interactive checklist.",
+                "Agent only: The document node is displayed as an interactive Chart.js chart."
               ]
             },
             "isRemixed": {
@@ -3579,6 +3727,32 @@
             },
             "text": {
               "description": "The agent generates a text response to be displayed to the user.",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "Typography": {
+          "description": "A typography style token in a design system, defining the visual properties for a single text level (e.g. \"display-lg\", \"body-md\").",
+          "properties": {
+            "fontFamily": {
+              "description": "Optional. The CSS font-family value (e.g., \"Manrope\", \"Inter\").",
+              "type": "string"
+            },
+            "fontSize": {
+              "description": "Optional. The CSS font-size value (e.g., \"32px\", \"1rem\").",
+              "type": "string"
+            },
+            "fontWeight": {
+              "description": "Optional. The CSS font-weight value (e.g., \"400\", \"700\").",
+              "type": "string"
+            },
+            "letterSpacing": {
+              "description": "Optional. The CSS letter-spacing value (e.g., \"0px\", \"-0.02em\").",
+              "type": "string"
+            },
+            "lineHeight": {
+              "description": "Optional. The CSS line-height value (e.g., \"1.5\", \"40px\").",
               "type": "string"
             }
           },
@@ -3734,6 +3908,10 @@
         "Asset": {
           "description": "An Asset resource.",
           "properties": {
+            "copiedFrom": {
+              "description": "Optional. The resource name of the asset this was copied from, if any. Format: assets/{asset} Tracks the fork history of assets.",
+              "type": "string"
+            },
             "designSystem": {
               "$ref": "#/$defs/DesignSystem",
               "description": "Optional. The design system."
@@ -3892,7 +4070,7 @@
           "type": "object"
         },
         "DesignTheme": {
-          "description": "The theme of the design. Next ID: 21 LINT.IfChange",
+          "description": "The theme of the design. Next ID: 23 LINT.IfChange",
           "properties": {
             "backgroundDark": {
               "deprecated": true,
@@ -4286,10 +4464,24 @@
               "format": "int32",
               "type": "integer"
             },
+            "spacing": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Optional. Spacing units for the design system. Maps spacing names to their values.",
+              "type": "object"
+            },
             "spacingScale": {
               "description": "Optional. The spacing scale level (0=minimal, 1=compact, 2=normal, 3=spacious).",
               "format": "int32",
               "type": "integer"
+            },
+            "typography": {
+              "additionalProperties": {
+                "$ref": "#/$defs/Typography"
+              },
+              "description": "Optional. Typography scale for the design system. Maps level names (e.g. \"display-lg\", \"body-md\") to their Typography token.",
+              "type": "object"
             }
           },
           "type": "object"
@@ -4610,7 +4802,12 @@
                 "HTML",
                 "CODE",
                 "MARKDOWN",
-                "STICKY_NOTE"
+                "STICKY_NOTE",
+                "SVG",
+                "TABLE",
+                "MERMAID",
+                "CHECKLIST",
+                "CHART"
               ],
               "type": "string",
               "x-google-enum-descriptions": [
@@ -4619,7 +4816,12 @@
                 "The screen is displayed as rendered HTML.",
                 "Displays the screen as code.",
                 "Displays the screen as markdown.",
-                "Displays the screen as a sticky note."
+                "Displays the screen as a sticky note.",
+                "Displays the screen as an inline SVG graphic.",
+                "Displays the screen as a data table (CSV).",
+                "Displays the screen as a mermaid diagram.",
+                "Agent only: The document node is displayed as an interactive checklist.",
+                "Agent only: The document node is displayed as an interactive Chart.js chart."
               ]
             },
             "isRemixed": {
@@ -4687,6 +4889,32 @@
             },
             "text": {
               "description": "The agent generates a text response to be displayed to the user.",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "Typography": {
+          "description": "A typography style token in a design system, defining the visual properties for a single text level (e.g. \"display-lg\", \"body-md\").",
+          "properties": {
+            "fontFamily": {
+              "description": "Optional. The CSS font-family value (e.g., \"Manrope\", \"Inter\").",
+              "type": "string"
+            },
+            "fontSize": {
+              "description": "Optional. The CSS font-size value (e.g., \"32px\", \"1rem\").",
+              "type": "string"
+            },
+            "fontWeight": {
+              "description": "Optional. The CSS font-weight value (e.g., \"400\", \"700\").",
+              "type": "string"
+            },
+            "letterSpacing": {
+              "description": "Optional. The CSS letter-spacing value (e.g., \"0px\", \"-0.02em\").",
+              "type": "string"
+            },
+            "lineHeight": {
+              "description": "Optional. The CSS line-height value (e.g., \"1.5\", \"40px\").",
               "type": "string"
             }
           },
@@ -4899,6 +5127,10 @@
         "Asset": {
           "description": "An Asset resource.",
           "properties": {
+            "copiedFrom": {
+              "description": "Optional. The resource name of the asset this was copied from, if any. Format: assets/{asset} Tracks the fork history of assets.",
+              "type": "string"
+            },
             "designSystem": {
               "$ref": "#/$defs/DesignSystem",
               "description": "Optional. The design system."
@@ -5057,7 +5289,7 @@
           "type": "object"
         },
         "DesignTheme": {
-          "description": "The theme of the design. Next ID: 21 LINT.IfChange",
+          "description": "The theme of the design. Next ID: 23 LINT.IfChange",
           "properties": {
             "backgroundDark": {
               "deprecated": true,
@@ -5451,10 +5683,24 @@
               "format": "int32",
               "type": "integer"
             },
+            "spacing": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Optional. Spacing units for the design system. Maps spacing names to their values.",
+              "type": "object"
+            },
             "spacingScale": {
               "description": "Optional. The spacing scale level (0=minimal, 1=compact, 2=normal, 3=spacious).",
               "format": "int32",
               "type": "integer"
+            },
+            "typography": {
+              "additionalProperties": {
+                "$ref": "#/$defs/Typography"
+              },
+              "description": "Optional. Typography scale for the design system. Maps level names (e.g. \"display-lg\", \"body-md\") to their Typography token.",
+              "type": "object"
             }
           },
           "type": "object"
@@ -5775,7 +6021,12 @@
                 "HTML",
                 "CODE",
                 "MARKDOWN",
-                "STICKY_NOTE"
+                "STICKY_NOTE",
+                "SVG",
+                "TABLE",
+                "MERMAID",
+                "CHECKLIST",
+                "CHART"
               ],
               "type": "string",
               "x-google-enum-descriptions": [
@@ -5784,7 +6035,12 @@
                 "The screen is displayed as rendered HTML.",
                 "Displays the screen as code.",
                 "Displays the screen as markdown.",
-                "Displays the screen as a sticky note."
+                "Displays the screen as a sticky note.",
+                "Displays the screen as an inline SVG graphic.",
+                "Displays the screen as a data table (CSV).",
+                "Displays the screen as a mermaid diagram.",
+                "Agent only: The document node is displayed as an interactive checklist.",
+                "Agent only: The document node is displayed as an interactive Chart.js chart."
               ]
             },
             "isRemixed": {
@@ -5852,6 +6108,32 @@
             },
             "text": {
               "description": "The agent generates a text response to be displayed to the user.",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "Typography": {
+          "description": "A typography style token in a design system, defining the visual properties for a single text level (e.g. \"display-lg\", \"body-md\").",
+          "properties": {
+            "fontFamily": {
+              "description": "Optional. The CSS font-family value (e.g., \"Manrope\", \"Inter\").",
+              "type": "string"
+            },
+            "fontSize": {
+              "description": "Optional. The CSS font-size value (e.g., \"32px\", \"1rem\").",
+              "type": "string"
+            },
+            "fontWeight": {
+              "description": "Optional. The CSS font-weight value (e.g., \"400\", \"700\").",
+              "type": "string"
+            },
+            "letterSpacing": {
+              "description": "Optional. The CSS letter-spacing value (e.g., \"0px\", \"-0.02em\").",
+              "type": "string"
+            },
+            "lineHeight": {
+              "description": "Optional. The CSS line-height value (e.g., \"1.5\", \"40px\").",
               "type": "string"
             }
           },
@@ -5956,7 +6238,7 @@
           "type": "object"
         },
         "DesignTheme": {
-          "description": "The theme of the design. Next ID: 13 LINT.IfChange",
+          "description": "The theme of the design. Next ID: 15 LINT.IfChange",
           "properties": {
             "bodyFont": {
               "description": "Required. Specifies the body font.",
@@ -6249,6 +6531,20 @@
                 "Round 12 or full",
                 "Round full."
               ]
+            },
+            "spacing": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Optional. Spacing units for the design system. Maps spacing names to their values.",
+              "type": "object"
+            },
+            "typography": {
+              "additionalProperties": {
+                "$ref": "#/$defs/Typography"
+              },
+              "description": "Optional. Typography scale for the design system. Maps level names (e.g. \"display-lg\", \"body-md\") to their Typography token.",
+              "type": "object"
             }
           },
           "required": [
@@ -6258,6 +6554,32 @@
             "roundness",
             "customColor"
           ],
+          "type": "object"
+        },
+        "Typography": {
+          "description": "A typography style token in a design system, defining the visual properties for a single text level (e.g. \"display-lg\", \"body-md\").",
+          "properties": {
+            "fontFamily": {
+              "description": "Optional. The CSS font-family value (e.g., \"Manrope\", \"Inter\").",
+              "type": "string"
+            },
+            "fontSize": {
+              "description": "Optional. The CSS font-size value (e.g., \"32px\", \"1rem\").",
+              "type": "string"
+            },
+            "fontWeight": {
+              "description": "Optional. The CSS font-weight value (e.g., \"400\", \"700\").",
+              "type": "string"
+            },
+            "letterSpacing": {
+              "description": "Optional. The CSS letter-spacing value (e.g., \"0px\", \"-0.02em\").",
+              "type": "string"
+            },
+            "lineHeight": {
+              "description": "Optional. The CSS line-height value (e.g., \"1.5\", \"40px\").",
+              "type": "string"
+            }
+          },
           "type": "object"
         }
       },
@@ -6303,7 +6625,7 @@
           "type": "object"
         },
         "DesignTheme": {
-          "description": "The theme of the design. Next ID: 21 LINT.IfChange",
+          "description": "The theme of the design. Next ID: 23 LINT.IfChange",
           "properties": {
             "backgroundDark": {
               "deprecated": true,
@@ -6697,10 +7019,50 @@
               "format": "int32",
               "type": "integer"
             },
+            "spacing": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Optional. Spacing units for the design system. Maps spacing names to their values.",
+              "type": "object"
+            },
             "spacingScale": {
               "description": "Optional. The spacing scale level (0=minimal, 1=compact, 2=normal, 3=spacious).",
               "format": "int32",
               "type": "integer"
+            },
+            "typography": {
+              "additionalProperties": {
+                "$ref": "#/$defs/Typography"
+              },
+              "description": "Optional. Typography scale for the design system. Maps level names (e.g. \"display-lg\", \"body-md\") to their Typography token.",
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "Typography": {
+          "description": "A typography style token in a design system, defining the visual properties for a single text level (e.g. \"display-lg\", \"body-md\").",
+          "properties": {
+            "fontFamily": {
+              "description": "Optional. The CSS font-family value (e.g., \"Manrope\", \"Inter\").",
+              "type": "string"
+            },
+            "fontSize": {
+              "description": "Optional. The CSS font-size value (e.g., \"32px\", \"1rem\").",
+              "type": "string"
+            },
+            "fontWeight": {
+              "description": "Optional. The CSS font-weight value (e.g., \"400\", \"700\").",
+              "type": "string"
+            },
+            "letterSpacing": {
+              "description": "Optional. The CSS letter-spacing value (e.g., \"0px\", \"-0.02em\").",
+              "type": "string"
+            },
+            "lineHeight": {
+              "description": "Optional. The CSS line-height value (e.g., \"1.5\", \"40px\").",
+              "type": "string"
             }
           },
           "type": "object"
@@ -6708,6 +7070,10 @@
       },
       "description": "An Asset resource.",
       "properties": {
+        "copiedFrom": {
+          "description": "Optional. The resource name of the asset this was copied from, if any. Format: assets/{asset} Tracks the fork history of assets.",
+          "type": "string"
+        },
         "designSystem": {
           "$ref": "#/$defs/DesignSystem",
           "description": "Optional. The design system."
@@ -6756,7 +7122,7 @@
           "type": "object"
         },
         "DesignTheme": {
-          "description": "The theme of the design. Next ID: 13 LINT.IfChange",
+          "description": "The theme of the design. Next ID: 15 LINT.IfChange",
           "properties": {
             "bodyFont": {
               "description": "Required. Specifies the body font.",
@@ -7049,6 +7415,20 @@
                 "Round 12 or full",
                 "Round full."
               ]
+            },
+            "spacing": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Optional. Spacing units for the design system. Maps spacing names to their values.",
+              "type": "object"
+            },
+            "typography": {
+              "additionalProperties": {
+                "$ref": "#/$defs/Typography"
+              },
+              "description": "Optional. Typography scale for the design system. Maps level names (e.g. \"display-lg\", \"body-md\") to their Typography token.",
+              "type": "object"
             }
           },
           "required": [
@@ -7058,6 +7438,32 @@
             "roundness",
             "customColor"
           ],
+          "type": "object"
+        },
+        "Typography": {
+          "description": "A typography style token in a design system, defining the visual properties for a single text level (e.g. \"display-lg\", \"body-md\").",
+          "properties": {
+            "fontFamily": {
+              "description": "Optional. The CSS font-family value (e.g., \"Manrope\", \"Inter\").",
+              "type": "string"
+            },
+            "fontSize": {
+              "description": "Optional. The CSS font-size value (e.g., \"32px\", \"1rem\").",
+              "type": "string"
+            },
+            "fontWeight": {
+              "description": "Optional. The CSS font-weight value (e.g., \"400\", \"700\").",
+              "type": "string"
+            },
+            "letterSpacing": {
+              "description": "Optional. The CSS letter-spacing value (e.g., \"0px\", \"-0.02em\").",
+              "type": "string"
+            },
+            "lineHeight": {
+              "description": "Optional. The CSS line-height value (e.g., \"1.5\", \"40px\").",
+              "type": "string"
+            }
+          },
           "type": "object"
         }
       },
@@ -7110,7 +7516,7 @@
           "type": "object"
         },
         "DesignTheme": {
-          "description": "The theme of the design. Next ID: 21 LINT.IfChange",
+          "description": "The theme of the design. Next ID: 23 LINT.IfChange",
           "properties": {
             "backgroundDark": {
               "deprecated": true,
@@ -7504,10 +7910,50 @@
               "format": "int32",
               "type": "integer"
             },
+            "spacing": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Optional. Spacing units for the design system. Maps spacing names to their values.",
+              "type": "object"
+            },
             "spacingScale": {
               "description": "Optional. The spacing scale level (0=minimal, 1=compact, 2=normal, 3=spacious).",
               "format": "int32",
               "type": "integer"
+            },
+            "typography": {
+              "additionalProperties": {
+                "$ref": "#/$defs/Typography"
+              },
+              "description": "Optional. Typography scale for the design system. Maps level names (e.g. \"display-lg\", \"body-md\") to their Typography token.",
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "Typography": {
+          "description": "A typography style token in a design system, defining the visual properties for a single text level (e.g. \"display-lg\", \"body-md\").",
+          "properties": {
+            "fontFamily": {
+              "description": "Optional. The CSS font-family value (e.g., \"Manrope\", \"Inter\").",
+              "type": "string"
+            },
+            "fontSize": {
+              "description": "Optional. The CSS font-size value (e.g., \"32px\", \"1rem\").",
+              "type": "string"
+            },
+            "fontWeight": {
+              "description": "Optional. The CSS font-weight value (e.g., \"400\", \"700\").",
+              "type": "string"
+            },
+            "letterSpacing": {
+              "description": "Optional. The CSS letter-spacing value (e.g., \"0px\", \"-0.02em\").",
+              "type": "string"
+            },
+            "lineHeight": {
+              "description": "Optional. The CSS line-height value (e.g., \"1.5\", \"40px\").",
+              "type": "string"
             }
           },
           "type": "object"
@@ -7515,6 +7961,10 @@
       },
       "description": "An Asset resource.",
       "properties": {
+        "copiedFrom": {
+          "description": "Optional. The resource name of the asset this was copied from, if any. Format: assets/{asset} Tracks the fork history of assets.",
+          "type": "string"
+        },
         "designSystem": {
           "$ref": "#/$defs/DesignSystem",
           "description": "Optional. The design system."
@@ -7556,6 +8006,10 @@
         "Asset": {
           "description": "An Asset resource.",
           "properties": {
+            "copiedFrom": {
+              "description": "Optional. The resource name of the asset this was copied from, if any. Format: assets/{asset} Tracks the fork history of assets.",
+              "type": "string"
+            },
             "designSystem": {
               "$ref": "#/$defs/DesignSystem",
               "description": "Optional. The design system."
@@ -7597,7 +8051,7 @@
           "type": "object"
         },
         "DesignTheme": {
-          "description": "The theme of the design. Next ID: 21 LINT.IfChange",
+          "description": "The theme of the design. Next ID: 23 LINT.IfChange",
           "properties": {
             "backgroundDark": {
               "deprecated": true,
@@ -7991,10 +8445,50 @@
               "format": "int32",
               "type": "integer"
             },
+            "spacing": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Optional. Spacing units for the design system. Maps spacing names to their values.",
+              "type": "object"
+            },
             "spacingScale": {
               "description": "Optional. The spacing scale level (0=minimal, 1=compact, 2=normal, 3=spacious).",
               "format": "int32",
               "type": "integer"
+            },
+            "typography": {
+              "additionalProperties": {
+                "$ref": "#/$defs/Typography"
+              },
+              "description": "Optional. Typography scale for the design system. Maps level names (e.g. \"display-lg\", \"body-md\") to their Typography token.",
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "Typography": {
+          "description": "A typography style token in a design system, defining the visual properties for a single text level (e.g. \"display-lg\", \"body-md\").",
+          "properties": {
+            "fontFamily": {
+              "description": "Optional. The CSS font-family value (e.g., \"Manrope\", \"Inter\").",
+              "type": "string"
+            },
+            "fontSize": {
+              "description": "Optional. The CSS font-size value (e.g., \"32px\", \"1rem\").",
+              "type": "string"
+            },
+            "fontWeight": {
+              "description": "Optional. The CSS font-weight value (e.g., \"400\", \"700\").",
+              "type": "string"
+            },
+            "letterSpacing": {
+              "description": "Optional. The CSS letter-spacing value (e.g., \"0px\", \"-0.02em\").",
+              "type": "string"
+            },
+            "lineHeight": {
+              "description": "Optional. The CSS line-height value (e.g., \"1.5\", \"40px\").",
+              "type": "string"
             }
           },
           "type": "object"
@@ -8073,6 +8567,10 @@
         "Asset": {
           "description": "An Asset resource.",
           "properties": {
+            "copiedFrom": {
+              "description": "Optional. The resource name of the asset this was copied from, if any. Format: assets/{asset} Tracks the fork history of assets.",
+              "type": "string"
+            },
             "designSystem": {
               "$ref": "#/$defs/DesignSystem",
               "description": "Optional. The design system."
@@ -8231,7 +8729,7 @@
           "type": "object"
         },
         "DesignTheme": {
-          "description": "The theme of the design. Next ID: 21 LINT.IfChange",
+          "description": "The theme of the design. Next ID: 23 LINT.IfChange",
           "properties": {
             "backgroundDark": {
               "deprecated": true,
@@ -8625,10 +9123,24 @@
               "format": "int32",
               "type": "integer"
             },
+            "spacing": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Optional. Spacing units for the design system. Maps spacing names to their values.",
+              "type": "object"
+            },
             "spacingScale": {
               "description": "Optional. The spacing scale level (0=minimal, 1=compact, 2=normal, 3=spacious).",
               "format": "int32",
               "type": "integer"
+            },
+            "typography": {
+              "additionalProperties": {
+                "$ref": "#/$defs/Typography"
+              },
+              "description": "Optional. Typography scale for the design system. Maps level names (e.g. \"display-lg\", \"body-md\") to their Typography token.",
+              "type": "object"
             }
           },
           "type": "object"
@@ -8949,7 +9461,12 @@
                 "HTML",
                 "CODE",
                 "MARKDOWN",
-                "STICKY_NOTE"
+                "STICKY_NOTE",
+                "SVG",
+                "TABLE",
+                "MERMAID",
+                "CHECKLIST",
+                "CHART"
               ],
               "type": "string",
               "x-google-enum-descriptions": [
@@ -8958,7 +9475,12 @@
                 "The screen is displayed as rendered HTML.",
                 "Displays the screen as code.",
                 "Displays the screen as markdown.",
-                "Displays the screen as a sticky note."
+                "Displays the screen as a sticky note.",
+                "Displays the screen as an inline SVG graphic.",
+                "Displays the screen as a data table (CSV).",
+                "Displays the screen as a mermaid diagram.",
+                "Agent only: The document node is displayed as an interactive checklist.",
+                "Agent only: The document node is displayed as an interactive Chart.js chart."
               ]
             },
             "isRemixed": {
@@ -9026,6 +9548,32 @@
             },
             "text": {
               "description": "The agent generates a text response to be displayed to the user.",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "Typography": {
+          "description": "A typography style token in a design system, defining the visual properties for a single text level (e.g. \"display-lg\", \"body-md\").",
+          "properties": {
+            "fontFamily": {
+              "description": "Optional. The CSS font-family value (e.g., \"Manrope\", \"Inter\").",
+              "type": "string"
+            },
+            "fontSize": {
+              "description": "Optional. The CSS font-size value (e.g., \"32px\", \"1rem\").",
+              "type": "string"
+            },
+            "fontWeight": {
+              "description": "Optional. The CSS font-weight value (e.g., \"400\", \"700\").",
+              "type": "string"
+            },
+            "letterSpacing": {
+              "description": "Optional. The CSS letter-spacing value (e.g., \"0px\", \"-0.02em\").",
+              "type": "string"
+            },
+            "lineHeight": {
+              "description": "Optional. The CSS line-height value (e.g., \"1.5\", \"40px\").",
               "type": "string"
             }
           },

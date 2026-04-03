@@ -16,6 +16,7 @@
 export { Stitch } from "../generated/src/stitch.js";
 export { Project } from "../generated/src/project.js";
 export { Screen } from "../generated/src/screen.js";
+export { DesignSystem } from "../generated/src/designsystem.js";
 
 // Infrastructure (handwritten)
 export { StitchToolClient } from "./client.js";

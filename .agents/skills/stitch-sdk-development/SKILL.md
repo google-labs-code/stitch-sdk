@@ -261,7 +261,7 @@ With passing tests as your safety net:
 Discover the current state by reading the codebase directly. The key entry points:
 
 - **Public surface**: Start at `packages/sdk/src/index.ts` — every public export is listed here
-- **Generated classes**: `packages/sdk/generated/src/` — Stitch, Project, Screen
+- **Generated classes**: `packages/sdk/generated/src/` — Stitch, Project, Screen, DesignSystem
 - **Pipeline artifacts**: `packages/sdk/generated/domain-map.json`, `packages/sdk/generated/tools-manifest.json`
 - **Infrastructure**: `packages/sdk/src/client.ts`, `packages/sdk/src/spec/errors.ts`, `packages/sdk/src/singleton.ts`
 - **Test structure**: `packages/sdk/test/unit/` for unit tests, `packages/sdk/test/integration/` for live tests
