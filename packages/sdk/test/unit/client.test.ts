@@ -270,7 +270,7 @@ describe("StitchToolClient", () => {
       const client = new StitchToolClient({ apiKey: "test-key" });
       let capturedHeaders: Record<string, string> = {};
 
-      globalThis.fetch = vi.fn().mockImplementation((_url: string, init: RequestInit) => {
+      (globalThis as any).fetch = vi.fn().mockImplementation((_url: string, init: RequestInit) => {
         capturedHeaders = Object.fromEntries(
           Object.entries(init.headers as Record<string, string>),
         );
@@ -288,7 +288,7 @@ describe("StitchToolClient", () => {
     it("throws StitchError with AUTH_FAILED on a 401 response", async () => {
       const client = new StitchToolClient({ apiKey: "bad-key" });
 
-      globalThis.fetch = vi.fn().mockResolvedValue({
+      (globalThis as any).fetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 401,
         statusText: "Unauthorized",
