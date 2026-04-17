@@ -104,3 +104,12 @@ export interface StitchToolClientSpec {
    */
   close: () => Promise<void>;
 }
+
+export interface VirtualToolDefinition {
+  name: string;
+  description: string;
+  source?: string;
+  inputSchema: any;
+  execute: (client: StitchToolClientSpec, args: any) => Promise<any>;
+}
+

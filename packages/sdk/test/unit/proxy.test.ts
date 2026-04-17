@@ -15,8 +15,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { registerListToolsHandler } from '../../src/proxy/handlers/listTools.js';
 import { registerCallToolHandler } from '../../src/proxy/handlers/callTool.js';
-import { VIRTUAL_TOOLS } from '../../src/proxy/virtual-tools.js';
+import { inferThemeTool, themePromptTool, syncThemeTool, downloadAssetsTool } from '../../src/proxy/virtual-tools.js';
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+
+const EXPECTED_VIRTUAL_TOOLS = [inferThemeTool, themePromptTool, syncThemeTool, downloadAssetsTool].map(t => ({
+  name: t.name,
+  description: t.description,
+  inputSchema: t.inputSchema,
+}));
 
 // Use vi.hoisted to ensure variables are available in mocked modules
 const { mockInferTheme, mockForward } = vi.hoisted(() => ({
@@ -66,7 +72,7 @@ describe("Proxy Handlers", () => {
     expect(handler).toBeDefined();
 
     const result = await handler();
-    expect(result.tools.length).toBe(1 + VIRTUAL_TOOLS.length);
+    expect(result.tools.length).toBe(1 + EXPECTED_VIRTUAL_TOOLS.length);
     expect(result.tools.find((t: any) => t.name === 'infer_theme')).toBeTruthy();
   });
 

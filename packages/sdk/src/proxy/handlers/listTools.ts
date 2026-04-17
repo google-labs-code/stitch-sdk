@@ -16,7 +16,13 @@ import { ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { ProxyContext } from '../client.js';
 import { refreshTools } from '../client.js';
-import { VIRTUAL_TOOLS } from '../virtual-tools.js';
+import { inferThemeTool, themePromptTool, syncThemeTool, downloadAssetsTool } from '../virtual-tools.js';
+
+const PROXY_VIRTUAL_TOOLS = [inferThemeTool, themePromptTool, syncThemeTool, downloadAssetsTool].map(t => ({
+  name: t.name,
+  description: t.description,
+  inputSchema: t.inputSchema,
+}));
 
 /**
  * Register the tools/list handler.
@@ -36,6 +42,6 @@ export function registerListToolsHandler(
         console.warn('[stitch-proxy] Warning: Using stale tools due to refresh failure');
       }
     }
-    return { tools: [...ctx.remoteTools, ...VIRTUAL_TOOLS] };
+    return { tools: [...ctx.remoteTools, ...PROXY_VIRTUAL_TOOLS] };
   });
 }

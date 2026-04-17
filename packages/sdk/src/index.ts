@@ -23,6 +23,15 @@ export { DesignSystem } from "../generated/src/designsystem.js";
 export { StitchToolClient } from "./client.js";
 export { StitchProxy } from "./proxy/core.js";
 
+// Virtual Tools
+export {
+  inferThemeTool,
+  themePromptTool,
+  syncThemeTool,
+  downloadAssetsTool,
+} from "./proxy/virtual-tools.js";
+export type { VirtualToolDefinition } from "./spec/client.js";
+
 // Singleton
 export { stitch } from "./singleton.js";
 

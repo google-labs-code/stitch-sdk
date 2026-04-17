@@ -52,8 +52,6 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
       const resolvedTempDir = tempDir ?? outputDir;
       // Guard assetsSubdir: strip any path separators — only use the basename.
       const safeSubdir = path.basename(assetsSubdir) || 'assets';
-      const assetsDir = path.join(outputDir, safeSubdir);
-      await fs.mkdir(assetsDir, { recursive: true });
 
       // 1. List screens
       const response = await this.client.callTool('list_screens', { projectId });
@@ -62,13 +60,21 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
       const downloadedScreens: string[] = [];
 
       for (const screen of screens) {
+        const screenId = screen.id || screen.name.split('/').pop();
+        const screenSlug = screen.title 
+          ? screen.title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+          : screenId;
+        
+        const screenDir = path.join(outputDir, screenSlug);
+        const screenAssetsDir = path.join(screenDir, safeSubdir);
+
         let htmlUrl = screen.htmlCode?.downloadUrl;
         if (!htmlUrl) {
           try {
             const raw = await this.client.callTool('get_screen', {
               projectId,
-              screenId: screen.id,
-              name: `projects/${projectId}/screens/${screen.id}`,
+              screenId: screenId,
+              name: `projects/${projectId}/screens/${screenId}`,
             });
             htmlUrl = (raw as any)?.htmlCode?.downloadUrl;
           } catch (error) {
@@ -78,6 +84,8 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
         }
         if (!htmlUrl) continue;
 
+        await fs.mkdir(screenAssetsDir, { recursive: true });
+
         const html = await fetch(htmlUrl).then((r) => r.text());
         const $ = cheerio.load(html);
 
@@ -86,29 +94,70 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
         $('img').each((_, el) => {
           const src = $(el).attr('src');
           if (src && src.startsWith('http')) {
-            assetPromises.push(this._downloadAndRewrite($, el, 'src', src, assetsDir, safeSubdir, resolvedTempDir, fileMode));
+            assetPromises.push(this._downloadAndRewrite($, el, 'src', src, screenAssetsDir, safeSubdir, resolvedTempDir, fileMode));
           }
         });
 
         $('link[rel="stylesheet"]').each((_, el) => {
           const href = $(el).attr('href');
           if (href && href.startsWith('http')) {
-            assetPromises.push(this._downloadAndRewrite($, el, 'href', href, assetsDir, safeSubdir, resolvedTempDir, fileMode));
+            assetPromises.push(this._downloadAndRewrite($, el, 'href', href, screenAssetsDir, safeSubdir, resolvedTempDir, fileMode));
           }
         });
 
         await Promise.all(assetPromises);
 
+        const screenshotUrl = screen.screenshot?.downloadUrl;
+        if (screenshotUrl) {
+          try {
+            const screenshotRes = await fetch(screenshotUrl);
+            const screenshotBuffer = await screenshotRes.arrayBuffer();
+            const screenshotPath = path.join(screenDir, 'screen.png');
+            const tempScreenshotFilename = `.tmp-screen-${crypto.randomBytes(8).toString('hex')}`;
+            const tempScreenshotPath = path.join(resolvedTempDir, tempScreenshotFilename);
+            
+            await fs.writeFile(tempScreenshotPath, Buffer.from(screenshotBuffer), { flag: 'wx', mode: fileMode });
+            await atomicRename(tempScreenshotPath, screenshotPath);
+          } catch (error) {
+            // Ignore failed screenshot download
+          }
+        }
+
         const rewrittenHtml = $.html();
-        const filename = `${screen.id}.html`;
+        const filename = `code.html`;
         const tempFilename = `.tmp-${crypto.randomBytes(8).toString('hex')}`;
         const tempPath = path.join(resolvedTempDir, tempFilename);
-        const targetPath = path.join(outputDir, filename);
+        const targetPath = path.join(screenDir, filename);
 
         await fs.writeFile(tempPath, rewrittenHtml, { flag: 'wx', mode: fileMode });
         await atomicRename(tempPath, targetPath);
 
-        downloadedScreens.push(screen.id);
+        downloadedScreens.push(screenId);
+      }
+
+      // 2. Export Design System
+      try {
+        const dsResponse = await this.client.callTool('list_design_systems', { projectId });
+        const designSystems = (dsResponse as any).designSystems || (dsResponse as any).screens || [];
+        
+        const ds = designSystems[0];
+        if (ds && ds.designSystem?.theme?.designMd) {
+          const dsName = ds.designSystem.displayName 
+            ? ds.designSystem.displayName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+            : ds.name.split('/').pop();
+          
+          const dsDir = path.join(outputDir, dsName);
+          await fs.mkdir(dsDir, { recursive: true });
+          
+          const dsPath = path.join(dsDir, 'DESIGN.md');
+          const tempDsFilename = `.tmp-ds-${crypto.randomBytes(8).toString('hex')}`;
+          const tempDsPath = path.join(resolvedTempDir, tempDsFilename);
+          
+          await fs.writeFile(tempDsPath, ds.designSystem.theme.designMd, { flag: 'wx', mode: fileMode });
+          await atomicRename(tempDsPath, dsPath);
+        }
+      } catch (error) {
+        // Ignore failed design system export
       }
 
       return { success: true, downloadedScreens };

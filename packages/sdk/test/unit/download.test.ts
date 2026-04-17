@@ -106,11 +106,11 @@ describe('DownloadAssetsHandler', () => {
       expect(typeof filePath).toBe('string');
       if (typeof filePath === 'string') {
         if (filePath.includes('/assets/')) {
-          expect(filePath).toContain('/tmp/out/assets/');
+          expect(filePath).toContain('/tmp/out/s1/assets/');
           const filename = path.basename(filePath);
           expect(filename).not.toContain('..');
         } else {
-          expect(filePath).toBe('/tmp/out/s1.html');
+          expect(filePath).toBe('/tmp/out/s1/code.html');
         }
       }
     }
@@ -211,6 +211,114 @@ describe('DownloadAssetsHandler', () => {
     expect(fs.rename).toHaveBeenCalledWith(
       expect.stringContaining('/custom/tmp/'),
       expect.stringContaining('/tmp/out/')
+    );
+  });
+
+  it('extracts screen ID from name if id is missing', async () => {
+    const fs = await import("node:fs/promises");
+    vi.mocked(fs.rename).mockClear();
+
+    const mockClient = {
+      callTool: vi.fn().mockResolvedValue({
+        screens: [{ name: 'projects/p1/screens/s123', htmlCode: { downloadUrl: 'http://fake/s123.html' } }]
+      }),
+    } as any;
+
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url) => {
+      return Promise.resolve({ text: () => Promise.resolve('<html></html>') });
+    }));
+
+    const handler = new DownloadAssetsHandler(mockClient);
+    await handler.execute({ projectId: 'p1', outputDir: '/tmp/out' });
+
+    expect(fs.rename).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.stringContaining('/tmp/out/s123/code.html')
+    );
+  });
+
+  it('downloads screenshot if available', async () => {
+    const fs = await import("node:fs/promises");
+    vi.mocked(fs.writeFile).mockClear();
+    vi.mocked(fs.rename).mockClear();
+
+    const mockClient = { callTool: vi.fn() } as any;
+    const mockScreen = { 
+      id: 's1', 
+      htmlCode: { downloadUrl: 'http://fake/s1.html' },
+      screenshot: { downloadUrl: 'http://fake/s1.png' }
+    };
+    mockClient.callTool.mockResolvedValue({ screens: [mockScreen] });
+
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url) => {
+      if (url === 'http://fake/s1.html') {
+        return Promise.resolve({ text: () => Promise.resolve('<html></html>') });
+      }
+      if (url === 'http://fake/s1.png') {
+        return Promise.resolve({ arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)) });
+      }
+      return Promise.resolve({ arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)) });
+    }));
+
+    const handler = new DownloadAssetsHandler(mockClient);
+    await handler.execute({ projectId: 'p1', outputDir: '/tmp/out' });
+
+    expect(fs.writeFile).toHaveBeenCalledWith(
+      expect.stringContaining('.tmp-screen-'),
+      expect.any(Buffer),
+      expect.any(Object)
+    );
+    
+    expect(fs.rename).toHaveBeenCalledWith(
+      expect.stringContaining('.tmp-screen-'),
+      expect.stringContaining('/tmp/out/s1/screen.png')
+    );
+  });
+
+  it('exports design system if available', async () => {
+    const fs = await import("node:fs/promises");
+    vi.mocked(fs.writeFile).mockClear();
+    vi.mocked(fs.rename).mockClear();
+    vi.mocked(fs.mkdir).mockClear();
+
+    const mockClient = { callTool: vi.fn() } as any;
+    mockClient.callTool.mockImplementation((tool, args) => {
+      if (tool === 'list_screens') {
+        return Promise.resolve({ screens: [] });
+      }
+      if (tool === 'list_design_systems') {
+        return Promise.resolve({
+          screens: [
+            {
+              name: 'assets/ds1',
+              designSystem: {
+                title: 'My Design System',
+                designMd: '# High Contrast Design'
+              }
+            }
+          ]
+        });
+      }
+      return Promise.resolve({});
+    });
+
+    const handler = new DownloadAssetsHandler(mockClient);
+    await handler.execute({ projectId: 'p1', outputDir: '/tmp/out' });
+
+    expect(fs.mkdir).toHaveBeenCalledWith(
+      expect.stringContaining('/tmp/out/my_design_system'),
+      expect.anything()
+    );
+
+    expect(fs.writeFile).toHaveBeenCalledWith(
+      expect.stringContaining('.tmp-ds-'),
+      '# High Contrast Design',
+      expect.any(Object)
+    );
+
+    expect(fs.rename).toHaveBeenCalledWith(
+      expect.stringContaining('.tmp-ds-'),
+      expect.stringContaining('/tmp/out/my_design_system/DESIGN.md')
     );
   });
 });

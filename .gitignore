@@ -12,3 +12,5 @@ dist
 *.log
 gen
 .stitch/
+packages/sdk/test/temp_assets
+*.tgz

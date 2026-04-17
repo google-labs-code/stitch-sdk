@@ -18,6 +18,7 @@ import {
   StitchConfigSchema,
   StitchConfig,
   StitchToolClientSpec,
+  VirtualToolDefinition,
 } from "./spec/client.js";
 import { StitchError, StitchErrorCode } from "./spec/errors.js";
 import { SDK_VERSION } from "./version.js";
@@ -42,8 +43,9 @@ export class StitchToolClient implements StitchToolClientSpec {
   private config: StitchConfig;
   private isConnected: boolean = false;
   private connectPromise: Promise<void> | null = null;
+  private localVirtualTools: VirtualToolDefinition[] = [];
 
-  constructor(inputConfig?: Partial<StitchConfig>) {
+  constructor(inputConfig?: Partial<StitchConfig> & { localVirtualTools?: VirtualToolDefinition[] }) {
     const rawConfig = {
       accessToken: inputConfig?.accessToken || process.env.STITCH_ACCESS_TOKEN,
       apiKey: inputConfig?.apiKey || process.env.STITCH_API_KEY,
@@ -52,6 +54,7 @@ export class StitchToolClient implements StitchToolClientSpec {
       timeout: inputConfig?.timeout,
     };
     this.config = StitchConfigSchema.parse(rawConfig);
+    this.localVirtualTools = inputConfig?.localVirtualTools || [];
 
     this.client = new Client(
       { name: "stitch-core-client", version: SDK_VERSION },
@@ -173,6 +176,11 @@ export class StitchToolClient implements StitchToolClientSpec {
   async callTool<T>(name: string, args: Record<string, any>): Promise<T> {
     if (!this.isConnected) await this.connect();
 
+    const localTool = this.localVirtualTools.find(t => t.name === name);
+    if (localTool) {
+      return localTool.execute(this, args);
+    }
+
     const result = await this.client.callTool(
       { name, arguments: args },
       undefined,
@@ -224,7 +232,16 @@ export class StitchToolClient implements StitchToolClientSpec {
 
   async listTools() {
     if (!this.isConnected) await this.connect();
-    return this.client.listTools();
+    const remoteTools = await this.client.listTools();
+    const localTools = this.localVirtualTools.map(t => ({
+      name: t.name,
+      description: t.description,
+      inputSchema: t.inputSchema,
+      source: t.source
+    }));
+    return {
+      tools: [...(remoteTools.tools || []), ...localTools]
+    };
   }
 
   async close() {
