@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Domain classes
-export { Stitch } from "../generated/src/stitch.js";
+export { Stitch } from "./stitch-ext.js";
 export { Project } from "./project-ext.js";  // Extended: includes uploadImage()
 export { Screen } from "../generated/src/screen.js";
 export { DesignSystem } from "../generated/src/designsystem.js";

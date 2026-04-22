@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Stitch } from "../generated/src/stitch.js";
+import { Stitch } from "./stitch-ext.js";
 import { StitchToolClient } from "./client.js";
 import { DEFAULT_STITCH_API_URL } from "./constants.js";
 import { toolMap, type ToolInfo } from "./tool-map.js";

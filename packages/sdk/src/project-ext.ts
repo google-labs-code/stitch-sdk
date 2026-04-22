@@ -243,4 +243,19 @@ export class Project extends GeneratedProject {
       });
     }
   }
+
+  /**
+   * Creates a new session in the project using the direct REST API.
+   * Spike: Exploratory REST support.
+   */
+  async createSessionREST(prompt: string, deviceType?: string): Promise<any> {
+    try {
+      const body: Record<string, any> = { prompt };
+      if (deviceType) body.deviceType = deviceType;
+      
+      return await this['client'].httpPost<any>(`projects/${this.projectId}/sessions`, body);
+    } catch (error) {
+      throw StitchError.fromUnknown(error);
+    }
+  }
 }
