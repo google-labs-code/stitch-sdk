@@ -14,7 +14,7 @@
 
 // Domain classes
 export { Stitch } from "./stitch-ext.js";
-export { Project } from "./project-ext.js";  // Extended: includes uploadImage()
+export { Project } from "./project-ext.js";  // Extended: includes uploadImage(), downloadAssets()
 export { Screen } from "../generated/src/screen.js";
 export { DesignSystem } from "../generated/src/designsystem.js";
 
@@ -25,9 +25,6 @@ export { StitchProxy } from "./proxy/core.js";
 
 // Virtual Tools
 export {
-  inferThemeTool,
-  themePromptTool,
-  syncThemeTool,
   downloadAssetsTool,
 } from "./proxy/virtual-tools.js";
 export type { VirtualToolDefinition } from "./spec/client.js";

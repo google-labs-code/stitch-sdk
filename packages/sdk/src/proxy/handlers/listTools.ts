@@ -16,9 +16,9 @@ import { ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { ProxyContext } from '../client.js';
 import { refreshTools } from '../client.js';
-import { inferThemeTool, themePromptTool, syncThemeTool, downloadAssetsTool } from '../virtual-tools.js';
+import { downloadAssetsTool } from '../virtual-tools.js';
 
-const PROXY_VIRTUAL_TOOLS = [inferThemeTool, themePromptTool, syncThemeTool, downloadAssetsTool].map(t => ({
+const PROXY_VIRTUAL_TOOLS = [downloadAssetsTool].map(t => ({
   name: t.name,
   description: t.description,
   inputSchema: t.inputSchema,

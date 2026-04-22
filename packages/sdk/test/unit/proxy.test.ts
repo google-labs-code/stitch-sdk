@@ -15,24 +15,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { registerListToolsHandler } from '../../src/proxy/handlers/listTools.js';
 import { registerCallToolHandler } from '../../src/proxy/handlers/callTool.js';
-import { inferThemeTool, themePromptTool, syncThemeTool, downloadAssetsTool } from '../../src/proxy/virtual-tools.js';
+import { downloadAssetsTool } from '../../src/proxy/virtual-tools.js';
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
-const EXPECTED_VIRTUAL_TOOLS = [inferThemeTool, themePromptTool, syncThemeTool, downloadAssetsTool].map(t => ({
+const EXPECTED_VIRTUAL_TOOLS = [downloadAssetsTool].map(t => ({
   name: t.name,
   description: t.description,
   inputSchema: t.inputSchema,
 }));
 
 // Use vi.hoisted to ensure variables are available in mocked modules
-const { mockInferTheme, mockForward } = vi.hoisted(() => ({
-  mockInferTheme: vi.fn(),
+const { mockDownloadAssets, mockForward } = vi.hoisted(() => ({
+  mockDownloadAssets: vi.fn(),
   mockForward: vi.fn()
 }));
 
 vi.mock('../../src/project-ext.js', () => ({
   Project: vi.fn().mockImplementation(() => ({
-    inferTheme: mockInferTheme
+    downloadAssets: mockDownloadAssets
   }))
 }));
 
@@ -73,11 +73,11 @@ describe("Proxy Handlers", () => {
 
     const result = await handler();
     expect(result.tools.length).toBe(1 + EXPECTED_VIRTUAL_TOOLS.length);
-    expect(result.tools.find((t: any) => t.name === 'infer_theme')).toBeTruthy();
+    expect(result.tools.find((t: any) => t.name === 'download_assets')).toBeTruthy();
   });
 
   it("should handle virtual tool call", async () => {
-    mockInferTheme.mockResolvedValue({ color: 'blue' });
+    mockDownloadAssets.mockResolvedValue([]);
     
     registerCallToolHandler(mockServer, mockCtx);
     
@@ -86,14 +86,13 @@ describe("Proxy Handlers", () => {
 
     const request = {
       params: {
-        name: 'infer_theme',
-        arguments: { projectId: 'p1', screenId: 's1' }
+        name: 'download_assets',
+        arguments: { projectId: 'p1', outputDir: '/tmp/out' }
       }
     };
 
     const result = await handler(request);
-    expect(mockInferTheme).toHaveBeenCalledWith('s1');
-    expect(result.content[0].text).toContain('blue');
+    expect(result.content[0].text).toContain('/tmp/out');
   });
 
   it("should forward non-virtual tool call", async () => {

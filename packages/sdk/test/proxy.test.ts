@@ -19,9 +19,9 @@ import { forwardToStitch, initializeStitchConnection } from '../src/proxy/client
 import { registerListToolsHandler } from '../src/proxy/handlers/listTools.js';
 import { registerCallToolHandler } from '../src/proxy/handlers/callTool.js';
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { inferThemeTool, themePromptTool, syncThemeTool, downloadAssetsTool } from '../src/proxy/virtual-tools.js';
+import { downloadAssetsTool } from '../src/proxy/virtual-tools.js';
 
-const EXPECTED_VIRTUAL_TOOLS = [inferThemeTool, themePromptTool, syncThemeTool, downloadAssetsTool].map(t => ({
+const EXPECTED_VIRTUAL_TOOLS = [downloadAssetsTool].map(t => ({
   name: t.name,
   description: t.description,
   inputSchema: t.inputSchema,
