@@ -29,7 +29,7 @@ import { Screen } from '../generated/src/screen.js';
 import { StitchError, StitchErrorCode } from './spec/errors.js';
 import * as cheerio from 'cheerio';
 import { DownloadAssetsHandler } from './download-handler.js';
-import { DownloadAssetsInputSchema } from './spec/download.js';
+import { DownloadAssetsInputSchema, DownloadedScreenTrace } from './spec/download.js';
 import {
   UploadImageInputSchema,
   type UploadImageInput,
@@ -215,7 +215,7 @@ export class Project extends GeneratedProject {
   async downloadAssets(
     outputDir: string,
     opts?: { fileMode?: number; tempDir?: string; assetsSubdir?: string },
-  ): Promise<void> {
+  ): Promise<DownloadedScreenTrace[]> {
     const handler = new DownloadAssetsHandler((this as any).client);
     const input = DownloadAssetsInputSchema.parse({
       projectId: (this as any).projectId,
@@ -242,6 +242,7 @@ export class Project extends GeneratedProject {
         recoverable: result.error.recoverable,
       });
     }
+    return result.downloadedScreens;
   }
 
   /**

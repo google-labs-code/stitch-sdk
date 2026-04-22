@@ -66,8 +66,14 @@ export type DownloadAssetsErrorCode = z.infer<typeof DownloadAssetsErrorCode>;
 
 // ── Result ─────────────────────────────────────────────────────────────────────
 
+export interface DownloadedScreenTrace {
+  screenId: string;
+  screenSlug: string;
+  filePath: string;
+}
+
 export type DownloadAssetsResult =
-  | { success: true; downloadedScreens: string[] }
+  | { success: true; downloadedScreens: DownloadedScreenTrace[] }
   | {
       success: false;
       error: {

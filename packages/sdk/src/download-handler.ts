@@ -19,7 +19,7 @@ import * as cheerio from 'cheerio';
 import type { AnyNode } from 'domhandler';
 import type { StitchToolClientSpec } from './spec/client.js';
 import { DownloadAssetsInputSchema } from './spec/download.js';
-import type { DownloadAssetsSpec, DownloadAssetsInput, DownloadAssetsResult } from './spec/download.js';
+import type { DownloadAssetsSpec, DownloadAssetsInput, DownloadAssetsResult, DownloadedScreenTrace } from './spec/download.js';
 
 /** Atomically rename src → dest, falling back to copy+delete on EXDEV. */
 async function atomicRename(src: string, dest: string): Promise<void> {
@@ -57,7 +57,7 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
       const response = await this.client.callTool('list_screens', { projectId });
       const screens = (response as any).screens || [];
 
-      const downloadedScreens: string[] = [];
+      const downloadedScreens: DownloadedScreenTrace[] = [];
 
       for (const screen of screens) {
         const screenId = screen.id || screen.name.split('/').pop();
@@ -132,7 +132,11 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
         await fs.writeFile(tempPath, rewrittenHtml, { flag: 'wx', mode: fileMode });
         await atomicRename(tempPath, targetPath);
 
-        downloadedScreens.push(screenId);
+        downloadedScreens.push({
+          screenId,
+          screenSlug,
+          filePath: path.join(screenSlug, filename),
+        });
       }
 
       // 2. Export Design System

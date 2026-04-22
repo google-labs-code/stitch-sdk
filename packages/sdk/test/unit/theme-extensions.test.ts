@@ -217,15 +217,15 @@ describe("Theme Extensions", () => {
       const fs = await import('fs/promises');
       
       // Verify files were created
-      expect(await fs.stat(`${testOutputDir}/screen-1.html`)).toBeTruthy();
+      expect(await fs.stat(`${testOutputDir}/screen-1/code.html`)).toBeTruthy();
       
-      const assets = await fs.readdir(`${testOutputDir}/assets`);
+      const assets = await fs.readdir(`${testOutputDir}/screen-1/assets`);
       expect(assets.length).toBe(2);
       expect(assets.some(f => f.startsWith('style'))).toBe(true);
       expect(assets.some(f => f.startsWith('image'))).toBe(true);
 
       // Verify HTML was rewritten
-      const rewritten = await fs.readFile(`${testOutputDir}/screen-1.html`, 'utf-8');
+      const rewritten = await fs.readFile(`${testOutputDir}/screen-1/code.html`, 'utf-8');
       expect(rewritten).toContain('href="assets/style-');
       expect(rewritten).toContain('src="assets/image-');
     });

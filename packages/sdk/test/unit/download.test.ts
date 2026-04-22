@@ -282,7 +282,7 @@ describe('DownloadAssetsHandler', () => {
     vi.mocked(fs.mkdir).mockClear();
 
     const mockClient = { callTool: vi.fn() } as any;
-    mockClient.callTool.mockImplementation((tool, args) => {
+    mockClient.callTool.mockImplementation((tool: string, args: Record<string, unknown>) => {
       if (tool === 'list_screens') {
         return Promise.resolve({ screens: [] });
       }
@@ -320,6 +320,32 @@ describe('DownloadAssetsHandler', () => {
       expect.stringContaining('.tmp-ds-'),
       expect.stringContaining('/tmp/out/my_design_system/DESIGN.md')
     );
+  });
+
+  it('returns a detailed trace of downloaded screens in result', async () => {
+    const mockClient = {
+      callTool: vi.fn().mockResolvedValue({
+        screens: [{ id: 's1', title: 'Home Screen', htmlCode: { downloadUrl: 'http://fake/s1.html' } }]
+      }),
+    } as any;
+
+    const mockFetch = vi.fn().mockImplementation((_url) => {
+      return Promise.resolve({ text: () => Promise.resolve('<html></html>') });
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const handler = new DownloadAssetsHandler(mockClient);
+    const result = await handler.execute({ projectId: 'p1', outputDir: '/tmp/out' });
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.downloadedScreens).toEqual([
+      {
+        screenId: 's1',
+        screenSlug: 'home_screen',
+        filePath: 'home_screen/code.html',
+      }
+    ]);
   });
 });
 
