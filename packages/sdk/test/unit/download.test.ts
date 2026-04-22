@@ -292,8 +292,10 @@ describe('DownloadAssetsHandler', () => {
             {
               name: 'assets/ds1',
               designSystem: {
-                title: 'My Design System',
-                designMd: '# High Contrast Design'
+                displayName: 'My Design System',
+                theme: {
+                  designMd: '# High Contrast Design'
+                }
               }
             }
           ]
