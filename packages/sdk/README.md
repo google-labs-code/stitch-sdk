@@ -110,6 +110,13 @@ await client.close();
 
 The client auto-connects on the first `callTool` or `listTools` call. No explicit `connect()` needed.
 
+## Examples
+
+The SDK includes several practical examples in the `examples/` directory demonstrating how to use the SDK in different form factors (Scripts, Agent Skills, CLIs, MCP):
+
+- **[Stitch CLI (Agent CLI)](./examples/stitch-cli/README.md)** - A CLI wrapper around the SDK with `--json` schema introspection designed for LLM agents.
+- Basic examples for project and screen management (`get-project.ts`, `generate-screen.ts`, `browse-designs.ts`, etc.).
+
 ## API Reference
 
 ### `Stitch`
