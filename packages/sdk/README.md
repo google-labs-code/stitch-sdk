@@ -18,6 +18,10 @@ const imageUrl = await screen.getImage();
 
 `html` is a download URL for the screen's HTML. `imageUrl` is a download URL for the screenshot.
 
+## Examples
+
+- [Basic Design Generation](examples/basic-design) - Create a project and generate a design
+
 ## Install
 
 ```bash
