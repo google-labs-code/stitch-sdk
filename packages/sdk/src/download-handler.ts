@@ -18,6 +18,7 @@ import * as crypto from 'node:crypto';
 import * as cheerio from 'cheerio';
 import type { AnyNode } from 'domhandler';
 import type { StitchToolClientSpec } from './spec/client.js';
+import { slugify } from './slugify.js';
 import { DownloadAssetsInputSchema } from './spec/download.js';
 import type { DownloadAssetsSpec, DownloadAssetsInput, DownloadAssetsResult, DownloadedScreenTrace } from './spec/download.js';
 
@@ -58,12 +59,11 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
       const screens = (response as any).screens || [];
 
       const downloadedScreens: DownloadedScreenTrace[] = [];
+      const seenSlugs = new Set<string>();
 
       for (const screen of screens) {
         const screenId = screen.id || screen.name.split('/').pop();
-        const screenSlug = screen.title 
-          ? screen.title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
-          : screenId;
+        const screenSlug = slugify(screen.title, screenId, seenSlugs);
         
         const screenDir = path.join(outputDir, screenSlug);
         const screenAssetsDir = path.join(screenDir, safeSubdir);
