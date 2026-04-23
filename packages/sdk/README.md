@@ -298,3 +298,7 @@ Program](https://bughunters.google.com/open-source-security).
 ## License
 
 Apache 2.0 — see [LICENSE](LICENSE) for details.
+## Examples
+
+Check out the [examples/](examples/) directory for practical workflows and agent skills:
+- [Design to React Component](examples/design-to-react/) — An Agent Skill demonstrating how to convert Stitch designs into modular React components.
