@@ -2,6 +2,12 @@
 
 Generate UI screens from text prompts and extract their HTML and screenshots programmatically.
 
+
+## Examples
+
+See `packages/sdk/examples/` for usage examples:
+- [Screenshot Gallery](./examples/screenshot-gallery/): Iterate over screens and generate an HTML gallery of screenshots.
+
 ## Quick Start
 
 Set your API key and generate a screen:
