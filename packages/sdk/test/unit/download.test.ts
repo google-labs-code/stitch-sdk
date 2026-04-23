@@ -448,3 +448,51 @@ describe('DownloadAssetsHandler warnings', () => {
     }
   });
 });
+
+describe('DownloadAssetsHandler concurrency', () => {
+  it('limits concurrent asset fetches to CONCURRENCY_LIMIT', async () => {
+    const fs = await import("node:fs/promises");
+    vi.mocked(fs.writeFile).mockClear();
+    vi.mocked(fs.rename).mockClear();
+    vi.mocked(fs.mkdir).mockClear();
+
+    // Build HTML with 10 images
+    const imgTags = Array.from({ length: 10 }, (_, i) =>
+      `<img src="http://cdn.example.com/asset-${i}.png">`
+    ).join('');
+    const html = `<html><body>${imgTags}</body></html>`;
+
+    const mockClient = { callTool: vi.fn() } as any;
+    mockClient.callTool.mockImplementation((tool: string) => {
+      if (tool === 'list_screens') {
+        return Promise.resolve({
+          screens: [{ id: 's1', htmlCode: { downloadUrl: 'http://fake/s1.html' } }]
+        });
+      }
+      if (tool === 'list_design_systems') {
+        return Promise.resolve({ designSystems: [] });
+      }
+      return Promise.resolve({});
+    });
+
+    let active = 0;
+    let peak = 0;
+
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string) => {
+      if (url === 'http://fake/s1.html') {
+        return { text: () => Promise.resolve(html) };
+      }
+      // Asset fetch — track concurrency
+      active++;
+      peak = Math.max(peak, active);
+      await new Promise(r => setTimeout(r, 20));
+      active--;
+      return { arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)) };
+    }));
+
+    const handler = new DownloadAssetsHandler(mockClient);
+    await handler.execute({ projectId: 'p1', outputDir: '/tmp/out' });
+
+    expect(peak).toBeLessThanOrEqual(5);
+  });
+});

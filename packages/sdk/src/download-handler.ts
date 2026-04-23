@@ -37,6 +37,24 @@ async function atomicRename(src: string, dest: string): Promise<void> {
   }
 }
 
+const CONCURRENCY_LIMIT = 5;
+
+/** Run async task factories with a bounded concurrency limit. */
+async function runWithConcurrency(tasks: (() => Promise<void>)[], limit: number): Promise<void> {
+  const executing = new Set<Promise<void>>();
+
+  for (const task of tasks) {
+    const p = task().finally(() => executing.delete(p));
+    executing.add(p);
+
+    if (executing.size >= limit) {
+      await Promise.race(executing);
+    }
+  }
+
+  await Promise.all(executing);
+}
+
 export class DownloadAssetsHandler implements DownloadAssetsSpec {
   constructor(private client: StitchToolClientSpec) {}
 
@@ -90,23 +108,23 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
         const html = await fetch(htmlUrl).then((r) => r.text());
         const $ = cheerio.load(html);
 
-        const assetPromises: Promise<void>[] = [];
+        const assetTasks: (() => Promise<void>)[] = [];
 
         $('img').each((_, el) => {
           const src = $(el).attr('src');
           if (src && src.startsWith('http')) {
-            assetPromises.push(this._downloadAndRewrite($, el, 'src', src, screenAssetsDir, safeSubdir, resolvedTempDir, fileMode));
+            assetTasks.push(() => this._downloadAndRewrite($, el, 'src', src, screenAssetsDir, safeSubdir, resolvedTempDir, fileMode));
           }
         });
 
         $('link[rel="stylesheet"]').each((_, el) => {
           const href = $(el).attr('href');
           if (href && href.startsWith('http')) {
-            assetPromises.push(this._downloadAndRewrite($, el, 'href', href, screenAssetsDir, safeSubdir, resolvedTempDir, fileMode));
+            assetTasks.push(() => this._downloadAndRewrite($, el, 'href', href, screenAssetsDir, safeSubdir, resolvedTempDir, fileMode));
           }
         });
 
-        await Promise.all(assetPromises);
+        await runWithConcurrency(assetTasks, CONCURRENCY_LIMIT);
 
         const screenshotUrl = screen.screenshot?.downloadUrl;
         if (screenshotUrl) {
