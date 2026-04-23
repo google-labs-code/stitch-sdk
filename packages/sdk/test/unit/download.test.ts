@@ -496,3 +496,81 @@ describe('DownloadAssetsHandler concurrency', () => {
     expect(peak).toBeLessThanOrEqual(5);
   });
 });
+
+describe('Project.downloadAssets() facade', () => {
+  it('surfaces warnings from handler in result', async () => {
+    const fs = await import("node:fs/promises");
+    vi.mocked(fs.writeFile).mockClear();
+    vi.mocked(fs.rename).mockClear();
+    vi.mocked(fs.mkdir).mockClear();
+
+    const { Project } = await import('../../src/project-ext.js');
+
+    const mockClient = { callTool: vi.fn(), httpPost: vi.fn() } as any;
+    mockClient.callTool.mockImplementation((tool: string) => {
+      if (tool === 'list_screens') {
+        return Promise.resolve({
+          screens: [{
+            id: 's1',
+            htmlCode: { downloadUrl: 'http://fake/s1.html' },
+            screenshot: { downloadUrl: 'http://fake/screenshot.png' }
+          }]
+        });
+      }
+      if (tool === 'list_design_systems') {
+        return Promise.resolve({ designSystems: [] });
+      }
+      return Promise.resolve({});
+    });
+
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
+      if (url === 'http://fake/s1.html') {
+        return Promise.resolve({ text: () => Promise.resolve('<html><body>Hello</body></html>') });
+      }
+      if (url === 'http://fake/screenshot.png') {
+        return Promise.reject(new Error('Network error'));
+      }
+      return Promise.resolve({ arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)) });
+    }));
+
+    const project = new Project(mockClient, 'p1');
+    const result = await project.downloadAssets('/tmp/out');
+
+    expect(result.warnings).toBeDefined();
+    expect(result.warnings.length).toBeGreaterThan(0);
+    expect(result.warnings[0].toLowerCase()).toContain('screenshot');
+    expect(result.screens.length).toBe(1);
+  });
+
+  it('returns empty warnings array on clean run', async () => {
+    const fs = await import("node:fs/promises");
+    vi.mocked(fs.writeFile).mockClear();
+    vi.mocked(fs.rename).mockClear();
+    vi.mocked(fs.mkdir).mockClear();
+
+    const { Project } = await import('../../src/project-ext.js');
+
+    const mockClient = { callTool: vi.fn(), httpPost: vi.fn() } as any;
+    mockClient.callTool.mockImplementation((tool: string) => {
+      if (tool === 'list_screens') {
+        return Promise.resolve({
+          screens: [{ id: 's1', htmlCode: { downloadUrl: 'http://fake/s1.html' } }]
+        });
+      }
+      if (tool === 'list_design_systems') {
+        return Promise.resolve({ designSystems: [] });
+      }
+      return Promise.resolve({});
+    });
+
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => {
+      return Promise.resolve({ text: () => Promise.resolve('<html><body>OK</body></html>') });
+    }));
+
+    const project = new Project(mockClient, 'p1');
+    const result = await project.downloadAssets('/tmp/out');
+
+    expect(result.warnings).toEqual([]);
+    expect(result.screens.length).toBe(1);
+  });
+});

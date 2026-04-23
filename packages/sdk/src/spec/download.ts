@@ -92,3 +92,11 @@ export type DownloadAssetsResult =
 export interface DownloadAssetsSpec {
   execute(input: DownloadAssetsInput): Promise<DownloadAssetsResult>;
 }
+
+// ── Public Output ─────────────────────────────────────────────────────────────
+
+/** Return type for Project.downloadAssets(). */
+export interface DownloadAssetsOutput {
+  screens: DownloadedScreenTrace[];
+  warnings: string[];
+}

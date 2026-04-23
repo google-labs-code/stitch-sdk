@@ -68,6 +68,7 @@ export type {
 // Download types
 export type {
   DownloadAssetsInput,
+  DownloadAssetsOutput,
   DownloadAssetsResult,
   DownloadedScreenTrace,
   DownloadAssetsErrorCode,
