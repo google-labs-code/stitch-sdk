@@ -85,7 +85,7 @@ async function run() {
   bodyContent = bodyContent.replace(/<br>/g, "<br />");
   bodyContent = bodyContent.replace(/<hr([^>]*[^\/])?>/g, "<hr$1 />");
   // remove unescaped script tags from body
-  bodyContent = bodyContent.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
+  bodyContent = bodyContent.replace(/<script\b[^<]*(?:(?!<\/script\s*>)<[^<]*)*<\/script\s*>/gi, "");
 
   const pageCode = `export default function Page() {\n  return (\n    <>\n${bodyContent}\n    </>\n  );\n}\n`;
   await writeFile(join(values.outDir, "app", "page.tsx"), pageCode);
