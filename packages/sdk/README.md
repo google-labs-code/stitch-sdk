@@ -85,6 +85,25 @@ for (const variant of variants) {
 | `creativeRange` | `string` | `"EXPLORE"` | `"REFINE"`, `"EXPLORE"`, or `"REIMAGINE"` |
 | `aspects` | `string[]` | all | `"LAYOUT"`, `"COLOR_SCHEME"`, `"IMAGES"`, `"TEXT_FONT"`, `"TEXT_CONTENT"` |
 
+## Examples
+
+Check out the `examples/` directory for practical workflows and agent skills:
+
+- **[Astro Multipage Site (astro-multipage)](examples/astro-multipage/):** An Agent Skill demonstrating how to generate multiple screens and assemble them into an Astro multipage site.
+- **[Basic Design Generation](examples/basic-design)** - Create a project and generate a design
+- **[Browse and Export](examples/browse-and-export/README.md)** - List projects and download HTML/screenshots locally.
+- **[Design Iteration Workflow](./examples/design-iteration/README.md)** - Evaluate and edit iteratively
+- **[Design System Extraction](examples/design-system-extraction/README.md):** Agent Skill example demonstrating how to parse Tailwind configs from multiple screens and reconcile conflicting design tokens.
+- **[Design to React Component](examples/design-to-react/)** — An Agent Skill demonstrating how to convert Stitch designs into modular React components.
+- **[HTML Email from Design](./examples/html-to-email)** - Generate email-ready HTML using the Stitch SDK.
+- **[Next.js Integration](examples/nextjs-integration)** - Agent Skill showing how to scaffold a Next.js App Router project and integrate Stitch's Tailwind config, Google Fonts, and convert HTML to JSX.
+- **[Screenshot Gallery](./examples/screenshot-gallery/):** Iterate over screens and generate an HTML gallery of screenshots.
+- **[Stitch CLI (Agent CLI)](./examples/stitch-cli/README.md)** - A CLI wrapper around the SDK with `--json` schema introspection designed for LLM agents.
+- **[Tool Filtering Custom AI Workflow Example](examples/tool-filtering/README.md)** - Tool filtering example.
+- **[Vite + Tailwind v4 Preview App](./examples/vite-preview/README.md)** - Convert Stitch outputs to a modern Vite + Tailwind v4 app.
+- **[Stitch MCP Server](./examples/mcp-server)**
+- **[CI Visual Testing](./examples/ci-visual-testing/README.md)** - Integrating Stitch SDK for visual regression testing.
+
 ## Tool Client (Agent Usage)
 
 For agents and orchestration scripts that need direct MCP tool access:
