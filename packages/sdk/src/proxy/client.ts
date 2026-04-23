@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import { StitchProxyConfig } from '../spec/proxy.js';
+import { buildAuthHeaders } from '../auth.js';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 
 /**
@@ -21,20 +22,6 @@ import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 export interface ProxyContext {
   config: StitchProxyConfig;
   remoteTools: Tool[];
-}
-
-/**
- * Build the appropriate auth headers based on config.
- */
-function buildAuthHeaders(config: StitchProxyConfig): Record<string, string> {
-    if (config.accessToken) {
-        const headers: Record<string, string> = { Authorization: `Bearer ${config.accessToken}` };
-        if (config.quotaProjectId) {
-            headers['X-Goog-User-Project'] = config.quotaProjectId;
-        }
-        return headers;
-    }
-    return { 'X-Goog-Api-Key': config.apiKey! };
 }
 
 /**

@@ -21,6 +21,7 @@ import {
   VirtualToolDefinition,
 } from "./spec/client.js";
 import { StitchError, StitchErrorCode } from "./spec/errors.js";
+import { buildAuthHeaders as buildBaseAuthHeaders } from "./auth.js";
 import { SDK_VERSION } from "./version.js";
 
 /**
@@ -66,18 +67,14 @@ export class StitchToolClient implements StitchToolClientSpec {
    * Build auth headers based on config (API key or OAuth).
    */
   private buildAuthHeaders(): Record<string, string> {
-    const headers: Record<string, string> = {
+    return {
       Accept: "application/json, text/event-stream",
+      ...buildBaseAuthHeaders({
+        apiKey: this.config.apiKey,
+        accessToken: this.config.accessToken,
+        quotaProjectId: this.config.projectId,
+      }),
     };
-
-    if (this.config.apiKey) {
-      headers["X-Goog-Api-Key"] = this.config.apiKey;
-    } else {
-      headers["Authorization"] = `Bearer ${this.config.accessToken}`;
-      headers["X-Goog-User-Project"] = this.config.projectId!;
-    }
-
-    return headers;
   }
 
   private parseToolResponse<T>(result: any, name: string): T {
