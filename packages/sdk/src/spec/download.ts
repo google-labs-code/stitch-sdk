@@ -73,7 +73,7 @@ export interface DownloadedScreenTrace {
 }
 
 export type DownloadAssetsResult =
-  | { success: true; downloadedScreens: DownloadedScreenTrace[] }
+  | { success: true; downloadedScreens: DownloadedScreenTrace[]; warnings?: string[] }
   | {
       success: false;
       error: {

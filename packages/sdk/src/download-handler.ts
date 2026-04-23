@@ -59,6 +59,7 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
       const screens = (response as any).screens || [];
 
       const downloadedScreens: DownloadedScreenTrace[] = [];
+      const warnings: string[] = [];
       const seenSlugs = new Set<string>();
 
       for (const screen of screens) {
@@ -119,7 +120,7 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
             await fs.writeFile(tempScreenshotPath, Buffer.from(screenshotBuffer), { flag: 'wx', mode: fileMode });
             await atomicRename(tempScreenshotPath, screenshotPath);
           } catch (error) {
-            // Ignore failed screenshot download
+            warnings.push(`Screenshot download failed for ${screenId}: ${error instanceof Error ? error.message : String(error)}`);
           }
         }
 
@@ -161,10 +162,10 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
           await atomicRename(tempDsPath, dsPath);
         }
       } catch (error) {
-        // Ignore failed design system export
+        warnings.push(`Design system export failed: ${error instanceof Error ? error.message : String(error)}`);
       }
 
-      return { success: true, downloadedScreens };
+      return { success: true, downloadedScreens, warnings: warnings.length > 0 ? warnings : undefined };
     } catch (error) {
       return {
         success: false,

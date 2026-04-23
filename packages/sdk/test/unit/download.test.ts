@@ -375,3 +375,76 @@ describe('sanitizeFilename', () => {
     expect(result).toBe('');
   });
 });
+
+describe('DownloadAssetsHandler warnings', () => {
+  it('collects warning for failed screenshot download', async () => {
+    const fs = await import("node:fs/promises");
+    vi.mocked(fs.writeFile).mockClear();
+    vi.mocked(fs.rename).mockClear();
+    vi.mocked(fs.mkdir).mockClear();
+
+    const mockClient = { callTool: vi.fn() } as any;
+    mockClient.callTool.mockImplementation((tool: string) => {
+      if (tool === 'list_screens') {
+        return Promise.resolve({
+          screens: [{
+            id: 's1',
+            htmlCode: { downloadUrl: 'http://fake/s1.html' },
+            screenshot: { downloadUrl: 'http://fake/screenshot.png' }
+          }]
+        });
+      }
+      if (tool === 'list_design_systems') {
+        return Promise.resolve({ designSystems: [] });
+      }
+      return Promise.resolve({});
+    });
+
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
+      if (url === 'http://fake/s1.html') {
+        return Promise.resolve({ text: () => Promise.resolve('<html><body>Hello</body></html>') });
+      }
+      if (url === 'http://fake/screenshot.png') {
+        return Promise.reject(new Error('Network error'));
+      }
+      return Promise.resolve({ arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)) });
+    }));
+
+    const handler = new DownloadAssetsHandler(mockClient);
+    const result = await handler.execute({ projectId: 'p1', outputDir: '/tmp/out' });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.warnings).toBeDefined();
+      expect(result.warnings!.length).toBeGreaterThan(0);
+      expect(result.warnings![0].toLowerCase()).toContain('screenshot');
+    }
+  });
+
+  it('collects warning when design system export fails', async () => {
+    const fs = await import("node:fs/promises");
+    vi.mocked(fs.writeFile).mockClear();
+    vi.mocked(fs.rename).mockClear();
+    vi.mocked(fs.mkdir).mockClear();
+
+    const mockClient = { callTool: vi.fn() } as any;
+    mockClient.callTool.mockImplementation((tool: string) => {
+      if (tool === 'list_screens') {
+        return Promise.resolve({ screens: [] });
+      }
+      if (tool === 'list_design_systems') {
+        return Promise.reject(new Error('API unavailable'));
+      }
+      return Promise.resolve({});
+    });
+
+    const handler = new DownloadAssetsHandler(mockClient);
+    const result = await handler.execute({ projectId: 'p1', outputDir: '/tmp/out' });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.warnings).toBeDefined();
+      expect(result.warnings!.some(w => w.toLowerCase().includes('design system'))).toBe(true);
+    }
+  });
+});
