@@ -298,3 +298,8 @@ Program](https://bughunters.google.com/open-source-security).
 ## License
 
 Apache 2.0 — see [LICENSE](LICENSE) for details.
+## Examples
+
+Check out the `examples/` directory for practical use cases of the Stitch SDK:
+
+*   [Next.js Integration](examples/nextjs-integration) - Agent Skill showing how to scaffold a Next.js App Router project and integrate Stitch's Tailwind config, Google Fonts, and convert HTML to JSX.
