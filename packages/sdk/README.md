@@ -289,6 +289,10 @@ Error codes: `AUTH_FAILED`, `NOT_FOUND`, `PERMISSION_DENIED`, `RATE_LIMITED`, `N
 
 ---
 
+## Examples
+
+- [Design System Extraction](examples/design-system-extraction/README.md): Agent Skill example demonstrating how to parse Tailwind configs from multiple screens and reconcile conflicting design tokens.
+
 ## Disclaimer
 
 This is not an officially supported Google product. This project is not
