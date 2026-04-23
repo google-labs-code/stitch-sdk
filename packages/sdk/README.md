@@ -85,6 +85,10 @@ for (const variant of variants) {
 | `creativeRange` | `string` | `"EXPLORE"` | `"REFINE"`, `"EXPLORE"`, or `"REIMAGINE"` |
 | `aspects` | `string[]` | all | `"LAYOUT"`, `"COLOR_SCHEME"`, `"IMAGES"`, `"TEXT_FONT"`, `"TEXT_CONTENT"` |
 
+### Examples
+
+- [Design Iteration Workflow](./examples/design-iteration/README.md)
+
 ## Tool Client (Agent Usage)
 
 For agents and orchestration scripts that need direct MCP tool access:
