@@ -59,7 +59,7 @@ export class Project extends GeneratedProject {
     opts?: Partial<Omit<UploadImageInput, 'filePath'>>,
   ): Promise<Screen[]> {
     const input = UploadImageInputSchema.parse({ filePath, ...opts });
-    const handler = new UploadImageHandler(this['client']);
+    const handler = new UploadImageHandler((this as any).client);
     const result = await handler.execute(this.projectId, input);
 
     if (!result.success) {
