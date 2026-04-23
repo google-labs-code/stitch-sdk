@@ -136,6 +136,23 @@ describe("SDK Unit Tests", () => {
       expect(edited.id).toBe("edited-screen");
     });
 
+    it("edit should find screen when a prefix block is present", async () => {
+      const screen = new Screen(mockClient, screenData);
+
+      (mockClient.callTool as Mock).mockResolvedValue({
+        outputComponents: [
+          { designSystem: { name: "ds-update" } },
+          { design: { screens: [{ id: "edited-2", htmlCode: "<div>Dark</div>", projectId }] } },
+        ],
+        projectId,
+        sessionId: "session-2",
+      });
+
+      const edited = await screen.edit("Make it dark");
+      expect(edited).toBeInstanceOf(Screen);
+      expect(edited.id).toBe("edited-2");
+    });
+
     it("edit should throw StitchError (not TypeError) when response has no screens", async () => {
       const screen = new Screen(mockClient, screenData);
 
@@ -253,6 +270,29 @@ describe("SDK Unit Tests", () => {
       expect(result).toBeInstanceOf(Screen);
       expect(result.id).toBe("new-screen-1");
       expect(result.projectId).toBe(projectId);
+    });
+
+    it("generate should find screen when designSystem block is absent (issue #315)", async () => {
+      const project = new Project(mockClient, projectId);
+
+      (mockClient.callTool as Mock).mockResolvedValue({
+        outputComponents: [
+          {
+            design: {
+              screens: [{ id: "screen-2", name: "Second", htmlCode: "<div>2</div>", projectId }],
+            },
+          },
+          { text: "summary" },
+          { suggestion: "try this" },
+        ],
+        projectId: projectId,
+        sessionId: "session-2",
+      });
+
+      const result = await project.generate("Second page");
+
+      expect(result).toBeInstanceOf(Screen);
+      expect(result.id).toBe("screen-2");
     });
 
 

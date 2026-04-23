@@ -115,7 +115,7 @@
         "projection": [
           {
             "prop": "outputComponents",
-            "index": 1
+            "find": "design.screens"
           },
           {
             "prop": "design"
@@ -156,7 +156,7 @@
         "projection": [
           {
             "prop": "outputComponents",
-            "index": 0
+            "find": "design.screens"
           },
           {
             "prop": "design"
