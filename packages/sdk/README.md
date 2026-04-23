@@ -287,6 +287,12 @@ try {
 
 Error codes: `AUTH_FAILED`, `NOT_FOUND`, `PERMISSION_DENIED`, `RATE_LIMITED`, `NETWORK_ERROR`, `VALIDATION_ERROR`, `UNKNOWN_ERROR`.
 
+## Examples
+
+Practical examples demonstrating how to use the Stitch SDK across different integration modalities:
+
+- [Vite + Tailwind v4 Preview App](./examples/vite-preview/README.md) - **Agent Skill:** Convert Stitch outputs to a modern Vite + Tailwind v4 app.
+
 ---
 
 ## Disclaimer
