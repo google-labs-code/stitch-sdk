@@ -142,7 +142,7 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
       // 2. Export Design System
       try {
         const dsResponse = await this.client.callTool('list_design_systems', { projectId });
-        const designSystems = (dsResponse as any).designSystems || (dsResponse as any).screens || [];
+        const designSystems = (dsResponse as any).designSystems || [];
         
         const ds = designSystems[0];
         if (ds && ds.designSystem?.theme?.designMd) {

@@ -288,7 +288,7 @@ describe('DownloadAssetsHandler', () => {
       }
       if (tool === 'list_design_systems') {
         return Promise.resolve({
-          screens: [
+          designSystems: [
             {
               name: 'assets/ds1',
               designSystem: {
