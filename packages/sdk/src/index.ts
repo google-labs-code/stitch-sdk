@@ -65,3 +65,10 @@ export type {
   UploadImageErrorCode,
 } from "./spec/upload.js";
 
+// Download types
+export type {
+  DownloadAssetsInput,
+  DownloadAssetsResult,
+  DownloadedScreenTrace,
+  DownloadAssetsErrorCode,
+} from "./spec/download.js";
