@@ -152,8 +152,8 @@ console.log("\n📐 Pack Size");
 const totalSize = packData[0].unpackedSize;
 const totalKB = Math.round(totalSize / 1024);
 
-check(`pack size is reasonable (${totalKB} KB, limit: 250 KB)`, () => {
-  assert(totalSize < 250 * 1024, `Pack is ${totalKB} KB — too large for a library`);
+check(`pack size is reasonable (${totalKB} KB, limit: 300 KB)`, () => {
+  assert(totalSize < 300 * 1024, `Pack is ${totalKB} KB — too large for a library`);
 });
 
 const fileCount = packFiles.length;

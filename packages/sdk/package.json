@@ -1,6 +1,6 @@
 {
   "name": "@google/stitch-sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "private": false,
   "description": "Generate UI screens from text prompts and extract their HTML and screenshots programmatically.",
@@ -39,6 +39,8 @@
   "files": [
     "dist",
     "!dist/tsconfig.tsbuildinfo",
+    "!dist/test",
+    "!dist/**/*.tsbuildinfo",
     "!dist/package.json",
     "README.md"
   ],
