@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/google-labs-code-stitch-sdk-badge.png)](https://mseep.ai/app/google-labs-code-stitch-sdk)
+
 # @google/stitch-sdk
 
 [![npm version](https://img.shields.io/npm/v/@google/stitch-sdk)](https://www.npmjs.com/package/@google/stitch-sdk)
