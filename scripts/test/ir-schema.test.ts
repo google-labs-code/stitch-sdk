@@ -234,3 +234,123 @@ describe("DomainMap", () => {
     expect(result.success).toBe(false);
   });
 });
+
+// ── SideEffectSpec ───────────────────────────────────────────
+
+describe("SideEffectSpec", () => {
+  test("accepts valid sideEffect with method, reason, and specPath", () => {
+    const result = DomainClassConfig.safeParse({
+      description: "Manages projects.",
+      constructorParams: ["projectId"],
+      extensionPath: "../../src/project-ext.js",
+      sideEffects: [
+        {
+          method: "uploadImage",
+          reason: "private_rest",
+          specPath: "src/spec/upload.ts",
+        },
+      ],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("accepts multiple sideEffects", () => {
+    const result = DomainClassConfig.safeParse({
+      description: "Manages projects.",
+      constructorParams: ["projectId"],
+      extensionPath: "../../src/project-ext.js",
+      sideEffects: [
+        {
+          method: "uploadImage",
+          reason: "private_rest",
+          specPath: "src/spec/upload.ts",
+        },
+        {
+          method: "downloadAssets",
+          reason: "filesystem_io",
+          specPath: "src/spec/download.ts",
+        },
+      ],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("accepts all valid reason values", () => {
+    const reasons = ["filesystem_io", "binary_data", "private_rest", "complex_orchestration"];
+    for (const reason of reasons) {
+      const result = DomainClassConfig.safeParse({
+        description: "Test class.",
+        constructorParams: [],
+        extensionPath: "../../src/test-ext.js",
+        sideEffects: [{ method: "doSomething", reason, specPath: "src/spec/test.ts" }],
+      });
+      expect(result.success).toBe(true);
+    }
+  });
+
+  test("rejects invalid reason value", () => {
+    const result = DomainClassConfig.safeParse({
+      description: "Test class.",
+      constructorParams: [],
+      extensionPath: "../../src/test-ext.js",
+      sideEffects: [
+        {
+          method: "doSomething",
+          reason: "just_because",
+          specPath: "src/spec/test.ts",
+        },
+      ],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test("rejects sideEffect without method", () => {
+    const result = DomainClassConfig.safeParse({
+      description: "Test class.",
+      constructorParams: [],
+      extensionPath: "../../src/test-ext.js",
+      sideEffects: [
+        {
+          reason: "filesystem_io",
+          specPath: "src/spec/test.ts",
+        },
+      ],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test("rejects sideEffect without specPath", () => {
+    const result = DomainClassConfig.safeParse({
+      description: "Test class.",
+      constructorParams: [],
+      extensionPath: "../../src/test-ext.js",
+      sideEffects: [
+        {
+          method: "doSomething",
+          reason: "filesystem_io",
+        },
+      ],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test("class without extensionPath and without sideEffects is valid (pure generated)", () => {
+    const result = DomainClassConfig.safeParse({
+      description: "A pure generated class.",
+      constructorParams: [],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("class with extensionPath but empty sideEffects array is valid (passthrough re-export)", () => {
+    // An extension with no side effects is a valid passthrough (though discouraged)
+    const result = DomainClassConfig.safeParse({
+      description: "A passthrough extension.",
+      constructorParams: [],
+      extensionPath: "../../src/test-ext.js",
+      sideEffects: [],
+    });
+    expect(result.success).toBe(true);
+  });
+});
+

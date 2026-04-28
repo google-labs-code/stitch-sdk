@@ -28,6 +28,18 @@
           "returns": "DesignSystem",
           "description": "Create a DesignSystem handle from an existing ID without an API call."
         }
+      ],
+      "sideEffects": [
+        {
+          "method": "uploadImage",
+          "reason": "private_rest",
+          "specPath": "src/spec/upload.ts"
+        },
+        {
+          "method": "downloadAssets",
+          "reason": "filesystem_io",
+          "specPath": "src/spec/download.ts"
+        }
       ]
     },
     "Screen": {

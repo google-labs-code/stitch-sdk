@@ -214,6 +214,57 @@ These components remain handwritten as they provide foundational plumbing:
 - `StitchProxy` — MCP proxy server for re-exposing Stitch to other agents
 - `singleton.ts` — lazy proxy for `stitch` export with env var config
 
+### The Side-Effect Membrane
+
+The SDK has two hemispheres separated by a formal boundary:
+
+- **Generated Hemisphere** — Every MCP tool call, response projection, arg routing, and class constructor. If it sends JSON and gets JSON back, it MUST be generated.
+- **Handwritten Hemisphere** — Operations that touch the real world: filesystem I/O, binary streams, non-MCP REST endpoints. If it touches disk or uses a private API, it MUST be handwritten.
+
+The membrane is declared in `domain-map.json` via `sideEffects` on any class with an `extensionPath`:
+
+```json
+{
+  "Project": {
+    "extensionPath": "../../src/project-ext.js",
+    "sideEffects": [
+      { "method": "uploadImage", "reason": "private_rest", "specPath": "src/spec/upload.ts" },
+      { "method": "downloadAssets", "reason": "filesystem_io", "specPath": "src/spec/download.ts" }
+    ]
+  }
+}
+```
+
+Valid `reason` values: `filesystem_io`, `binary_data`, `private_rest`, `complex_orchestration`.
+
+The generator validates at Stage 3:
+1. No `sideEffect.method` collides with a generated binding method name
+2. Each `specPath` points to an existing file
+
+#### Adding a New Side-Effect Method
+
+Follow the Spec → Handler → Extension pattern:
+
+1. **Create the Spec** (`src/spec/my-operation.ts`): Define input schema (Zod), error codes, Result type, and interface. The Handler must implement this interface and never throw.
+
+2. **Create the Handler** (`src/my-operation-handler.ts`): Implement the Spec interface. All failures return `Result<T>`, never `throw`. This is where side-effect logic lives (disk, network, binary).
+
+3. **Add to the Extension** (`src/project-ext.ts`): A thin adapter (< 15 lines per method body) that parses input, calls the Handler, and maps the Result to `throw StitchError` on failure.
+
+4. **Declare in domain-map.json**: Add a `sideEffect` entry with `method`, `reason`, and `specPath`.
+
+5. **Regenerate**: Run `bun scripts/generate-sdk.ts` — the generator validates the declaration.
+
+#### Rules
+
+| Rule | Rationale |
+|---|---|
+| Extension methods must NOT override generated methods | Prevents silent shadowing |
+| Extension methods must delegate to a Handler | Prevents inline business logic |
+| Handlers must implement a Spec interface | Typed service contract |
+| Handlers must return Result, never throw | Consistent error surface |
+| Extensions must NOT import from `singleton.ts` | Prevents circular dependencies |
+
 ---
 
 ## Traffic Light Implementation (Red → Green → Yellow)

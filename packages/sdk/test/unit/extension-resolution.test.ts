@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { Stitch } from '../../src/stitch-ext.js';
+import { Stitch } from '../../generated/src/stitch.js';
 import { StitchToolClient } from '../../src/client.js';
 
 describe('SDK Extension Resolution', () => {

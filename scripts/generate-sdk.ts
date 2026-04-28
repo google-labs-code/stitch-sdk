@@ -497,6 +497,41 @@ async function main() {
   }
   console.log("  ✓ All projections valid against output schemas");
 
+  // ── Side-effect validation ───────────────────────────────────
+  // Ensure handwritten extension methods don't shadow generated methods,
+  // and that each spec file exists.
+  for (const [className, config] of Object.entries(domainMap.classes)) {
+    if (!config.sideEffects?.length) continue;
+    
+    // Collect generated method names for this class
+    const generatedMethods = new Set(
+      domainMap.bindings
+        .filter(b => b.class === className)
+        .map(b => b.method)
+    );
+
+    for (const se of config.sideEffects) {
+      // Check for method name collision
+      if (generatedMethods.has(se.method)) {
+        throw new Error(
+          `❌ Side-effect collision: ${className}.${se.method} is declared as both a ` +
+          `generated binding and a handwritten sideEffect. Extension methods must NOT ` +
+          `shadow generated methods.`
+        );
+      }
+
+      // Check that spec file exists
+      const specAbsPath = resolve(ROOT_DIR, "packages/sdk", se.specPath);
+      if (!existsSync(specAbsPath)) {
+        throw new Error(
+          `❌ Missing spec file: ${className}.${se.method} declares specPath ` +
+          `"${se.specPath}" but file does not exist at ${specAbsPath}`
+        );
+      }
+    }
+  }
+  console.log("  ✓ Side-effect declarations valid");
+
   const manifestHash = sha256(manifestContent);
   const domainMapHash = sha256(domainMapContent);
 
