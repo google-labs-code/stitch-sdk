@@ -16,3 +16,11 @@ packages/sdk/test/temp_assets
 *.tgz
 PR.md
 package-lock.json
+
+# Scratch / diagnostic scripts
+fetch_info.sh
+open_issues.json
+open_prs.json
+packages/sdk/scripts/bug-bash-*.ts
+packages/sdk/scripts/diag-*.ts
+packages/sdk/test/bug-bash-*.ts

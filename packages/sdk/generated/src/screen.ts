@@ -3,8 +3,8 @@
 DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:2f1a623ec115...)
-        domain-map.json     (sha256:376520bcbc85...)
-Generated: 2026-04-03T00:43:46.581Z
+        domain-map.json     (sha256:31c515cd2479...)
+Generated: 2026-04-28T00:56:15.046Z
  */
 import { type StitchToolClient } from "../../src/client.js";
 import { StitchError } from "../../src/spec/errors.js";
@@ -38,7 +38,7 @@ export class Screen {
     async edit(prompt: string, deviceType?: "DEVICE_TYPE_UNSPECIFIED" | "MOBILE" | "DESKTOP" | "TABLET" | "AGNOSTIC", modelId?: "MODEL_ID_UNSPECIFIED" | "GEMINI_3_PRO" | "GEMINI_3_FLASH" | "GEMINI_3_1_PRO"): Promise<Screen> {
         try {
           const raw = await this.client.callTool<any>("edit_screens", { projectId: this.projectId, selectedScreenIds: [this.screenId], prompt, deviceType, modelId });
-          const _projected = (raw?.outputComponents ?? []).map((c: any) => c?.design?.screens?.[0]).find((s: any) => s != null);
+          const _projected = (raw?.outputComponents ?? []).find((c: any) => c?.design?.screens != null)?.design?.screens?.[0];
           if (!_projected) throw new StitchError({ code: "UNKNOWN_ERROR", message: "Incomplete API response from edit_screens: expected object at projection path", recoverable: false });
           return new Screen(this.client, { ..._projected, projectId: this.projectId })
         } catch (error) {

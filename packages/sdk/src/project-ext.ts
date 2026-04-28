@@ -59,7 +59,7 @@ export class Project extends GeneratedProject {
     opts?: Partial<Omit<UploadImageInput, 'filePath'>>,
   ): Promise<Screen[]> {
     const input = UploadImageInputSchema.parse({ filePath, ...opts });
-    const handler = new UploadImageHandler((this as any).client);
+    const handler = new UploadImageHandler(this.client);
     const result = await handler.execute(this.projectId, input);
 
     if (!result.success) {
@@ -95,9 +95,9 @@ export class Project extends GeneratedProject {
     outputDir: string,
     opts?: { fileMode?: number; tempDir?: string; assetsSubdir?: string },
   ): Promise<DownloadAssetsOutput> {
-    const handler = new DownloadAssetsHandler((this as any).client);
+    const handler = new DownloadAssetsHandler(this.client);
     const input = DownloadAssetsInputSchema.parse({
-      projectId: (this as any).projectId,
+      projectId: this.projectId,
       outputDir,
       ...opts,
     });

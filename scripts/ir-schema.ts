@@ -38,9 +38,21 @@ export const ProjectionStep = z.object({
   each: z.boolean().optional(),
   /** Alternate property name if primary is missing */
   fallback: z.string().optional(),
+  /**
+   * Scan pattern: iterate the array at `prop` and find the first element
+   * whose nested path (dot-separated, e.g. "design.screens") is non-null.
+   * Emits: `(raw?.prop ?? []).map(c => c?.a?.b).find(s => s != null)`
+   */
+  find: z.string().optional(),
 }).refine(
   data => !(data.index !== undefined && data.each),
   { message: "Cannot use both 'index' and 'each' on the same step" }
+).refine(
+  data => !(data.find && data.each),
+  { message: "Cannot use both 'find' and 'each' on the same step" }
+).refine(
+  data => !(data.find && data.index !== undefined),
+  { message: "Cannot use both 'find' and 'index' on the same step" }
 );
 export type ProjectionStep = z.infer<typeof ProjectionStep>;
 
@@ -132,6 +144,7 @@ export type FactorySpec = z.infer<typeof FactorySpec>;
 
 export const DomainClassConfig = z.object({
   description: z.string(),
+  extensionPath: z.string().optional(),
   constructorParams: z.array(z.string()),
   isRoot: z.boolean().optional(),
   identifierField: z.string().optional(),

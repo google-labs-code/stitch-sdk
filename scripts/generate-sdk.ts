@@ -154,7 +154,7 @@ export function validateProjection(
  * Emit TypeScript code for a projection path.
  *
  * Walks the ProjectionStep[] array and emits property access,
- * [index], or .flatMap() for each step.
+ * [index], .flatMap() for each step, or .map().find() for find steps.
  */
 export function emitProjection(steps: ProjectionStep[], rawVar: string = "raw"): string {
   if (steps.length === 0) return rawVar;
@@ -166,6 +166,12 @@ export function emitProjection(steps: ProjectionStep[], rawVar: string = "raw"):
     return emitFlatMapProjection(steps, rawVar);
   }
 
+  // Check if any step uses 'find' (scan pattern)
+  const findIndex = steps.findIndex(s => s.find);
+  if (findIndex !== -1) {
+    return emitFindProjection(steps, findIndex, rawVar);
+  }
+
   // Simple chain with optional chaining: raw.outputComponents?.[0]?.design?.screens?.[0]
   let code = rawVar;
   for (const step of steps) {
@@ -174,6 +180,45 @@ export function emitProjection(steps: ProjectionStep[], rawVar: string = "raw"):
       code += `?.[${step.index}]`;
     }
   }
+  return code;
+}
+
+/**
+ * Emit a scan-based projection for steps with 'find'.
+ *
+ * e.g. [{ prop: "outputComponents", find: "design.screens" }, { prop: "design" }, { prop: "screens", index: 0 }]
+ * emits: (raw?.outputComponents ?? []).find((c: any) => c?.design?.screens != null)?.design?.screens?.[0]
+ *
+ * The find step scans the array at `prop` and returns the first element
+ * whose nested path (dot-separated) is non-null. Remaining steps
+ * after the find step continue as a normal optional chain on that element.
+ */
+function emitFindProjection(steps: ProjectionStep[], findIdx: number, rawVar: string): string {
+  const findStep = steps[findIdx];
+  const findPath = findStep.find!;
+
+  // Build prefix chain for steps before the find step
+  let prefix = rawVar;
+  for (let i = 0; i < findIdx; i++) {
+    prefix += `?.${steps[i].prop}`;
+    if (steps[i].index !== undefined) {
+      prefix += `?.[${steps[i].index}]`;
+    }
+  }
+
+  // Build the find-scan expression
+  // (prefix?.prop ?? []).find((c: any) => c?.a?.b != null)
+  const innerChain = findPath.split('.').map(p => `?.${p}`).join('');
+  let code = `(${prefix}?.${findStep.prop} ?? []).find((c: any) => c${innerChain} != null)`;
+
+  // Chain remaining steps after the find step
+  for (let i = findIdx + 1; i < steps.length; i++) {
+    code += `?.${steps[i].prop}`;
+    if (steps[i].index !== undefined) {
+      code += `?.[${steps[i].index}]`;
+    }
+  }
+
   return code;
 }
 
@@ -520,10 +565,18 @@ async function main() {
       namedImports: ["StitchError"],
     });
     for (const rc of returnClasses) {
-      sourceFile.addImportDeclaration({
-        moduleSpecifier: `./${rc.toLowerCase()}.js`,
-        namedImports: [rc],
-      });
+      const targetClassConfig = domainMap.classes[rc];
+      if (targetClassConfig?.extensionPath) {
+        sourceFile.addImportDeclaration({
+          moduleSpecifier: targetClassConfig.extensionPath,
+          namedImports: [rc],
+        });
+      } else {
+        sourceFile.addImportDeclaration({
+          moduleSpecifier: `./${rc.toLowerCase()}.js`,
+          namedImports: [rc],
+        });
+      }
     }
 
     // Class
@@ -534,9 +587,10 @@ async function main() {
     });
 
     // Constructor
+    const clientScope = config.extensionPath ? Scope.Protected : Scope.Private;
     if (config.isRoot) {
       cls.addConstructor({
-        parameters: [{ name: "client", type: "StitchToolClient", scope: Scope.Private }],
+        parameters: [{ name: "client", type: "StitchToolClient", scope: clientScope }],
       });
     } else {
       // Declare fields
@@ -547,7 +601,7 @@ async function main() {
 
       cls.addConstructor({
         parameters: [
-          { name: "client", type: "StitchToolClient", scope: Scope.Private },
+          { name: "client", type: "StitchToolClient", scope: clientScope },
           { name: "data", type: "any" },
         ],
         statements: buildConstructorBody(config),

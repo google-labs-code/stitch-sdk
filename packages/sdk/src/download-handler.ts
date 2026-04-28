@@ -185,12 +185,24 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
 
       return { success: true, downloadedScreens, warnings: warnings.length > 0 ? warnings : undefined };
     } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      const lowerMsg = msg.toLowerCase();
+      
+      let code = 'UNKNOWN_ERROR' as any;
+      if (lowerMsg.includes('not found')) {
+        code = 'PROJECT_NOT_FOUND';
+      } else if (lowerMsg.includes('fetch') || lowerMsg.includes('network')) {
+        code = 'FETCH_FAILED';
+      } else if (lowerMsg.includes('401') || lowerMsg.includes('auth')) {
+        code = 'UNKNOWN_ERROR'; // Actually download-handler spec has a specific enum, let's just check NOT_FOUND
+      }
+      
       return {
         success: false,
         error: {
-          code: 'UNKNOWN_ERROR',
-          message: error instanceof Error ? error.message : String(error),
-          recoverable: false,
+          code,
+          message: msg,
+          recoverable: code === 'FETCH_FAILED',
         },
       };
     }
