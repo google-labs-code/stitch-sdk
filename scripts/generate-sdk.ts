@@ -284,13 +284,30 @@ export function emitCacheProjection(steps: ProjectionStep[]): string {
   return code;
 }
 
-// ── Param Type Generation ─────────────────────────────────────
-
 /**
  * Convert JSON Schema type to TypeScript type.
+ * Supports primitives, enums, arrays, objects with properties, and $ref.
  */
-export function jsonSchemaToTs(prop: ToolSchema | null | undefined): string {
+export function jsonSchemaToTs(
+  prop: ToolSchema | null | undefined,
+  defs?: Record<string, ToolSchema>,
+  namedTypes?: Map<string, string>,
+): string {
   if (!prop) return "any";
+
+  // Resolve $ref before anything else
+  if (prop.$ref) {
+    const refName = prop.$ref.replace("#/$defs/", "");
+    const mappedName = namedTypes?.get(refName);
+    if (mappedName) return mappedName;
+    console.log(`[DEBUG] Resolving $ref "${refName}" recursively because it was not in namedTypes.`);
+    const resolved = defs?.[refName];
+    return resolved ? jsonSchemaToTs(resolved, defs, namedTypes) : "any";
+  }
+
+  // Merge $defs from current schema into the defs context
+  const allDefs = { ...defs, ...prop.$defs };
+
   if (prop.enum) {
     return prop.enum.map((v: string) => `"${v}"`).join(" | ");
   }
@@ -300,24 +317,98 @@ export function jsonSchemaToTs(prop: ToolSchema | null | undefined): string {
     case "number": return "number";
     case "boolean": return "boolean";
     case "array":
-      if (prop.items) return `${jsonSchemaToTs(prop.items)}[]`;
+      if (prop.items) return `${jsonSchemaToTs(prop.items, allDefs, namedTypes)}[]`;
       return "any[]";
-    case "object": return "any";
+    case "object":
+      if (prop.properties) {
+        return emitObjectLiteral(prop, allDefs, namedTypes);
+      }
+      if (prop.additionalProperties) {
+        return `Record<string, ${jsonSchemaToTs(prop.additionalProperties, allDefs, namedTypes)}>`;
+      }
+      return "Record<string, unknown>";
     default: return "any";
   }
+}
+
+/**
+ * Emit an inline TypeScript object literal type from a JSON Schema with properties.
+ * e.g. { name: string; count?: number }
+ */
+function emitObjectLiteral(
+  schema: ToolSchema,
+  defs?: Record<string, ToolSchema>,
+  namedTypes?: Map<string, string>,
+): string {
+  const props = schema.properties!;
+  const required = new Set(schema.required || []);
+  const fields = Object.entries(props).map(([name, fieldSchema]) => {
+    const opt = required.has(name) ? "" : "?";
+    const type = jsonSchemaToTs(fieldSchema, defs, namedTypes);
+    return `${name}${opt}: ${type}`;
+  });
+  return `{ ${fields.join("; ")} }`;
+}
+
+/**
+ * Emit TypeScript interfaces from JSON Schema $defs.
+ */
+export function emitNamedInterfaces(defs: Record<string, ToolSchema>, namedTypes: Map<string, string>): string {
+  const interfaces: string[] = [];
+  for (const [name, schema] of Object.entries(defs)) {
+    const desc = schema.description ? `/** ${schema.description} */\n` : "";
+    const typeLit = emitObjectLiteral(schema, defs, namedTypes);
+    // Convert `{ a: string; b: string }` -> `{\n  a: string;\n  b: string;\n}`
+    const intf = typeLit === "{  }" ? "{}" : typeLit
+      .replace(/^{ /, "{\n  ")
+      .replace(/ }$/, ";\n}")
+      .replace(/; /g, ";\n  ");
+    interfaces.push(`${desc}export interface ${name} ${intf}`);
+  }
+  return interfaces.join("\n\n");
+}
+
+/**
+ * Convert a snake_case tool name to a PascalCase response name.
+ * e.g. "list_screens" -> "ListScreensResponse"
+ */
+function toResponseName(toolName: string): string {
+  return toolName.split("_").map(part => part.charAt(0).toUpperCase() + part.slice(1)).join("") + "Response";
+}
+
+/**
+ * Emit TypeScript interfaces for a tool's outputSchema.
+ */
+export function emitResponseType(tool: Tool, namedTypes?: Map<string, string>): string {
+  const schema = tool.outputSchema;
+  if (!schema || schema.type !== "object" || !schema.properties) {
+    return `export interface ${toResponseName(tool.name)} {}`;
+  }
+  const desc = tool.description ? `/** Response message for ${tool.name}. */\n` : "";
+  const typeLit = emitObjectLiteral(schema, tool.outputSchema?.$defs, namedTypes);
+  const intf = typeLit === "{  }" ? "{}" : typeLit
+    .replace(/^{ /, "{\n  ")
+    .replace(/ }$/, ";\n}")
+    .replace(/; /g, ";\n  ");
+  return `${desc}export interface ${toResponseName(tool.name)} ${intf}`;
 }
 
 /**
  * Convert a tool's inputSchema properties to TypeScript param types.
  * Types are derived from the manifest inputSchema, not hardcoded in domain-map.
  */
-function generateParamType(tool: Tool, args: Record<string, ArgSpec>): string {
+export function generateParamType(
+  tool: Tool,
+  args: Record<string, ArgSpec>,
+  namedTypes?: Map<string, string>,
+): string {
   const params: string[] = [];
   for (const [name, spec] of Object.entries(args)) {
     if (spec.from !== "param") continue;
     const paramName = spec.rename || name;
     const toolProp = tool.inputSchema?.properties?.[name];
-    const tsType = jsonSchemaToTs(toolProp);
+    const defs = tool.inputSchema?.$defs;
+    const tsType = jsonSchemaToTs(toolProp, defs, namedTypes);
     const optional = spec.optional ? "?" : "";
     params.push(`${paramName}${optional}: ${tsType}`);
   }
@@ -373,7 +464,7 @@ function generateReturnExpression(
         ? `{ ...item, ${parentField}: this.${parentField} }`
         : "item";
       // Null-safe: default to empty array if projection yields undefined
-      return `(${projectionExpr} || []).map((item: any) => new ${binding.returns.class}(this.client, ${itemExpr}))`;
+      return `(${projectionExpr} || []).map((item) => new ${binding.returns.class}(this.client, ${itemExpr}))`;
     }
 
     // Only emit guard when projection has actual steps (not just `raw`)
@@ -454,7 +545,8 @@ function buildMethodBody(
   }
 
   statements.push(`try {`);
-  statements.push(`  const raw = await this.client.callTool<any>("${binding.tool}", ${generateArgsObject(binding.args)});`);
+  const responseName = toResponseName(binding.tool);
+  statements.push(`  const raw = await this.client.callTool<${responseName}>("${binding.tool}", ${generateArgsObject(binding.args)});`);
   const retExpr = generateReturnExpression(binding, className, domainMap);
   // If retExpr contains newlines, it has guard statements — don't wrap in return
   if (retExpr.includes("\n")) {
@@ -560,7 +652,49 @@ async function main() {
     `Generated: ${new Date().toISOString()}`,
   ].join("\n");
 
+  // ── Phase A: Generate named input types ─────────────────────
+  const allDefs: Record<string, ToolSchema> = {};
+  for (const tool of manifest) {
+    if (tool.inputSchema?.$defs) {
+      Object.assign(allDefs, tool.inputSchema.$defs);
+    }
+    if (tool.outputSchema?.$defs) {
+      Object.assign(allDefs, tool.outputSchema.$defs);
+    }
+  }
+  // Map original def name -> emitted TS name (handles collisions)
+  const namedTypes = new Map<string, string>();
+  const renamedDefs: Record<string, ToolSchema> = {};
+  for (const [name, def] of Object.entries(allDefs)) {
+    // If it collides with a domain class, append "Input"
+    const newName = domainMap.classes[name] ? `${name}Input` : name;
+    namedTypes.set(name, newName);
+    renamedDefs[newName] = def;
+  }
+  
   let fileCount = 0;
+  const typesFile = tsProject.createSourceFile("types.generated.ts");
+  typesFile.addStatements(`/**\n * ${headerComment}\n */\n\n${emitNamedInterfaces(renamedDefs, namedTypes)}`);
+  await Bun.write(resolve(GENERATED_DIR, "types.generated.ts"), typesFile.getFullText());
+  fileCount++;
+
+  // ── Phase B: Generate named response types ────────────────────
+  const responsesFile = tsProject.createSourceFile("responses.generated.ts");
+  const responseTypes: string[] = [];
+  if (namedTypes.size > 0) {
+    responsesFile.addImportDeclaration({
+      moduleSpecifier: "./types.generated.js",
+      namedImports: Array.from(namedTypes.values()),
+    });
+  }
+  for (const tool of manifest) {
+    responseTypes.push(emitResponseType(tool, namedTypes));
+  }
+  responsesFile.addStatements(`/**\n * ${headerComment}\n */\n\n${responseTypes.join("\n\n")}`);
+  await Bun.write(resolve(GENERATED_DIR, "responses.generated.ts"), responsesFile.getFullText());
+  fileCount++;
+
+  let fileCountTotal = fileCount;
 
   // Generate a class file for each domain class
   for (const [className, config] of Object.entries(domainMap.classes)) {
@@ -599,6 +733,25 @@ async function main() {
       moduleSpecifier: "../../src/spec/errors.js",
       namedImports: ["StitchError"],
     });
+    if (namedTypes.size > 0) {
+      sourceFile.addImportDeclaration({
+        moduleSpecifier: "./types.generated.js",
+        namedImports: Array.from(namedTypes.values()),
+      });
+    }
+    
+    // Import response types used by bindings in this class
+    const requiredResponses = new Set<string>();
+    for (const b of classBindings) {
+      requiredResponses.add(toResponseName(b.tool));
+    }
+    if (requiredResponses.size > 0) {
+      sourceFile.addImportDeclaration({
+        moduleSpecifier: "./responses.generated.js",
+        namedImports: Array.from(requiredResponses),
+      });
+    }
+
     for (const rc of returnClasses) {
       const targetClassConfig = domainMap.classes[rc];
       if (targetClassConfig?.extensionPath) {
@@ -662,7 +815,7 @@ async function main() {
         continue;
       }
 
-      const paramTypes = generateParamType(tool, binding.args);
+      const paramTypes = generateParamType(tool, binding.args, namedTypes);
       const returnTypeStr = binding.returns.class
         ? (binding.returns.array ? `${binding.returns.class}[]` : binding.returns.class)
         : (binding.returns.type || "any");
@@ -805,6 +958,16 @@ async function main() {
       { name: "ToolInputSchema", isTypeOnly: true },
       { name: "ToolPropertySchema", isTypeOnly: true },
     ],
+  });
+  if (namedTypes.size > 0) {
+    indexFile.addExportDeclaration({
+      moduleSpecifier: "./types.generated.js",
+      isTypeOnly: true,
+    });
+  }
+  indexFile.addExportDeclaration({
+    moduleSpecifier: "./responses.generated.js",
+    isTypeOnly: true,
   });
   await Bun.write(resolve(GENERATED_DIR, "index.ts"), indexFile.getFullText());
   fileCount++;

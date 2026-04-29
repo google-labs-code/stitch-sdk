@@ -21,6 +21,18 @@
  *   API. The SDK runs as Node.js server-side code, so it can read files from
  *   disk and send arbitrarily large base64-encoded payloads — unlike agent-
  *   driven MCP calls, which are constrained by output token limits (~16K).
+ *
+ * AUTHENTICATION:
+ *   API keys (X-Goog-Api-Key) ARE accepted by BatchCreateScreens. Both API key
+ *   and OAuth Bearer token authentication work.
+ *
+ * DEBUGGING TRAPS (do not repeat):
+ *   1. A 401 CREDENTIALS_MISSING means the key was EMPTY, not that the mechanism
+ *      is unsupported. Always verify: echo $STITCH_API_KEY (source .env first).
+ *   2. A 403 PERMISSION_DENIED means the key is valid but doesn't own the project.
+ *      The user tests across two accounts — check key/project ownership pairing.
+ *   3. Neither error means "API keys are unsupported." Do NOT add OAuth-only
+ *      documentation based on these errors.
  */
 
 import * as path from 'node:path';

@@ -3,11 +3,13 @@
 DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:2f1a623ec115...)
-        domain-map.json     (sha256:baa17d36f4c1...)
-Generated: 2026-04-28T16:31:23.449Z
+        domain-map.json     (sha256:ffa082d8fbe7...)
+Generated: 2026-04-28T20:49:35.251Z
  */
 import { type StitchToolClient } from "../../src/client.js";
 import { StitchError } from "../../src/spec/errors.js";
+import { DesignTheme, File, ProjectMetadata, ScreenInstance, Typography, UserFeedback, ProjectInput, ScreenInput, Asset, BoundingBox, ComponentRegion, Design, DesignSuggestion, DesignSystemInput, ProgressUpdate, ProgressUpdates, PrototypeLink, PrototypeLinks, PrototypeState, PrototypeV2Spec, ScreenMetadata, SessionOutputComponent, VariantOptions, SelectedScreenInstance } from "./types.generated.js";
+import { GenerateScreenFromTextResponse, ListScreensResponse, GetScreenResponse, CreateDesignSystemResponse, ListDesignSystemsResponse } from "./responses.generated.js";
 import { Screen } from "./screen.js";
 import { DesignSystem } from "./designsystem.js";
 
@@ -37,7 +39,7 @@ export class Project {
      */
     async generate(prompt: string, deviceType?: "DEVICE_TYPE_UNSPECIFIED" | "MOBILE" | "DESKTOP" | "TABLET" | "AGNOSTIC", modelId?: "MODEL_ID_UNSPECIFIED" | "GEMINI_3_PRO" | "GEMINI_3_FLASH" | "GEMINI_3_1_PRO"): Promise<Screen> {
         try {
-          const raw = await this.client.callTool<any>("generate_screen_from_text", { projectId: this.projectId, prompt, deviceType, modelId });
+          const raw = await this.client.callTool<GenerateScreenFromTextResponse>("generate_screen_from_text", { projectId: this.projectId, prompt, deviceType, modelId });
           const _projected = (raw?.outputComponents ?? []).find((c: any) => c?.design?.screens != null)?.design?.screens?.[0];
           if (!_projected) throw new StitchError({ code: "UNKNOWN_ERROR", message: "Incomplete API response from generate_screen_from_text: expected object at projection path", recoverable: false });
           return new Screen(this.client, { ..._projected, projectId: this.projectId })
@@ -52,8 +54,8 @@ export class Project {
      */
     async screens(): Promise<Screen[]> {
         try {
-          const raw = await this.client.callTool<any>("list_screens", { projectId: this.projectId });
-          return (raw?.screens || []).map((item: any) => new Screen(this.client, { ...item, projectId: this.projectId }));
+          const raw = await this.client.callTool<ListScreensResponse>("list_screens", { projectId: this.projectId });
+          return (raw?.screens || []).map((item) => new Screen(this.client, { ...item, projectId: this.projectId }));
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }
@@ -65,7 +67,7 @@ export class Project {
      */
     async getScreen(screenId: string): Promise<Screen> {
         try {
-          const raw = await this.client.callTool<any>("get_screen", { projectId: this.projectId, screenId, name: `projects/${this.projectId}/screens/${screenId}` });
+          const raw = await this.client.callTool<GetScreenResponse>("get_screen", { projectId: this.projectId, screenId, name: `projects/${this.projectId}/screens/${screenId}` });
           return new Screen(this.client, { ...raw, projectId: this.projectId });
         } catch (error) {
           throw StitchError.fromUnknown(error);
@@ -76,9 +78,9 @@ export class Project {
      * Creates a new design system for a project. Use this tool when the user wants to set or update the overall visual theme, style, or branding of the application.
      * Tool: create_design_system
      */
-    async createDesignSystem(designSystem: any): Promise<DesignSystem> {
+    async createDesignSystem(designSystem: DesignSystemInput): Promise<DesignSystem> {
         try {
-          const raw = await this.client.callTool<any>("create_design_system", { projectId: this.projectId, designSystem });
+          const raw = await this.client.callTool<CreateDesignSystemResponse>("create_design_system", { projectId: this.projectId, designSystem });
           return new DesignSystem(this.client, { ...raw, projectId: this.projectId });
         } catch (error) {
           throw StitchError.fromUnknown(error);
@@ -91,8 +93,8 @@ export class Project {
      */
     async listDesignSystems(): Promise<DesignSystem[]> {
         try {
-          const raw = await this.client.callTool<any>("list_design_systems", { projectId: this.projectId });
-          return (raw?.designSystems || []).map((item: any) => new DesignSystem(this.client, { ...item, projectId: this.projectId }));
+          const raw = await this.client.callTool<ListDesignSystemsResponse>("list_design_systems", { projectId: this.projectId });
+          return (raw?.designSystems || []).map((item) => new DesignSystem(this.client, { ...item, projectId: this.projectId }));
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }
@@ -101,5 +103,10 @@ export class Project {
     /** Create a DesignSystem handle from an existing ID without an API call. */
     designSystem(id: string): DesignSystem {
         return new DesignSystem(this.client, { name: id, projectId: this.projectId });
+    }
+
+    /** Create a Screen handle from an existing ID without an API call. */
+    screen(id: string): Screen {
+        return new Screen(this.client, { id: id, projectId: this.projectId });
     }
 }

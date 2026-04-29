@@ -27,6 +27,11 @@
           "method": "designSystem",
           "returns": "DesignSystem",
           "description": "Create a DesignSystem handle from an existing ID without an API call."
+        },
+        {
+          "method": "screen",
+          "returns": "Screen",
+          "description": "Create a Screen handle from an existing ID without an API call."
         }
       ],
       "sideEffects": [

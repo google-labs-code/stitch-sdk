@@ -3,11 +3,13 @@
 DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:2f1a623ec115...)
-        domain-map.json     (sha256:baa17d36f4c1...)
-Generated: 2026-04-28T16:31:23.449Z
+        domain-map.json     (sha256:ffa082d8fbe7...)
+Generated: 2026-04-28T20:49:35.251Z
  */
 import { type StitchToolClient } from "../../src/client.js";
 import { StitchError } from "../../src/spec/errors.js";
+import { DesignTheme, File, ProjectMetadata, ScreenInstance, Typography, UserFeedback, ProjectInput, ScreenInput, Asset, BoundingBox, ComponentRegion, Design, DesignSuggestion, DesignSystemInput, ProgressUpdate, ProgressUpdates, PrototypeLink, PrototypeLinks, PrototypeState, PrototypeV2Spec, ScreenMetadata, SessionOutputComponent, VariantOptions, SelectedScreenInstance } from "./types.generated.js";
+import { ListProjectsResponse, CreateProjectResponse } from "./responses.generated.js";
 import { Project } from "../../src/project-ext.js";
 
 /** Main entry point. Manages projects. */
@@ -21,8 +23,8 @@ export class Stitch {
      */
     async projects(): Promise<Project[]> {
         try {
-          const raw = await this.client.callTool<any>("list_projects", {  });
-          return (raw?.projects || []).map((item: any) => new Project(this.client, item));
+          const raw = await this.client.callTool<ListProjectsResponse>("list_projects", {  });
+          return (raw?.projects || []).map((item) => new Project(this.client, item));
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }
@@ -34,7 +36,7 @@ export class Stitch {
      */
     async createProject(title?: string): Promise<Project> {
         try {
-          const raw = await this.client.callTool<any>("create_project", { title });
+          const raw = await this.client.callTool<CreateProjectResponse>("create_project", { title });
           return new Project(this.client, raw);
         } catch (error) {
           throw StitchError.fromUnknown(error);

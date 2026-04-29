@@ -134,14 +134,18 @@ Both methods use cached data from the generation response when available, fallin
 For agents and orchestration scripts that forward JSON payloads to MCP tools:
 
 ```typescript
-import { StitchToolClient } from '@google/stitch-sdk';
+import { stitch } from '@google/stitch-sdk';
 
-const client = new StitchToolClient(); // reads STITCH_API_KEY from env
-const tools = await client.listTools();
-const result = await client.callTool("generate_screen_from_text", {
+// Find available tools
+const { tools } = await stitch.listTools();
+for (const tool of tools) {
+  console.log(`${tool.name}: ${tool.description}`);
+}
+// Call a tool with a JSON payload
+const result = await stitch.callTool("generate_screen_from_text", {
   projectId: "123", prompt: "A login page"
 });
-await client.close();
+await stitch.close();
 ```
 
 ## Error Handling

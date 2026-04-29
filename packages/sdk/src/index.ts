@@ -38,6 +38,9 @@ export { StitchError, StitchErrorCode } from "./spec/errors.js";
 // FIFE URL utilities
 export { buildFifeSuffix, type FifeImageOptions } from "./fife.js";
 
+// Resource name utilities
+export { parseResourceName } from "./utils.js";
+
 // Tool catalog (generated)
 export {
   toolDefinitions,

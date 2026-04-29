@@ -28,6 +28,7 @@ export interface ToolSchema {
   items?: ToolSchema;
   $ref?: string;
   $defs?: Record<string, ToolSchema>;
+  additionalProperties?: ToolSchema;
   enum?: string[];
   description?: string;
   required?: string[];

@@ -52,15 +52,18 @@ runIfConfigured("Stitch Live Integration", () => {
   }, 30000);
 });
 
-// ─── E2E: uploadImage (REST path, API key auth) ───────────────────────────────
+// ─── E2E: uploadImage (REST path) ────────────────────────────────────────────
+// AUTH: BatchCreateScreens accepts API keys. Do NOT change this to use OAuth.
+// If this test fails with 401, the STITCH_API_KEY env var is empty (source .env).
+// If it fails with 403, the key doesn't own the project (account mismatch).
+// See upload-handler.ts DEBUGGING TRAPS for full context.
+const runIfKey = process.env.STITCH_API_KEY ? describe : describe.skip;
 
-const runIfApiKey = process.env.STITCH_API_KEY ? describe : describe.skip;
-
-runIfApiKey("Project.uploadImage (E2E)", () => {
+runIfKey("Project.uploadImage (E2E)", () => {
   let client: StitchToolClient;
   let project: Project;
 
-  const FIXTURE_PNG = resolve(import.meta.dirname, "../fixtures/real-image.png");
+  const FIXTURE_PNG = resolve(import.meta.dirname, "../fixtures/1x1.png");
 
   beforeAll(async () => {
     client = new StitchToolClient({ apiKey: process.env.STITCH_API_KEY });

@@ -3,11 +3,13 @@
 DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:2f1a623ec115...)
-        domain-map.json     (sha256:baa17d36f4c1...)
-Generated: 2026-04-28T16:31:23.449Z
+        domain-map.json     (sha256:ffa082d8fbe7...)
+Generated: 2026-04-28T20:49:35.251Z
  */
 import { type StitchToolClient } from "../../src/client.js";
 import { StitchError } from "../../src/spec/errors.js";
+import { DesignTheme, File, ProjectMetadata, ScreenInstance, Typography, UserFeedback, ProjectInput, ScreenInput, Asset, BoundingBox, ComponentRegion, Design, DesignSuggestion, DesignSystemInput, ProgressUpdate, ProgressUpdates, PrototypeLink, PrototypeLinks, PrototypeState, PrototypeV2Spec, ScreenMetadata, SessionOutputComponent, VariantOptions, SelectedScreenInstance } from "./types.generated.js";
+import { EditScreensResponse, GenerateVariantsResponse, GetScreenResponse } from "./responses.generated.js";
 
 /** A generated UI screen. Provides access to HTML and screenshots. */
 export class Screen {
@@ -37,7 +39,7 @@ export class Screen {
      */
     async edit(prompt: string, deviceType?: "DEVICE_TYPE_UNSPECIFIED" | "MOBILE" | "DESKTOP" | "TABLET" | "AGNOSTIC", modelId?: "MODEL_ID_UNSPECIFIED" | "GEMINI_3_PRO" | "GEMINI_3_FLASH" | "GEMINI_3_1_PRO"): Promise<Screen> {
         try {
-          const raw = await this.client.callTool<any>("edit_screens", { projectId: this.projectId, selectedScreenIds: [this.screenId], prompt, deviceType, modelId });
+          const raw = await this.client.callTool<EditScreensResponse>("edit_screens", { projectId: this.projectId, selectedScreenIds: [this.screenId], prompt, deviceType, modelId });
           const _projected = (raw?.outputComponents ?? []).find((c: any) => c?.design?.screens != null)?.design?.screens?.[0];
           if (!_projected) throw new StitchError({ code: "UNKNOWN_ERROR", message: "Incomplete API response from edit_screens: expected object at projection path", recoverable: false });
           return new Screen(this.client, { ..._projected, projectId: this.projectId })
@@ -50,10 +52,10 @@ export class Screen {
      * Generates variants of existing screens within a project using a text prompt.
      * Tool: generate_variants
      */
-    async variants(prompt: string, variantOptions: any, deviceType?: "DEVICE_TYPE_UNSPECIFIED" | "MOBILE" | "DESKTOP" | "TABLET" | "AGNOSTIC", modelId?: "MODEL_ID_UNSPECIFIED" | "GEMINI_3_PRO" | "GEMINI_3_FLASH" | "GEMINI_3_1_PRO"): Promise<Screen[]> {
+    async variants(prompt: string, variantOptions: VariantOptions, deviceType?: "DEVICE_TYPE_UNSPECIFIED" | "MOBILE" | "DESKTOP" | "TABLET" | "AGNOSTIC", modelId?: "MODEL_ID_UNSPECIFIED" | "GEMINI_3_PRO" | "GEMINI_3_FLASH" | "GEMINI_3_1_PRO"): Promise<Screen[]> {
         try {
-          const raw = await this.client.callTool<any>("generate_variants", { projectId: this.projectId, selectedScreenIds: [this.screenId], prompt, variantOptions, deviceType, modelId });
-          return ((raw.outputComponents || []).flatMap((a: any) => a?.design?.screens || []) || []).map((item: any) => new Screen(this.client, { ...item, projectId: this.projectId }));
+          const raw = await this.client.callTool<GenerateVariantsResponse>("generate_variants", { projectId: this.projectId, selectedScreenIds: [this.screenId], prompt, variantOptions, deviceType, modelId });
+          return ((raw.outputComponents || []).flatMap((a: any) => a?.design?.screens || []) || []).map((item) => new Screen(this.client, { ...item, projectId: this.projectId }));
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }
@@ -68,7 +70,7 @@ export class Screen {
         if (this.data?.htmlCode?.downloadUrl) return this.data?.htmlCode?.downloadUrl;
         
         try {
-          const raw = await this.client.callTool<any>("get_screen", { projectId: this.projectId, screenId: this.screenId, name: `projects/${this.projectId}/screens/${this.screenId}` });
+          const raw = await this.client.callTool<GetScreenResponse>("get_screen", { projectId: this.projectId, screenId: this.screenId, name: `projects/${this.projectId}/screens/${this.screenId}` });
           return raw?.htmlCode?.downloadUrl || "";
         } catch (error) {
           throw StitchError.fromUnknown(error);
@@ -84,7 +86,7 @@ export class Screen {
         if (this.data?.screenshot?.downloadUrl) return this.data?.screenshot?.downloadUrl;
         
         try {
-          const raw = await this.client.callTool<any>("get_screen", { projectId: this.projectId, screenId: this.screenId, name: `projects/${this.projectId}/screens/${this.screenId}` });
+          const raw = await this.client.callTool<GetScreenResponse>("get_screen", { projectId: this.projectId, screenId: this.screenId, name: `projects/${this.projectId}/screens/${this.screenId}` });
           return raw?.screenshot?.downloadUrl || "";
         } catch (error) {
           throw StitchError.fromUnknown(error);

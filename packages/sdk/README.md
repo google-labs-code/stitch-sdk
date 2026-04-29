@@ -100,15 +100,18 @@ for (const tool of tools) {
   console.log(tool.name, tool.description);
 }
 
-// Call a tool directly
-const result = await client.callTool("create_project", {
+// Call a tool directly — returns are now strongly typed!
+import { CreateProjectResponse } from "@google/stitch-sdk";
+const result = await client.callTool<CreateProjectResponse>("create_project", {
   title: "Agent Project",
 });
+console.log(result.project?.projectId);
 
 await client.close();
 ```
 
 The client auto-connects on the first `callTool` or `listTools` call. No explicit `connect()` needed.
+All tool responses and input parameters are strictly typed and exported from the SDK.
 
 ## API Reference
 
@@ -165,8 +168,10 @@ A generated UI screen. Provides access to HTML and screenshots.
 Low-level authenticated pipe to the Stitch MCP server. Use this when you need direct tool access (e.g., in an AI agent).
 
 ```ts
+import { StitchToolClient, GetScreenResponse } from "@google/stitch-sdk";
+
 const client = new StitchToolClient({ apiKey: "..." });
-const result = await client.callTool<any>("tool_name", { arg: "value" });
+const result = await client.callTool<GetScreenResponse>("get_screen", { projectId: "...", screenId: "..." });
 await client.close();
 ```
 

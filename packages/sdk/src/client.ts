@@ -191,7 +191,13 @@ export class StitchToolClient implements StitchToolClientSpec {
    * Make a direct REST POST to the Stitch API.
    *
    * Used for endpoints not available as MCP tools (e.g. BatchCreateScreens).
-   * Reuses the same auth headers as callTool. Throws StitchError on HTTP errors.
+   * Reuses the same auth headers as callTool — both API key and OAuth Bearer
+   * token are supported by all current REST POST endpoints.
+   *
+   * Throws StitchError on HTTP errors. Common failure modes:
+   *   - 401 CREDENTIALS_MISSING → the API key was empty (source .env first)
+   *   - 403 PERMISSION_DENIED   → the key doesn't own the target project
+   *   Neither means "API keys are unsupported." See upload-handler.ts for full context.
    */
   async httpPost<T>(path: string, body: unknown): Promise<T> {
     const url = `${this.config.baseUrl.replace(/\/mcp$/, '').replace(/\/$/, '')}/v1/${path}`;

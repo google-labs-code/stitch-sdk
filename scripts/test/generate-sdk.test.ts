@@ -27,7 +27,10 @@ import {
   emitCacheProjection,
   validateProjection,
   jsonSchemaToTs,
+  emitNamedInterfaces,
+  emitResponseType,
   generateArgsObject,
+  generateParamType,
   resolveRef,
 } from "../generate-sdk.js";
 
@@ -238,8 +241,146 @@ describe("jsonSchemaToTs", () => {
     expect(jsonSchemaToTs(undefined)).toBe("any");
   });
 
-  test("object type → any", () => {
-    expect(jsonSchemaToTs({ type: "object" })).toBe("any");
+  test("bare object type → Record<string, unknown>", () => {
+    expect(jsonSchemaToTs({ type: "object" })).toBe("Record<string, unknown>");
+  });
+
+  test("object with properties → inline type literal", () => {
+    const result = jsonSchemaToTs({
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        count: { type: "integer" },
+      },
+      required: ["name"],
+    });
+    expect(result).toBe("{ name: string; count?: number }");
+  });
+
+  test("$ref resolves to inline type via defs", () => {
+    const defs = {
+      Typography: {
+        type: "object" as const,
+        properties: {
+          fontSize: { type: "string" as const },
+          fontWeight: { type: "string" as const },
+        },
+      },
+    };
+    const result = jsonSchemaToTs({ $ref: "#/$defs/Typography" }, defs);
+    expect(result).toBe("{ fontSize?: string; fontWeight?: string }");
+  });
+
+  test("object with additionalProperties → Record<string, T>", () => {
+    const result = jsonSchemaToTs({
+      type: "object",
+      additionalProperties: { type: "string" },
+    });
+    expect(result).toBe("Record<string, string>");
+  });
+
+  test("object with additionalProperties $ref → Record<string, Resolved>", () => {
+    const defs = {
+      Typography: {
+        type: "object" as const,
+        properties: { fontSize: { type: "string" as const } },
+      },
+    };
+    const result = jsonSchemaToTs(
+      { type: "object", additionalProperties: { $ref: "#/$defs/Typography" } },
+      defs,
+    );
+    expect(result).toBe("Record<string, { fontSize?: string }>");
+  });
+
+  test("$ref resolves to named type when in namedTypes map", () => {
+    const namedTypes = new Map([["Typography", "Typography"]]);
+    const result = jsonSchemaToTs(
+      { $ref: "#/$defs/Typography" },
+      { Typography: { type: "object" as const, properties: { fontSize: { type: "string" as const } } } },
+      namedTypes,
+    );
+    expect(result).toBe("Typography");
+  });
+});
+
+// ── emitNamedInterfaces ──────────────────────────────────────
+
+describe("emitNamedInterfaces", () => {
+  test("generates interfaces from $defs", () => {
+    const defs = {
+      Typography: {
+        type: "object" as const,
+        description: "A typography token.",
+        properties: {
+          fontSize: { type: "string" as const, description: "CSS font-size." },
+          fontWeight: { type: "string" as const },
+        },
+      },
+    };
+    const namedTypes = new Map([["Typography", "Typography"]]);
+    const result = emitNamedInterfaces(defs, namedTypes);
+    expect(result).toContain("export interface Typography {");
+    expect(result).toContain("fontSize?: string;");
+    expect(result).toContain("fontWeight?: string;");
+    expect(result).toContain("/** A typography token. */");
+  });
+});
+
+// ── generateParamType ───────────────────────────────────────
+
+describe("generateParamType", () => {
+  test("uses named type for $ref", () => {
+    const tool: any = {
+      name: "apply_design_system",
+      inputSchema: {
+        properties: {
+          selectedScreenInstances: {
+            type: "array",
+            items: { $ref: "#/$defs/SelectedScreenInstance" },
+          },
+        },
+        $defs: {
+          SelectedScreenInstance: {
+            type: "object",
+            properties: { id: { type: "string" }, sourceScreen: { type: "string" } },
+            required: ["id", "sourceScreen"],
+          },
+        },
+      },
+    };
+    const namedTypes = new Map([["SelectedScreenInstance", "SelectedScreenInstance"]]);
+    const args = { selectedScreenInstances: { from: "param" as const } };
+    const result = generateParamType(tool, args as any, namedTypes);
+    expect(result).toContain("selectedScreenInstances: SelectedScreenInstance[]");
+  });
+});
+
+// ── emitResponseType ────────────────────────────────────────
+
+describe("emitResponseType", () => {
+  test("generates interface from outputSchema", () => {
+    const tool: any = {
+      name: "list_screens",
+      outputSchema: {
+        type: "object",
+        properties: {
+          screens: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                id: { type: "string" },
+              },
+            },
+          },
+        },
+      },
+    };
+    const result = emitResponseType(tool, new Map());
+    expect(result).toContain("export interface ListScreensResponse {");
+    expect(result).toContain("screens?: { name?: string;\n  id?: string }[];");
   });
 });
 
