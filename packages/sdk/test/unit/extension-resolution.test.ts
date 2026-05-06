@@ -18,8 +18,8 @@ describe('SDK Extension Resolution', () => {
     const project = projects[0];
 
     // 4. Assert that the returned object is actually the extended subclass
-    // By verifying the existence of the handwritten uploadImage method
+    // By verifying the existence of the handwritten upload method
     expect(project).toBeDefined();
-    expect(typeof project!.uploadImage).toBe('function');
+    expect(typeof project!.upload).toBe('function');
   });
 });

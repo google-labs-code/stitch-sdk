@@ -379,6 +379,7 @@ describe("SDK Unit Tests", () => {
       expect(result).toEqual([]);
     });
 
+
     it("generate should throw StitchError on failure", async () => {
       const project = new Project(mockClient, projectId);
 

@@ -27,14 +27,16 @@ export const SUPPORTED_MIME_TYPES = {
   '.jpg':  'image/jpeg',
   '.jpeg': 'image/jpeg',
   '.webp': 'image/webp',
+  '.html': 'text/html',
+  '.htm':  'text/html',
 } as const;
 
 export type SupportedExtension = keyof typeof SUPPORTED_MIME_TYPES;
 
 // ── Input ──────────────────────────────────────────────────────────────────────
 
-export const UploadImageInputSchema = z.object({
-  /** Absolute or relative path to the image file on disk. */
+export const UploadInputSchema = z.object({
+  /** Absolute or relative path to the asset file on disk. */
   filePath: z.string().min(1),
   /** Optional display title for the created screen. */
   title: z.string().optional(),
@@ -42,11 +44,11 @@ export const UploadImageInputSchema = z.object({
   createScreenInstances: z.boolean().default(true),
 });
 
-export type UploadImageInput = z.infer<typeof UploadImageInputSchema>;
+export type UploadInput = z.infer<typeof UploadInputSchema>;
 
 // ── Error Codes ────────────────────────────────────────────────────────────────
 
-export const UploadImageErrorCode = z.enum([
+export const UploadErrorCode = z.enum([
   'FILE_NOT_FOUND',
   'UNSUPPORTED_FORMAT',
   'UPLOAD_FAILED',
@@ -54,16 +56,16 @@ export const UploadImageErrorCode = z.enum([
   'UNKNOWN_ERROR',
 ]);
 
-export type UploadImageErrorCode = z.infer<typeof UploadImageErrorCode>;
+export type UploadErrorCode = z.infer<typeof UploadErrorCode>;
 
 // ── Result ─────────────────────────────────────────────────────────────────────
 
-export type UploadImageResult =
+export type UploadResult =
   | { success: true; screens: Screen[] }
   | {
       success: false;
       error: {
-        code: UploadImageErrorCode;
+        code: UploadErrorCode;
         message: string;
         recoverable: boolean;
       };
@@ -72,9 +74,11 @@ export type UploadImageResult =
 // ── Interface ──────────────────────────────────────────────────────────────────
 
 /**
- * Contract for the uploadImage operation.
- * Implementations must never throw — all failures return UploadImageResult.
+ * Contract for the upload operation.
+ * Implementations must never throw — all failures return UploadResult.
  */
-export interface UploadImageSpec {
-  execute(projectId: string, input: UploadImageInput): Promise<UploadImageResult>;
+export interface UploadSpec {
+  execute(projectId: string, input: UploadInput): Promise<UploadResult>;
 }
+
+

@@ -13,8 +13,11 @@
 // limitations under the License.
 
 import { describe, it, expect, vi } from "vitest";
-import { UploadImageInputSchema } from "../../src/spec/upload.js";
-import { UploadImageHandler } from "../../src/upload-handler.js";
+import { Project } from "../../src/project-ext.js";
+import { StitchError } from "../../src/spec/errors.js";
+import { StitchToolClient } from "../../src/client.js";
+import { UploadInputSchema } from "../../src/spec/upload.js";
+import { UploadHandler } from "../../src/upload-handler.js";
 import type { StitchToolClientSpec } from "../../src/spec/client.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -34,18 +37,14 @@ function createMockClient(
   };
 }
 
-// ─── Slice 1: Contract Tests ──────────────────────────────────────────────────
-
-describe("UploadImageInputSchema", () => {
-  // Test 1: rejects empty filePath
+describe("UploadInputSchema", () => {
   it("rejects an empty filePath", () => {
-    const result = UploadImageInputSchema.safeParse({ filePath: "" });
+    const result = UploadInputSchema.safeParse({ filePath: "" });
     expect(result.success).toBe(false);
   });
 
-  // Test 2: parses valid input, defaults createScreenInstances to true
   it("parses valid input with createScreenInstances defaulting to true", () => {
-    const result = UploadImageInputSchema.safeParse({ filePath: "/img/a.png" });
+    const result = UploadInputSchema.safeParse({ filePath: "/img/a.png" });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.createScreenInstances).toBe(true);
@@ -53,9 +52,8 @@ describe("UploadImageInputSchema", () => {
     }
   });
 
-  // Test 3: title is optional
   it("allows input without a title", () => {
-    const result = UploadImageInputSchema.safeParse({
+    const result = UploadInputSchema.safeParse({
       filePath: "/img/b.webp",
       createScreenInstances: false,
     });
@@ -69,10 +67,17 @@ describe("UploadImageInputSchema", () => {
 
 // ─── Slice 2: Handler Tests ───────────────────────────────────────────────────
 
-describe("UploadImageHandler", () => {
-  // Test 4: UNSUPPORTED_FORMAT for .gif
+describe("UploadHandler (TDD RED)", () => {
+  it("should exist as a valid handler class constructor and be executable", async () => {
+    expect(UploadHandler).toBeDefined();
+    const handler = new UploadHandler(createMockClient());
+    expect(handler.execute).toBeDefined();
+  });
+});
+
+describe("UploadHandler", () => {
   it("returns UNSUPPORTED_FORMAT for a .gif file", async () => {
-    const handler = new UploadImageHandler(createMockClient());
+    const handler = new UploadHandler(createMockClient());
     const result = await handler.execute("proj-1", {
       filePath: "/images/animation.gif",
       createScreenInstances: true,
@@ -84,15 +89,12 @@ describe("UploadImageHandler", () => {
     }
   });
 
-  // Test 5: FILE_NOT_FOUND for a path that doesn't exist
-  // Note: vi.mock at module level stubs fs.access globally, so we need to
-  // temporarily restore the real behavior for this test.
   it("returns FILE_NOT_FOUND for a nonexistent .png path", async () => {
     const fs = await import("node:fs/promises");
     const realReadFile = (await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises")).readFile;
     vi.mocked(fs.readFile).mockImplementationOnce(realReadFile as any);
 
-    const handler = new UploadImageHandler(createMockClient());
+    const handler = new UploadHandler(createMockClient());
     const result = await handler.execute("proj-1", {
       filePath: "/absolutely/nonexistent/photo.png",
       createScreenInstances: true,
@@ -104,30 +106,8 @@ describe("UploadImageHandler", () => {
     }
   });
 
-  // Test 6: successful upload → httpPost called with correct path → Screen[]
-  it("calls httpPost with the correct REST path and returns Screen[]", async () => {
-    const httpPost = vi.fn().mockResolvedValue({
-      screens: [{ name: "projects/proj-1/screens/s-123", title: "Uploaded" }],
-    });
-
-    // Use the package.json as a stand-in "image" — it exists on disk.
-    // We rename it conceptually by reading the real path with a .png extension alias
-    // via symlinking would be complex; instead we swap fs.access/readFile via vi.mock.
-    // Since we can't dynamically mock fs here without vi.mock at module level,
-    // we use the vitest.config.ts file (which exists) and override the extension
-    // check by using a .png path that references a real file.
-    //
-    // Practical approach: mock the entire 'node:fs/promises' module.
-    // This test is deferred to the vi.mock block below.
-    expect(httpPost).toBeDefined(); // placeholder — covered by mocked block below
-  });
-
-  // Test 7: UPLOAD_FAILED when httpPost throws generic error
   it("returns UPLOAD_FAILED when httpPost throws a generic server error", async () => {
-    // To reach httpPost the file must pass ext + access checks.
-    // We'll use a real file path with .png extension — handled via the mock block.
-    // Placeholder: extension guard verified here using .gif
-    const handler = new UploadImageHandler(
+    const handler = new UploadHandler(
       createMockClient({
         httpPost: vi.fn().mockRejectedValue(new Error("Internal Server Error")),
       }),
@@ -136,17 +116,14 @@ describe("UploadImageHandler", () => {
       filePath: "/tmp/missing.gif",
       createScreenInstances: true,
     });
-    // .gif hits UNSUPPORTED_FORMAT before httpPost
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.code).toBe("UNSUPPORTED_FORMAT");
     }
   });
 
-  // Test 8: AUTH_FAILED when httpPost throws with 401 in message
   it("returns AUTH_FAILED when httpPost throws with 401 in message", async () => {
-    // Deferred to fs-mocked block below. Verify format guard works for .gif here.
-    const handler = new UploadImageHandler(
+    const handler = new UploadHandler(
       createMockClient({
         httpPost: vi.fn().mockRejectedValue(new Error("HTTP 401")),
       }),
@@ -159,12 +136,6 @@ describe("UploadImageHandler", () => {
     if (!result.success) {
       expect(result.error.code).toBe("UNSUPPORTED_FORMAT");
     }
-  });
-
-  // Test 9: correct REST path is passed to httpPost
-  it("passes the right REST path to httpPost", async () => {
-    // Covered by the vi.mock block below — placeholder here
-    expect(true).toBe(true);
   });
 });
 
@@ -179,13 +150,12 @@ vi.mock("node:fs/promises", async (importOriginal) => {
   };
 });
 
-describe("UploadImageHandler (fs mocked)", () => {
-  // Test 6 (real): successful upload returns Screen[]
+describe("UploadHandler (fs mocked)", () => {
   it("returns Screen[] on a successful upload", async () => {
     const httpPost = vi.fn().mockResolvedValue({
       results: [{ screen: { name: "projects/proj-1/screens/s-abc", title: "Test" } }],
     });
-    const handler = new UploadImageHandler(createMockClient({ httpPost }));
+    const handler = new UploadHandler(createMockClient({ httpPost }));
     const result = await handler.execute("proj-1", {
       filePath: "/fake/design.png",
       createScreenInstances: true,
@@ -201,7 +171,7 @@ describe("UploadImageHandler (fs mocked)", () => {
     vi.mocked(fs.access).mockClear();
     
     const httpPost = vi.fn().mockResolvedValue({ results: [] });
-    const handler = new UploadImageHandler(createMockClient({ httpPost }));
+    const handler = new UploadHandler(createMockClient({ httpPost }));
     
     await handler.execute("proj-1", {
       filePath: "/fake/design.png",
@@ -211,10 +181,9 @@ describe("UploadImageHandler (fs mocked)", () => {
     expect(fs.access).not.toHaveBeenCalled();
   });
 
-  // Test 7 (real): UPLOAD_FAILED when httpPost throws
   it("returns UPLOAD_FAILED when httpPost throws a generic server error", async () => {
     const httpPost = vi.fn().mockRejectedValue(new Error("Internal Server Error"));
-    const handler = new UploadImageHandler(createMockClient({ httpPost }));
+    const handler = new UploadHandler(createMockClient({ httpPost }));
     const result = await handler.execute("proj-1", {
       filePath: "/fake/design.png",
       createScreenInstances: true,
@@ -225,10 +194,9 @@ describe("UploadImageHandler (fs mocked)", () => {
     }
   });
 
-  // Test 8 (real): AUTH_FAILED when httpPost throws 401
   it("returns AUTH_FAILED when httpPost throws with 401 in message", async () => {
     const httpPost = vi.fn().mockRejectedValue(new Error("HTTP 401: Unauthorized"));
-    const handler = new UploadImageHandler(createMockClient({ httpPost }));
+    const handler = new UploadHandler(createMockClient({ httpPost }));
     const result = await handler.execute("proj-1", {
       filePath: "/fake/design.png",
       createScreenInstances: true,
@@ -239,10 +207,9 @@ describe("UploadImageHandler (fs mocked)", () => {
     }
   });
 
-  // Test 9: correct REST path is passed to httpPost
   it("calls httpPost with the correct REST path", async () => {
     const httpPost = vi.fn().mockResolvedValue({ screens: [] });
-    const handler = new UploadImageHandler(createMockClient({ httpPost }));
+    const handler = new UploadHandler(createMockClient({ httpPost }));
     await handler.execute("my-proj-id", {
       filePath: "/fake/design.webp",
       createScreenInstances: true,
@@ -254,42 +221,30 @@ describe("UploadImageHandler (fs mocked)", () => {
   });
 });
 
-// ─── Slice 4: Integration Tests (Project.uploadImage) ────────────────────────
+// ─── Slice 4: Integration Tests (Project.upload) ─────────────────────────────
 
-import { Project } from "../../src/project-ext.js";
-import { StitchError } from "../../src/spec/errors.js";
-import { StitchToolClient } from "../../src/client.js";
 
-vi.mock(
-  "../../src/client.js",
-  async (importOriginal) => {
-    const real = await importOriginal<typeof import("../../src/client.js")>();
-    return real;
-  },
-);
-
-describe("Project.uploadImage (integration)", () => {
+describe("Project.upload (generic integration)", () => {
   function createProjectWithMockedClient(httpPostMock: ReturnType<typeof vi.fn>) {
-    // Create a real Project with a mock client that satisfies StitchToolClientSpec
     const mockClient = createMockClient({ httpPost: httpPostMock as unknown as StitchToolClientSpec['httpPost'] });
     return new Project(mockClient as unknown as StitchToolClient, "test-project-id");
   }
 
-  // Test 12: throws StitchError when handler returns failure (UNSUPPORTED_FORMAT)
-  it("throws StitchError when the image format is unsupported", async () => {
+  it("throws StitchError when the asset format is unsupported", async () => {
     const proj = createProjectWithMockedClient(vi.fn());
     await expect(
-      proj.uploadImage("/path/to/animation.gif"),
+      proj.upload("/path/to/animation.gif"),
     ).rejects.toThrow(StitchError);
   });
 
-  // Test 13: returns Screen[] on success
-  it("returns Screen[] when the upload succeeds", async () => {
+  it("should surface a valid generic upload method capability", async () => {
     const httpPost = vi.fn().mockResolvedValue({
-      results: [{ screen: { name: "projects/test-project-id/screens/s-xyz", title: "Uploaded" } }],
+      results: [{ screen: { name: "projects/test-project-id/screens/s-abc", title: "Generic" } }],
     });
     const proj = createProjectWithMockedClient(httpPost);
-    const screens = await proj.uploadImage("/fake/design.png");
+    expect(proj.upload).toBeDefined();
+    const screens = await proj.upload("/fake/document.html");
     expect(screens).toHaveLength(1);
   });
 });
+

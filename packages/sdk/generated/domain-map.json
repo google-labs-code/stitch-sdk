@@ -36,7 +36,7 @@
       ],
       "sideEffects": [
         {
-          "method": "uploadImage",
+          "method": "upload",
           "reason": "private_rest",
           "specPath": "src/spec/upload.ts"
         },

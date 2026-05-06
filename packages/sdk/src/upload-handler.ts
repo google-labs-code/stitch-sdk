@@ -41,10 +41,10 @@ import type { StitchToolClientSpec } from './spec/client.js';
 import {
   SUPPORTED_MIME_TYPES,
   type SupportedExtension,
-  type UploadImageInput,
-  type UploadImageResult,
-  type UploadImageErrorCode,
-  type UploadImageSpec,
+  type UploadInput,
+  type UploadResult,
+  type UploadErrorCode,
+  type UploadSpec,
 } from './spec/upload.js';
 import { Screen } from '../generated/src/screen.js';
 
@@ -53,16 +53,24 @@ function buildBatchCreateScreensBody(
   projectId: string,
   fileContentBase64: string,
   mimeType: string,
-  input: UploadImageInput,
+  input: UploadInput,
 ) {
+  const fileObj = {
+    fileContentBase64,
+    mimeType,
+  };
+
+  const isHtml = mimeType === 'text/html';
   const screen: Record<string, unknown> = {
-    screenshot: {
-      fileContentBase64,
-      mimeType,
-    },
-    screenType: 'IMAGE',
+    screenType: isHtml ? 'DOCUMENT' : 'IMAGE',
     isCreatedByClient: true,
   };
+
+  if (isHtml) {
+    screen['htmlCode'] = fileObj;
+  } else {
+    screen['screenshot'] = fileObj;
+  }
 
   if (input.title) {
     screen['title'] = input.title;
@@ -76,16 +84,14 @@ function buildBatchCreateScreensBody(
 }
 
 /**
- * Handler for uploadImage — implements UploadImageSpec.
- *
- * Never throws. All failures are returned as UploadImageResult with a typed
- * error code. The caller (Project.uploadImage) surfaces failures as StitchError.
+ * Handler for the upload capability — implements UploadSpec.
+ * Never throws. All failures return an UploadResult value with a classified error code.
  */
-export class UploadImageHandler implements UploadImageSpec {
+export class UploadHandler implements UploadSpec {
   constructor(private readonly client: StitchToolClientSpec) {}
 
-  async execute(projectId: string, input: UploadImageInput): Promise<UploadImageResult> {
-    // ── Step 1: Validate extension → typed error code ────────────────────────
+  async execute(projectId: string, input: UploadInput): Promise<UploadResult> {
+    // ── Step 1: Validate extension ───────────────────────────────────────────
     const ext = path.extname(input.filePath).toLowerCase();
     const mimeType = SUPPORTED_MIME_TYPES[ext as SupportedExtension];
     if (!mimeType) {
@@ -117,12 +123,10 @@ export class UploadImageHandler implements UploadImageSpec {
         body,
       );
 
-      // ── Step 3: Project the response into Screen[] ───────────────────────
-      // BatchCreateScreens returns { results: [{ screen: { ... } }] }
+      // ── Step 3: Project the response into Screen[] ─────────────────────────
       const results: Array<{ screen: any }> = raw?.results ?? [];
       const screens: Screen[] = results.map((r) => {
         const screenData = { ...r.screen, projectId };
-        // If API didn't return an ID but returned a file name, extract ID from it
         if (!screenData.id && screenData.screenshot?.name) {
           const parts = screenData.screenshot.name.split('/files/');
           if (parts.length === 2) {
@@ -131,7 +135,6 @@ export class UploadImageHandler implements UploadImageSpec {
         }
         return new Screen(this.client as any, screenData);
       });
-
 
       return { success: true, screens };
     } catch (err) {
@@ -146,7 +149,7 @@ export class UploadImageHandler implements UploadImageSpec {
         };
       }
       const msg = err instanceof Error ? err.message : String(err);
-      const code: UploadImageErrorCode =
+      const code: UploadErrorCode =
         msg.includes('401') || msg.includes('403') || msg.toLowerCase().includes('auth')
           ? 'AUTH_FAILED'
           : 'UPLOAD_FAILED';
@@ -158,3 +161,5 @@ export class UploadImageHandler implements UploadImageSpec {
     }
   }
 }
+
+

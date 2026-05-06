@@ -31,35 +31,26 @@ import { DownloadAssetsHandler } from './download-handler.js';
 import { DownloadAssetsInputSchema } from './spec/download.js';
 import type { DownloadAssetsOutput } from './spec/download.js';
 import {
-  UploadImageInputSchema,
-  type UploadImageInput,
+  UploadInputSchema,
+  type UploadInput,
 } from './spec/upload.js';
-import { UploadImageHandler } from './upload-handler.js';
+import { UploadHandler } from './upload-handler.js';
 
 export class Project extends GeneratedProject {
+
   /**
-   * Upload an image file to the project and create a new Screen from it.
+   * Upload any supported design or document file asset (PNG, JPG, WEBP, HTML) into the project.
+   * Creates a new screen canvas entity from the file contents.
    *
-   * WHY THIS IS NOT GENERATED:
-   *   BatchCreateScreens is a private REST endpoint — it has no MCP tool
-   *   in tools-manifest.json. It also requires reading a file from disk and
-   *   base64-encoding it, which the codegen arg-routing model cannot express.
-   *
-   * @param filePath - Absolute or relative path to the image (PNG, JPG, JPEG, WEBP).
-   * @param opts - Optional screen title and createScreenInstances flag.
-   * @returns An array of Screen objects created from the upload.
-   * @throws {StitchError} on file not found, unsupported format, or upload failure.
-   *
-   * @example
-   * const [screen] = await project.uploadImage('./mockup.png', { title: 'Home Screen' });
-   * const html = await screen.getHtml();
+   * @param filePath - Absolute or relative path to the asset file.
+   * @param opts - Optional parameter overrides.
    */
-  async uploadImage(
+  async upload(
     filePath: string,
-    opts?: Partial<Omit<UploadImageInput, 'filePath'>>,
+    opts?: Partial<Omit<UploadInput, 'filePath'>>,
   ): Promise<Screen[]> {
-    const input = UploadImageInputSchema.parse({ filePath, ...opts });
-    const handler = new UploadImageHandler(this.client);
+    const input = UploadInputSchema.parse({ filePath, ...opts });
+    const handler = new UploadHandler(this.client);
     const result = await handler.execute(this.projectId, input);
 
     if (!result.success) {

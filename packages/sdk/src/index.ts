@@ -63,9 +63,9 @@ export type {
 
 // Upload types
 export type {
-  UploadImageInput,
-  UploadImageResult,
-  UploadImageErrorCode,
+  UploadInput,
+  UploadResult,
+  UploadErrorCode,
 } from "./spec/upload.js";
 
 // Download types
