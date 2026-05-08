@@ -236,6 +236,63 @@ export class StitchToolClient implements StitchToolClientSpec {
   async listTools() {
     if (!this.isConnected) await this.connect();
     const remoteTools = await this.client.listTools();
+    
+    const tools = remoteTools.tools || [];
+    
+    // Resilient Schema Repair: Dynamically patch broken $ref schemas from the Stitch backend
+    for (const tool of tools) {
+      const schema = tool.inputSchema as any;
+      if (schema && typeof schema === 'object') {
+        schema.$defs = schema.$defs || {};
+        
+        // Inject the missing ScreenInstance definition if referenced
+        if (!schema.$defs.ScreenInstance) {
+          schema.$defs.ScreenInstance = {
+            type: 'object',
+            description: 'An instance of a screen on the project.',
+            properties: {
+              groupId: { type: 'string' },
+              groupName: { type: 'string' },
+              height: { type: 'integer', format: 'int32' },
+              hidden: { type: 'boolean' },
+              id: { type: 'string' },
+              isFavourite: { type: 'boolean' },
+              label: { type: 'string' },
+              sourceAsset: { type: 'string' },
+              sourceScreen: { type: 'string' },
+              type: {
+                type: 'string',
+                enum: [
+                  'SCREEN_INSTANCE_TYPE_UNSPECIFIED',
+                  'SCREEN_INSTANCE',
+                  'DESIGN_SYSTEM_INSTANCE',
+                  'GROUP_INSTANCE'
+                ]
+              },
+              width: { type: 'integer', format: 'int32' },
+              x: { type: 'integer', format: 'int32' },
+              y: { type: 'integer', format: 'int32' }
+            }
+          };
+        }
+
+        // Inject the missing File definition if referenced
+        if (!schema.$defs.File) {
+          schema.$defs.File = {
+            type: 'object',
+            description: 'A File resource.',
+            properties: {
+              downloadUrl: { type: 'string' },
+              fileContentBase64: { type: 'string', writeOnly: true },
+              mimeType: { type: 'string' },
+              name: { type: 'string' },
+              uploadBlobId: { type: 'string' }
+            }
+          };
+        }
+      }
+    }
+
     const localTools = this.localVirtualTools.map(t => ({
       name: t.name,
       description: t.description,
@@ -243,7 +300,7 @@ export class StitchToolClient implements StitchToolClientSpec {
       source: t.source
     }));
     return {
-      tools: [...(remoteTools.tools || []), ...localTools]
+      tools: [...tools, ...localTools]
     };
   }
 
