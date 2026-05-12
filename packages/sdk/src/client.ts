@@ -14,6 +14,7 @@
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { ListToolsResultSchema } from "@modelcontextprotocol/sdk/types.js";
 import {
   StitchConfigSchema,
   StitchConfig,
@@ -23,6 +24,7 @@ import {
 import { StitchError, StitchErrorCode } from "./spec/errors.js";
 import { buildAuthHeaders as buildBaseAuthHeaders } from "./auth.js";
 import { SDK_VERSION } from "./version.js";
+import { repairToolSchemas } from "./schema-repair.js";
 
 /**
  * Authenticated tool pipe for the Stitch MCP Server.
@@ -235,63 +237,25 @@ export class StitchToolClient implements StitchToolClientSpec {
 
   async listTools() {
     if (!this.isConnected) await this.connect();
-    const remoteTools = await this.client.listTools();
+
+    // CRITICAL: We use a raw request() instead of this.client.listTools()
+    // because Client.listTools() eagerly compiles outputSchema with AJV
+    // via cacheToolMetadata(). If the Stitch backend returns schemas with
+    // $ref to missing $defs (e.g. #/$defs/ScreenInstance), AJV throws a
+    // MissingRefError BEFORE our schema repair code can run.
+    //
+    // By using request() directly, we get the raw tool list, apply schema
+    // repair to inject missing $defs, and avoid the AJV crash entirely.
+    const remoteTools = await (this.client as any).request(
+      { method: 'tools/list', params: {} },
+      ListToolsResultSchema,
+    );
     
     const tools = remoteTools.tools || [];
     
-    // Resilient Schema Repair: Dynamically patch broken $ref schemas from the Stitch backend
-    for (const tool of tools) {
-      const schema = tool.inputSchema as any;
-      if (schema && typeof schema === 'object') {
-        schema.$defs = schema.$defs || {};
-        
-        // Inject the missing ScreenInstance definition if referenced
-        if (!schema.$defs.ScreenInstance) {
-          schema.$defs.ScreenInstance = {
-            type: 'object',
-            description: 'An instance of a screen on the project.',
-            properties: {
-              groupId: { type: 'string' },
-              groupName: { type: 'string' },
-              height: { type: 'integer', format: 'int32' },
-              hidden: { type: 'boolean' },
-              id: { type: 'string' },
-              isFavourite: { type: 'boolean' },
-              label: { type: 'string' },
-              sourceAsset: { type: 'string' },
-              sourceScreen: { type: 'string' },
-              type: {
-                type: 'string',
-                enum: [
-                  'SCREEN_INSTANCE_TYPE_UNSPECIFIED',
-                  'SCREEN_INSTANCE',
-                  'DESIGN_SYSTEM_INSTANCE',
-                  'GROUP_INSTANCE'
-                ]
-              },
-              width: { type: 'integer', format: 'int32' },
-              x: { type: 'integer', format: 'int32' },
-              y: { type: 'integer', format: 'int32' }
-            }
-          };
-        }
-
-        // Inject the missing File definition if referenced
-        if (!schema.$defs.File) {
-          schema.$defs.File = {
-            type: 'object',
-            description: 'A File resource.',
-            properties: {
-              downloadUrl: { type: 'string' },
-              fileContentBase64: { type: 'string', writeOnly: true },
-              mimeType: { type: 'string' },
-              name: { type: 'string' },
-              uploadBlobId: { type: 'string' }
-            }
-          };
-        }
-      }
-    }
+    // Resilient Schema Repair: Inject missing $defs BEFORE any AJV
+    // compilation can occur. Repairs both inputSchema and outputSchema.
+    repairToolSchemas(tools);
 
     const localTools = this.localVirtualTools.map(t => ({
       name: t.name,
