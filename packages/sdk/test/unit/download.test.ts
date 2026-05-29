@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { EntityManager } from "../../src/entity-manager.js";
 import { describe, it, expect, vi } from 'vitest';
 import { DownloadAssetsHandler, sanitizeFilename } from '../../src/download-handler.js';
 
@@ -507,6 +508,7 @@ describe('Project.downloadAssets() facade', () => {
     const { Project } = await import('../../src/project-ext.js');
 
     const mockClient = { callTool: vi.fn(), httpPost: vi.fn() } as any;
+    mockClient.entities = new EntityManager(mockClient);
     mockClient.callTool.mockImplementation((tool: string) => {
       if (tool === 'list_screens') {
         return Promise.resolve({
@@ -533,7 +535,7 @@ describe('Project.downloadAssets() facade', () => {
       return Promise.resolve({ arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)) });
     }));
 
-    const project = new Project(mockClient, 'p1');
+    const project = mockClient.entities.resolve(Project, ["projectId"], 'p1');
     const result = await project.downloadAssets('/tmp/out');
 
     expect(result.warnings).toBeDefined();
@@ -551,6 +553,7 @@ describe('Project.downloadAssets() facade', () => {
     const { Project } = await import('../../src/project-ext.js');
 
     const mockClient = { callTool: vi.fn(), httpPost: vi.fn() } as any;
+    mockClient.entities = new EntityManager(mockClient);
     mockClient.callTool.mockImplementation((tool: string) => {
       if (tool === 'list_screens') {
         return Promise.resolve({
@@ -567,7 +570,7 @@ describe('Project.downloadAssets() facade', () => {
       return Promise.resolve({ text: () => Promise.resolve('<html><body>OK</body></html>') });
     }));
 
-    const project = new Project(mockClient, 'p1');
+    const project = mockClient.entities.resolve(Project, ["projectId"], 'p1');
     const result = await project.downloadAssets('/tmp/out');
 
     expect(result.warnings).toEqual([]);

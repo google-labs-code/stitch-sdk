@@ -3,8 +3,8 @@
 DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:2f1a623ec115...)
-        domain-map.json     (sha256:ffa082d8fbe7...)
-Generated: 2026-04-28T20:49:35.251Z
+        domain-map.json     (sha256:0ee09d686be6...)
+Generated: 2026-05-29T22:05:20.536Z
  */
 import { type StitchToolClient } from "../../src/client.js";
 import { StitchError } from "../../src/spec/errors.js";
@@ -19,12 +19,6 @@ export class Project {
     public data: any;
 
     constructor(protected client: StitchToolClient, data: any) {
-        {
-          let _v = typeof data === "string" ? data : data.name;
-          if (typeof _v === "string" && _v.startsWith("projects/")) _v = _v.slice(9);
-          this.projectId = _v;
-        }
-
         this.data = typeof data === "object" ? data : undefined;
     }
 
@@ -42,7 +36,7 @@ export class Project {
           const raw = await this.client.callTool<GenerateScreenFromTextResponse>("generate_screen_from_text", { projectId: this.projectId, prompt, deviceType, modelId });
           const _projected = (raw?.outputComponents ?? []).find((c: any) => c?.design?.screens != null)?.design?.screens?.[0];
           if (!_projected) throw new StitchError({ code: "UNKNOWN_ERROR", message: "Incomplete API response from generate_screen_from_text: expected object at projection path", recoverable: false });
-          return new Screen(this.client, { ..._projected, projectId: this.projectId })
+          return this.client.entities.resolve(Screen, ["projectId","screenId"], { ..._projected, projectId: this.projectId })
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }
@@ -55,7 +49,7 @@ export class Project {
     async screens(): Promise<Screen[]> {
         try {
           const raw = await this.client.callTool<ListScreensResponse>("list_screens", { projectId: this.projectId });
-          return (raw?.screens || []).map((item) => new Screen(this.client, { ...item, projectId: this.projectId }));
+          return (raw?.screens || []).map((item) => this.client.entities.resolve(Screen, ["projectId","screenId"], { ...item, projectId: this.projectId }));
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }
@@ -68,7 +62,7 @@ export class Project {
     async getScreen(screenId: string): Promise<Screen> {
         try {
           const raw = await this.client.callTool<GetScreenResponse>("get_screen", { projectId: this.projectId, screenId, name: `projects/${this.projectId}/screens/${screenId}` });
-          return new Screen(this.client, { ...raw, projectId: this.projectId });
+          return this.client.entities.resolve(Screen, ["projectId","screenId"], { ...raw, projectId: this.projectId });
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }
@@ -81,7 +75,7 @@ export class Project {
     async createDesignSystem(designSystem: DesignSystemInput): Promise<DesignSystem> {
         try {
           const raw = await this.client.callTool<CreateDesignSystemResponse>("create_design_system", { projectId: this.projectId, designSystem });
-          return new DesignSystem(this.client, { ...raw, projectId: this.projectId });
+          return this.client.entities.resolve(DesignSystem, ["projectId","assetId"], { ...raw, projectId: this.projectId });
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }
@@ -94,7 +88,7 @@ export class Project {
     async listDesignSystems(): Promise<DesignSystem[]> {
         try {
           const raw = await this.client.callTool<ListDesignSystemsResponse>("list_design_systems", { projectId: this.projectId });
-          return (raw?.designSystems || []).map((item) => new DesignSystem(this.client, { ...item, projectId: this.projectId }));
+          return (raw?.designSystems || []).map((item) => this.client.entities.resolve(DesignSystem, ["projectId","assetId"], { ...item, projectId: this.projectId }));
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }
@@ -102,11 +96,11 @@ export class Project {
 
     /** Create a DesignSystem handle from an existing ID without an API call. */
     designSystem(id: string): DesignSystem {
-        return new DesignSystem(this.client, { name: id, projectId: this.projectId });
+        return this.client.entities.resolve(DesignSystem, ["projectId","assetId"], { assetId: id, projectId: this.projectId });
     }
 
     /** Create a Screen handle from an existing ID without an API call. */
     screen(id: string): Screen {
-        return new Screen(this.client, { id: id, projectId: this.projectId });
+        return this.client.entities.resolve(Screen, ["projectId","screenId"], { screenId: id, projectId: this.projectId });
     }
 }

@@ -458,13 +458,14 @@ function generateReturnExpression(
   if (binding.returns.class) {
     const childClass = domainMap.classes[binding.returns.class];
     const parentField = childClass?.parentField;
+    const keys = childClass?.reference?.keys ? JSON.stringify(childClass.reference.keys) : '[]';
 
     if (binding.returns.array) {
       const itemExpr = parentField
         ? `{ ...item, ${parentField}: this.${parentField} }`
         : "item";
       // Null-safe: default to empty array if projection yields undefined
-      return `(${projectionExpr} || []).map((item) => new ${binding.returns.class}(this.client, ${itemExpr}))`;
+      return `(${projectionExpr} || []).map((item) => this.client.entities.resolve(${binding.returns.class}, ${keys}, ${itemExpr}))`;
     }
 
     // Only emit guard when projection has actual steps (not just `raw`)
@@ -476,14 +477,14 @@ function generateReturnExpression(
       const toolName = binding.tool;
       return `const ${guardVar} = ${projectionExpr};\n` +
         `  if (!${guardVar}) throw new StitchError({ code: "UNKNOWN_ERROR", message: "Incomplete API response from ${toolName}: expected object at projection path", recoverable: false });\n` +
-        `  return new ${binding.returns.class}(this.client, ${dataExpr})`;
+        `  return this.client.entities.resolve(${binding.returns.class}, ${keys}, ${dataExpr})`;
     }
 
     // Direct return — projection is empty, raw is the result itself
     const dataExpr = parentField
       ? `{ ...${projectionExpr}, ${parentField}: this.${parentField} }`
       : projectionExpr;
-    return `new ${binding.returns.class}(this.client, ${dataExpr})`;
+    return `this.client.entities.resolve(${binding.returns.class}, ${keys}, ${dataExpr})`;
   }
 
   return `${projectionExpr} || ""`;
@@ -495,34 +496,6 @@ function buildConstructorBody(
   config: ReturnType<typeof DomainMap.parse>["classes"][string],
 ): string[] {
   const statements: string[] = [];
-  const ctorParams = config.constructorParams;
-
-  for (const p of ctorParams) {
-    const fm = config.fieldMapping?.[p];
-    if (fm) {
-      if (fm.stripPrefix) {
-        const prefix = fm.stripPrefix;
-        statements.push(`{`);
-        statements.push(`  let _v = typeof data === "string" ? data : data.${fm.from};`);
-        statements.push(`  if (typeof _v === "string" && _v.startsWith("${prefix}")) _v = _v.slice(${prefix.length});`);
-        statements.push(`  this.${p} = _v;`);
-        statements.push(`}`);
-      } else {
-        statements.push(`this.${p} = typeof data === "string" ? data : data.${fm.from};`);
-      }
-      if (fm.fallback) {
-        statements.push(`if (!this.${p} && typeof data === "object" && data.${fm.fallback.field}) {`);
-        statements.push(`  const parts = data.${fm.fallback.field}.split("${fm.fallback.splitOn}");`);
-        statements.push(`  if (parts.length === 2) this.${p} = parts[1];`);
-        statements.push(`}`);
-      }
-    } else if (config.identifierField && p === ctorParams[0]) {
-      statements.push(`this.${p} = typeof data === "string" ? data : data.${config.identifierField};`);
-    } else {
-      statements.push(`this.${p} = typeof data === "string" ? data : data.${p};`);
-    }
-  }
-
   statements.push(`this.data = typeof data === "object" ? data : undefined;`);
   return statements;
 }
@@ -796,7 +769,7 @@ async function main() {
       });
 
       // ID getter
-      const idParam = config.idField || config.constructorParams[0];
+      const idParam = (config.reference?.keys && config.reference.keys.length > 0) ? config.reference.keys[config.reference.keys.length - 1] : config.constructorParams[0];
       if (idParam && idParam !== "id") {
         cls.addGetAccessor({
           name: "id",
@@ -859,11 +832,7 @@ async function main() {
         }
 
         const parentField = factoryClass.parentField;
-        let idKey = "id";
-        const idParam = factoryClass.constructorParams.find(p => p !== parentField);
-        if (idParam && factoryClass.fieldMapping?.[idParam]) {
-          idKey = factoryClass.fieldMapping[idParam].from;
-        }
+        let idKey = (factoryClass.reference?.keys && factoryClass.reference.keys.length > 0) ? factoryClass.reference.keys[factoryClass.reference.keys.length - 1] : "id";
         
         const factoryDataExpr = parentField
           ? `{ ${idKey}: id, ${parentField}: this.${parentField} }`
@@ -873,7 +842,7 @@ async function main() {
           returnType: factory.returns,
           parameters: [{ name: "id", type: "string" }],
           docs: [{ description: factory.description || `Create a ${factory.returns} from an ID.` }],
-          statements: [`return new ${factory.returns}(this.client, ${factoryDataExpr});`],
+          statements: [`return this.client.entities.resolve(${factory.returns}, ${JSON.stringify(factoryClass.reference?.keys || [])}, ${factoryDataExpr});`],
         });
       }
     }

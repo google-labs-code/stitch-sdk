@@ -3,8 +3,8 @@
 DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:2f1a623ec115...)
-        domain-map.json     (sha256:ffa082d8fbe7...)
-Generated: 2026-04-28T20:49:35.251Z
+        domain-map.json     (sha256:0ee09d686be6...)
+Generated: 2026-05-29T22:05:20.536Z
  */
 import { type StitchToolClient } from "../../src/client.js";
 import { StitchError } from "../../src/spec/errors.js";
@@ -18,13 +18,6 @@ export class Screen {
     public data: any;
 
     constructor(private client: StitchToolClient, data: any) {
-        this.projectId = typeof data === "string" ? data : data.projectId;
-        this.screenId = typeof data === "string" ? data : data.id;
-        if (!this.screenId && typeof data === "object" && data.name) {
-          const parts = data.name.split("/screens/");
-          if (parts.length === 2) this.screenId = parts[1];
-        }
-
         this.data = typeof data === "object" ? data : undefined;
     }
 
@@ -42,7 +35,7 @@ export class Screen {
           const raw = await this.client.callTool<EditScreensResponse>("edit_screens", { projectId: this.projectId, selectedScreenIds: [this.screenId], prompt, deviceType, modelId });
           const _projected = (raw?.outputComponents ?? []).find((c: any) => c?.design?.screens != null)?.design?.screens?.[0];
           if (!_projected) throw new StitchError({ code: "UNKNOWN_ERROR", message: "Incomplete API response from edit_screens: expected object at projection path", recoverable: false });
-          return new Screen(this.client, { ..._projected, projectId: this.projectId })
+          return this.client.entities.resolve(Screen, ["projectId","screenId"], { ..._projected, projectId: this.projectId })
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }
@@ -55,7 +48,7 @@ export class Screen {
     async variants(prompt: string, variantOptions: VariantOptions, deviceType?: "DEVICE_TYPE_UNSPECIFIED" | "MOBILE" | "DESKTOP" | "TABLET" | "AGNOSTIC", modelId?: "MODEL_ID_UNSPECIFIED" | "GEMINI_3_PRO" | "GEMINI_3_FLASH" | "GEMINI_3_1_PRO"): Promise<Screen[]> {
         try {
           const raw = await this.client.callTool<GenerateVariantsResponse>("generate_variants", { projectId: this.projectId, selectedScreenIds: [this.screenId], prompt, variantOptions, deviceType, modelId });
-          return ((raw.outputComponents || []).flatMap((a: any) => a?.design?.screens || []) || []).map((item) => new Screen(this.client, { ...item, projectId: this.projectId }));
+          return ((raw.outputComponents || []).flatMap((a: any) => a?.design?.screens || []) || []).map((item) => this.client.entities.resolve(Screen, ["projectId","screenId"], { ...item, projectId: this.projectId }));
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }

@@ -25,6 +25,7 @@ import { StitchError, StitchErrorCode } from "./spec/errors.js";
 import { buildAuthHeaders as buildBaseAuthHeaders } from "./auth.js";
 import { SDK_VERSION } from "./version.js";
 import { repairToolSchemas } from "./schema-repair.js";
+import { EntityManager } from "./entity-manager.js";
 
 /**
  * Authenticated tool pipe for the Stitch MCP Server.
@@ -47,6 +48,7 @@ export class StitchToolClient implements StitchToolClientSpec {
   private isConnected: boolean = false;
   private connectPromise: Promise<void> | null = null;
   private localVirtualTools: VirtualToolDefinition[] = [];
+  public entities: EntityManager;
 
   constructor(inputConfig?: Partial<StitchConfig> & { localVirtualTools?: VirtualToolDefinition[] }) {
     const rawConfig = {
@@ -58,6 +60,7 @@ export class StitchToolClient implements StitchToolClientSpec {
     };
     this.config = StitchConfigSchema.parse(rawConfig);
     this.localVirtualTools = inputConfig?.localVirtualTools || [];
+    this.entities = new EntityManager(this);
 
     this.client = new Client(
       { name: "stitch-core-client", version: SDK_VERSION },

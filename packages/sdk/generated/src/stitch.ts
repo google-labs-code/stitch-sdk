@@ -3,8 +3,8 @@
 DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:2f1a623ec115...)
-        domain-map.json     (sha256:ffa082d8fbe7...)
-Generated: 2026-04-28T20:49:35.251Z
+        domain-map.json     (sha256:0ee09d686be6...)
+Generated: 2026-05-29T22:05:20.536Z
  */
 import { type StitchToolClient } from "../../src/client.js";
 import { StitchError } from "../../src/spec/errors.js";
@@ -24,7 +24,7 @@ export class Stitch {
     async projects(): Promise<Project[]> {
         try {
           const raw = await this.client.callTool<ListProjectsResponse>("list_projects", {  });
-          return (raw?.projects || []).map((item) => new Project(this.client, item));
+          return (raw?.projects || []).map((item) => this.client.entities.resolve(Project, ["projectId"], item));
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }
@@ -37,7 +37,7 @@ export class Stitch {
     async createProject(title?: string): Promise<Project> {
         try {
           const raw = await this.client.callTool<CreateProjectResponse>("create_project", { title });
-          return new Project(this.client, raw);
+          return this.client.entities.resolve(Project, ["projectId"], raw);
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }
@@ -45,6 +45,6 @@ export class Stitch {
 
     /** Create a Project handle from an existing ID without an API call. */
     project(id: string): Project {
-        return new Project(this.client, id);
+        return this.client.entities.resolve(Project, ["projectId"], id);
     }
 }

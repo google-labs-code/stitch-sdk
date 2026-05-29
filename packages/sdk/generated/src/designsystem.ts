@@ -3,8 +3,8 @@
 DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:2f1a623ec115...)
-        domain-map.json     (sha256:ffa082d8fbe7...)
-Generated: 2026-04-28T20:49:35.251Z
+        domain-map.json     (sha256:0ee09d686be6...)
+Generated: 2026-05-29T22:05:20.536Z
  */
 import { type StitchToolClient } from "../../src/client.js";
 import { StitchError } from "../../src/spec/errors.js";
@@ -19,13 +19,6 @@ export class DesignSystem {
     public data: any;
 
     constructor(private client: StitchToolClient, data: any) {
-        this.projectId = typeof data === "string" ? data : data.projectId;
-        {
-          let _v = typeof data === "string" ? data : data.name;
-          if (typeof _v === "string" && _v.startsWith("assets/")) _v = _v.slice(7);
-          this.assetId = _v;
-        }
-
         this.data = typeof data === "object" ? data : undefined;
     }
 
@@ -41,7 +34,7 @@ export class DesignSystem {
     async update(designSystem: DesignSystemInput): Promise<DesignSystem> {
         try {
           const raw = await this.client.callTool<UpdateDesignSystemResponse>("update_design_system", { name: `assets/${this.assetId}`, projectId: this.projectId, designSystem });
-          return new DesignSystem(this.client, { ...raw, projectId: this.projectId });
+          return this.client.entities.resolve(DesignSystem, ["projectId","assetId"], { ...raw, projectId: this.projectId });
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }
@@ -54,7 +47,7 @@ export class DesignSystem {
     async apply(selectedScreenInstances: SelectedScreenInstance[]): Promise<Screen[]> {
         try {
           const raw = await this.client.callTool<ApplyDesignSystemResponse>("apply_design_system", { assetId: this.assetId, projectId: this.projectId, selectedScreenInstances });
-          return ((raw.outputComponents || []).flatMap((a: any) => a?.design?.screens || []) || []).map((item) => new Screen(this.client, { ...item, projectId: this.projectId }));
+          return ((raw.outputComponents || []).flatMap((a: any) => a?.design?.screens || []) || []).map((item) => this.client.entities.resolve(Screen, ["projectId","screenId"], { ...item, projectId: this.projectId }));
         } catch (error) {
           throw StitchError.fromUnknown(error);
         }

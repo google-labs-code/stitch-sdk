@@ -22,6 +22,7 @@
  * Green → runs after `npm run generate` and `npm run build`.
  */
 
+import { EntityManager } from "../../src/entity-manager.js";
 import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
 import { Project } from "../../generated/src/project.js";
 import { DesignSystem } from "../../generated/src/designsystem.js";
@@ -41,13 +42,14 @@ describe("DesignSystem Domain Class", () => {
     vi.clearAllMocks();
     mockClient = new StitchToolClient();
     mockClient.callTool = vi.fn();
+    mockClient.entities = new EntityManager(mockClient);
   });
 
   // ── Project.createDesignSystem() ─────────────────────────────
 
   describe("Project.createDesignSystem()", () => {
     it("should call create_design_system with projectId from self and return a DesignSystem handle", async () => {
-      const project = new Project(mockClient, projectId);
+      const project = mockClient.entities.resolve(Project, ["projectId"], projectId);
 
       (mockClient.callTool as Mock).mockResolvedValue({
         name: assetName,
@@ -77,7 +79,7 @@ describe("DesignSystem Domain Class", () => {
 
   describe("Project.listDesignSystems()", () => {
     it("should call list_design_systems with projectId from self and return DesignSystem[]", async () => {
-      const project = new Project(mockClient, projectId);
+      const project = mockClient.entities.resolve(Project, ["projectId"], projectId);
 
       (mockClient.callTool as Mock).mockResolvedValue({
         designSystems: [
@@ -97,7 +99,7 @@ describe("DesignSystem Domain Class", () => {
     });
 
     it("should return empty array when no design systems exist", async () => {
-      const project = new Project(mockClient, projectId);
+      const project = mockClient.entities.resolve(Project, ["projectId"], projectId);
       (mockClient.callTool as Mock).mockResolvedValue({ designSystems: [] });
 
       const list = await project.listDesignSystems();
@@ -109,7 +111,7 @@ describe("DesignSystem Domain Class", () => {
 
   describe("Project.designSystem() factory", () => {
     it("should return a DesignSystem handle without an API call", () => {
-      const project = new Project(mockClient, projectId);
+      const project = mockClient.entities.resolve(Project, ["projectId"], projectId);
       const ds = project.designSystem(assetId);
 
       expect(ds).toBeInstanceOf(DesignSystem);
@@ -123,7 +125,7 @@ describe("DesignSystem Domain Class", () => {
 
   describe("DesignSystem.update()", () => {
     it("should call update_design_system with assetId and projectId from self and return DesignSystem", async () => {
-      const project = new Project(mockClient, projectId);
+      const project = mockClient.entities.resolve(Project, ["projectId"], projectId);
       const ds = project.designSystem(assetId);
 
       (mockClient.callTool as Mock).mockResolvedValue({
@@ -154,7 +156,7 @@ describe("DesignSystem Domain Class", () => {
 
   describe("DesignSystem.apply()", () => {
     it("should call apply_design_system with assetId and projectId from self and return Screen[]", async () => {
-      const project = new Project(mockClient, projectId);
+      const project = mockClient.entities.resolve(Project, ["projectId"], projectId);
       const ds = project.designSystem(assetId);
 
       const screenInstances = [{ id: "si-1", sourceScreen: `projects/${projectId}/screens/s-1` }];

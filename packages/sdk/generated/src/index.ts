@@ -3,8 +3,8 @@
 DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:2f1a623ec115...)
-        domain-map.json     (sha256:ffa082d8fbe7...)
-Generated: 2026-04-28T20:49:35.251Z
+        domain-map.json     (sha256:0ee09d686be6...)
+Generated: 2026-05-29T22:05:20.536Z
  */
 export { Stitch } from "./stitch.js";
 export { Project } from "./project.js";

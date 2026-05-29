@@ -15,13 +15,9 @@
     "Project": {
       "description": "A Stitch project containing screens.",
       "extensionPath": "../../src/project-ext.js",
-      "constructorParams": ["projectId"],
-      "fieldMapping": {
-        "projectId": {
-          "from": "name",
-          "stripPrefix": "projects/"
-        }
-      },
+      "constructorParams": [
+        "projectId"
+      ],
       "factories": [
         {
           "method": "designSystem",
@@ -45,35 +41,40 @@
           "reason": "filesystem_io",
           "specPath": "src/spec/download.ts"
         }
-      ]
+      ],
+      "reference": {
+        "keys": [
+          "projectId"
+        ]
+      }
     },
     "Screen": {
       "description": "A generated UI screen. Provides access to HTML and screenshots.",
-      "constructorParams": ["projectId", "screenId"],
-      "fieldMapping": {
-        "projectId": {
-          "from": "projectId"
-        },
-        "screenId": {
-          "from": "id",
-          "fallback": {
-            "field": "name",
-            "splitOn": "/screens/"
-          }
-        }
-      },
+      "constructorParams": [
+        "projectId",
+        "screenId"
+      ],
       "parentField": "projectId",
-      "idField": "screenId"
+      "reference": {
+        "keys": [
+          "projectId",
+          "screenId"
+        ]
+      }
     },
     "DesignSystem": {
       "description": "Represents a visual theme or branding applied to projects and screens.",
-      "constructorParams": ["projectId", "assetId"],
-      "fieldMapping": {
-        "projectId": { "from": "projectId" },
-        "assetId": { "from": "name", "stripPrefix": "assets/" }
-      },
+      "constructorParams": [
+        "projectId",
+        "assetId"
+      ],
       "parentField": "projectId",
-      "idField": "assetId"
+      "reference": {
+        "keys": [
+          "projectId",
+          "assetId"
+        ]
+      }
     }
   },
   "bindings": [
@@ -123,7 +124,7 @@
           "optional": true,
           "default": "DESKTOP"
         },
-         "modelId": {
+        "modelId": {
           "from": "param",
           "optional": true
         }

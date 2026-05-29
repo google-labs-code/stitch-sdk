@@ -164,15 +164,18 @@ export type SideEffectSpec = z.infer<typeof SideEffectSpec>;
 
 // ── Class Config ──────────────────────────────────────────────
 
+export const ReferenceSpec = z.object({
+  keys: z.array(z.string()),
+});
+export type ReferenceSpec = z.infer<typeof ReferenceSpec>;
+
 export const DomainClassConfig = z.object({
   description: z.string(),
   extensionPath: z.string().optional(),
   constructorParams: z.array(z.string()),
   isRoot: z.boolean().optional(),
-  identifierField: z.string().optional(),
-  fieldMapping: z.record(z.string(), FieldMappingSpec).optional(),
+  reference: ReferenceSpec.optional(),
   parentField: z.string().optional(),
-  idField: z.string().optional(),
   /** Local factory methods that create child instances without API calls */
   factories: z.array(FactorySpec).optional(),
   /**
