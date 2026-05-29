@@ -33,8 +33,10 @@ function createMockClient(
     listTools: vi.fn().mockResolvedValue({ tools: [] }),
     close: vi.fn().mockResolvedValue(undefined),
     httpPost: vi.fn().mockResolvedValue({ screens: [] }),
+    resolveIdentity: () => undefined,
+    registerIdentity: () => {},
     ...overrides,
-  };
+  } as any;
 }
 
 describe("UploadInputSchema", () => {

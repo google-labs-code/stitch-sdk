@@ -493,6 +493,7 @@ function generateReturnExpression(
 
 function buildConstructorBody(
   config: ReturnType<typeof DomainMap.parse>["classes"][string],
+  className: string,
 ): string[] {
   const statements: string[] = [];
   const ctorParams = config.constructorParams;
@@ -524,6 +525,21 @@ function buildConstructorBody(
   }
 
   statements.push(`this.data = typeof data === "object" ? data : undefined;`);
+
+  // Identity Map registration and resolution
+  const idParam = config.idField || config.constructorParams[0];
+  if (idParam) {
+    statements.push(`const _id = this.${idParam};`);
+    statements.push(`if (_id) {`);
+    statements.push(`  const existing = client.resolveIdentity("${className}", _id);`);
+    statements.push(`  if (existing) {`);
+    statements.push(`    if (this.data) existing.data = { ...existing.data, ...this.data };`);
+    statements.push(`    return existing;`);
+    statements.push(`  }`);
+    statements.push(`  client.registerIdentity("${className}", _id, this);`);
+    statements.push(`}`);
+  }
+
   return statements;
 }
 
@@ -792,7 +808,7 @@ async function main() {
           { name: "client", type: "StitchToolClient", scope: clientScope },
           { name: "data", type: "any" },
         ],
-        statements: buildConstructorBody(config),
+        statements: buildConstructorBody(config, className),
       });
 
       // ID getter

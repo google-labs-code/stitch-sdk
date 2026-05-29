@@ -47,6 +47,22 @@ export class StitchToolClient implements StitchToolClientSpec {
   private isConnected: boolean = false;
   private connectPromise: Promise<void> | null = null;
   private localVirtualTools: VirtualToolDefinition[] = [];
+  private identityMap = new Map<string, WeakRef<any>>();
+
+  public resolveIdentity(className: string, id: string): any {
+    const key = `${className}:${id}`;
+    const ref = this.identityMap.get(key);
+    const existing = ref?.deref();
+    if (!existing) {
+      this.identityMap.delete(key);
+    }
+    return existing;
+  }
+
+  public registerIdentity(className: string, id: string, instance: any): void {
+    const key = `${className}:${id}`;
+    this.identityMap.set(key, new WeakRef(instance));
+  }
 
   constructor(inputConfig?: Partial<StitchConfig> & { localVirtualTools?: VirtualToolDefinition[] }) {
     const rawConfig = {

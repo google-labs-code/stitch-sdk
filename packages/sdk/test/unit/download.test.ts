@@ -35,7 +35,7 @@ describe('DownloadAssetsHandler', () => {
     const fs = await import("node:fs/promises");
     vi.mocked(fs.writeFile).mockClear();
     
-    const mockClient = {
+    const mockClient = { resolveIdentity: () => undefined, registerIdentity: () => {}, 
       callTool: vi.fn().mockResolvedValue({
         screens: [{ id: 's1', name: 'projects/p1/screens/s1' }] // Mock screen object
       }),
@@ -78,7 +78,7 @@ describe('DownloadAssetsHandler', () => {
     const path = await import("node:path");
     vi.mocked(fs.writeFile).mockClear();
     
-    const mockClient = {
+    const mockClient = { resolveIdentity: () => undefined, registerIdentity: () => {}, 
       callTool: vi.fn().mockResolvedValue({
         screens: [{ id: 's1', name: 'projects/p1/screens/s1' }]
       }),
@@ -117,7 +117,7 @@ describe('DownloadAssetsHandler', () => {
   });
 
   it('returns failure if list_screens fails', async () => {
-    const mockClient = {
+    const mockClient = { resolveIdentity: () => undefined, registerIdentity: () => {}, 
       callTool: vi.fn().mockRejectedValue(new Error('API Error')),
     } as any;
 
@@ -134,7 +134,7 @@ describe('DownloadAssetsHandler', () => {
     const fs = await import("node:fs/promises");
     vi.mocked(fs.writeFile).mockClear();
 
-    const mockClient = { callTool: vi.fn() } as any;
+    const mockClient = { resolveIdentity: () => undefined, registerIdentity: () => {},  callTool: vi.fn() } as any;
     const mockScreen = { id: 's1', htmlCode: { downloadUrl: 'http://fake/s1.html' } };
     mockClient.callTool.mockResolvedValue({ screens: [mockScreen] });
 
@@ -160,7 +160,7 @@ describe('DownloadAssetsHandler', () => {
     vi.mocked(fs.mkdir).mockClear();
     vi.mocked(fs.writeFile).mockClear();
 
-    const mockClient = { callTool: vi.fn() } as any;
+    const mockClient = { resolveIdentity: () => undefined, registerIdentity: () => {},  callTool: vi.fn() } as any;
     const mockScreen = {
       id: 's1',
       htmlCode: { downloadUrl: 'http://fake/s1.html' }
@@ -188,7 +188,7 @@ describe('DownloadAssetsHandler', () => {
     vi.mocked(fs.writeFile).mockClear();
     vi.mocked(fs.rename).mockClear();
 
-    const mockClient = { callTool: vi.fn() } as any;
+    const mockClient = { resolveIdentity: () => undefined, registerIdentity: () => {},  callTool: vi.fn() } as any;
     const mockScreen = { id: 's1', htmlCode: { downloadUrl: 'http://fake/s1.html' } };
     mockClient.callTool.mockResolvedValue({ screens: [mockScreen] });
 
@@ -218,7 +218,7 @@ describe('DownloadAssetsHandler', () => {
     const fs = await import("node:fs/promises");
     vi.mocked(fs.rename).mockClear();
 
-    const mockClient = {
+    const mockClient = { resolveIdentity: () => undefined, registerIdentity: () => {}, 
       callTool: vi.fn().mockResolvedValue({
         screens: [{ name: 'projects/p1/screens/s123', htmlCode: { downloadUrl: 'http://fake/s123.html' } }]
       }),
@@ -242,7 +242,7 @@ describe('DownloadAssetsHandler', () => {
     vi.mocked(fs.writeFile).mockClear();
     vi.mocked(fs.rename).mockClear();
 
-    const mockClient = { callTool: vi.fn() } as any;
+    const mockClient = { resolveIdentity: () => undefined, registerIdentity: () => {},  callTool: vi.fn() } as any;
     const mockScreen = { 
       id: 's1', 
       htmlCode: { downloadUrl: 'http://fake/s1.html' },
@@ -281,7 +281,7 @@ describe('DownloadAssetsHandler', () => {
     vi.mocked(fs.rename).mockClear();
     vi.mocked(fs.mkdir).mockClear();
 
-    const mockClient = { callTool: vi.fn() } as any;
+    const mockClient = { resolveIdentity: () => undefined, registerIdentity: () => {},  callTool: vi.fn() } as any;
     mockClient.callTool.mockImplementation((tool: string, args: Record<string, unknown>) => {
       if (tool === 'list_screens') {
         return Promise.resolve({ screens: [] });
@@ -325,7 +325,7 @@ describe('DownloadAssetsHandler', () => {
   });
 
   it('returns a detailed trace of downloaded screens in result', async () => {
-    const mockClient = {
+    const mockClient = { resolveIdentity: () => undefined, registerIdentity: () => {}, 
       callTool: vi.fn().mockResolvedValue({
         screens: [{ id: 's1', title: 'Home Screen', htmlCode: { downloadUrl: 'http://fake/s1.html' } }]
       }),
@@ -383,7 +383,7 @@ describe('DownloadAssetsHandler warnings', () => {
     vi.mocked(fs.rename).mockClear();
     vi.mocked(fs.mkdir).mockClear();
 
-    const mockClient = { callTool: vi.fn() } as any;
+    const mockClient = { resolveIdentity: () => undefined, registerIdentity: () => {},  callTool: vi.fn() } as any;
     mockClient.callTool.mockImplementation((tool: string) => {
       if (tool === 'list_screens') {
         return Promise.resolve({
@@ -427,7 +427,7 @@ describe('DownloadAssetsHandler warnings', () => {
     vi.mocked(fs.rename).mockClear();
     vi.mocked(fs.mkdir).mockClear();
 
-    const mockClient = { callTool: vi.fn() } as any;
+    const mockClient = { resolveIdentity: () => undefined, registerIdentity: () => {},  callTool: vi.fn() } as any;
     mockClient.callTool.mockImplementation((tool: string) => {
       if (tool === 'list_screens') {
         return Promise.resolve({ screens: [] });
@@ -462,7 +462,7 @@ describe('DownloadAssetsHandler concurrency', () => {
     ).join('');
     const html = `<html><body>${imgTags}</body></html>`;
 
-    const mockClient = { callTool: vi.fn() } as any;
+    const mockClient = { resolveIdentity: () => undefined, registerIdentity: () => {},  callTool: vi.fn() } as any;
     mockClient.callTool.mockImplementation((tool: string) => {
       if (tool === 'list_screens') {
         return Promise.resolve({
@@ -506,7 +506,7 @@ describe('Project.downloadAssets() facade', () => {
 
     const { Project } = await import('../../src/project-ext.js');
 
-    const mockClient = { callTool: vi.fn(), httpPost: vi.fn() } as any;
+    const mockClient = { resolveIdentity: () => undefined, registerIdentity: () => {},  callTool: vi.fn(), httpPost: vi.fn() } as any;
     mockClient.callTool.mockImplementation((tool: string) => {
       if (tool === 'list_screens') {
         return Promise.resolve({
@@ -550,7 +550,7 @@ describe('Project.downloadAssets() facade', () => {
 
     const { Project } = await import('../../src/project-ext.js');
 
-    const mockClient = { callTool: vi.fn(), httpPost: vi.fn() } as any;
+    const mockClient = { resolveIdentity: () => undefined, registerIdentity: () => {},  callTool: vi.fn(), httpPost: vi.fn() } as any;
     mockClient.callTool.mockImplementation((tool: string) => {
       if (tool === 'list_screens') {
         return Promise.resolve({
