@@ -12,20 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { z } from 'zod';
+import { z } from "zod";
 
 /**
  * Exhaustive error codes for Stitch operations.
  * Add new codes here as needed.
  */
 export const StitchErrorCode = z.enum([
-  'AUTH_FAILED',
-  'NOT_FOUND',
-  'PERMISSION_DENIED',
-  'RATE_LIMITED',
-  'NETWORK_ERROR',
-  'VALIDATION_ERROR',
-  'UNKNOWN_ERROR',
+  "AUTH_FAILED",
+  "NOT_FOUND",
+  "PERMISSION_DENIED",
+  "RATE_LIMITED",
+  "NETWORK_ERROR",
+  "VALIDATION_ERROR",
+  "UNKNOWN_ERROR",
 ]);
 
 export type StitchErrorCode = z.infer<typeof StitchErrorCode>;
@@ -51,19 +51,19 @@ export class StitchError extends Error {
 
   constructor(data: StitchErrorData) {
     super(data.message);
-    this.name = 'StitchError';
+    this.name = "StitchError";
     this.code = data.code;
     this.suggestion = data.suggestion;
     this.recoverable = data.recoverable;
   }
 
-/**
- * Create a StitchError from an unknown caught error.
- */
+  /**
+   * Create a StitchError from an unknown caught error.
+   */
   static fromUnknown(error: unknown): StitchError {
     if (error instanceof StitchError) return error;
     return new StitchError({
-      code: 'UNKNOWN_ERROR',
+      code: "UNKNOWN_ERROR",
       message: error instanceof Error ? error.message : String(error),
       recoverable: false,
     });

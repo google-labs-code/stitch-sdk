@@ -1,13 +1,13 @@
-import { describe, it, expect, vi } from 'vitest';
-import { Stitch } from '../../generated/src/stitch.js';
-import { StitchToolClient } from '../../src/client.js';
+import { describe, it, expect, vi } from "vitest";
+import { Stitch } from "../../generated/src/stitch.js";
+import { StitchToolClient } from "../../src/client.js";
 
-describe('SDK Extension Resolution', () => {
-  it('should return instances containing handwritten extension methods', async () => {
+describe("SDK Extension Resolution", () => {
+  it("should return instances containing handwritten extension methods", async () => {
     // 1. Mock the underlying client to prevent real network calls
-    const mockClient = new StitchToolClient({ apiKey: 'fake' });
-    vi.spyOn(mockClient, 'callTool').mockResolvedValue({
-      projects: [{ name: 'projects/123' }]
+    const mockClient = new StitchToolClient({ apiKey: "fake" });
+    vi.spyOn(mockClient, "callTool").mockResolvedValue({
+      projects: [{ name: "projects/123" }],
     });
 
     // 2. Instantiate the Stitch entrypoint
@@ -20,6 +20,6 @@ describe('SDK Extension Resolution', () => {
     // 4. Assert that the returned object is actually the extended subclass
     // By verifying the existence of the handwritten upload method
     expect(project).toBeDefined();
-    expect(typeof project!.upload).toBe('function');
+    expect(typeof project!.upload).toBe("function");
   });
 });

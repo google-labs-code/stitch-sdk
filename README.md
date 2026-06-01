@@ -13,7 +13,9 @@ import { stitch } from "@google/stitch-sdk";
 
 // STITCH_API_KEY must be set in the environment
 const project = stitch.project("your-project-id");
-const screen = await project.generate("A login page with email and password fields");
+const screen = await project.generate(
+  "A login page with email and password fields",
+);
 const html = await screen.getHtml();
 const imageUrl = await screen.getImage();
 ```
@@ -87,11 +89,11 @@ for (const variant of variants) {
 
 `variantOptions` fields:
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `variantCount` | `number` | 3 | Number of variants (1–5) |
-| `creativeRange` | `string` | `"EXPLORE"` | `"REFINE"`, `"EXPLORE"`, or `"REIMAGINE"` |
-| `aspects` | `string[]` | all | `"LAYOUT"`, `"COLOR_SCHEME"`, `"IMAGES"`, `"TEXT_FONT"`, `"TEXT_CONTENT"` |
+| Field           | Type       | Default     | Description                                                               |
+| --------------- | ---------- | ----------- | ------------------------------------------------------------------------- |
+| `variantCount`  | `number`   | 3           | Number of variants (1–5)                                                  |
+| `creativeRange` | `string`   | `"EXPLORE"` | `"REFINE"`, `"EXPLORE"`, or `"REIMAGINE"`                                 |
+| `aspects`       | `string[]` | all         | `"LAYOUT"`, `"COLOR_SCHEME"`, `"IMAGES"`, `"TEXT_FONT"`, `"TEXT_CONTENT"` |
 
 ## Tool Client (Agent Usage)
 
@@ -118,7 +120,9 @@ For explicit configuration (custom API key, base URL), use `StitchToolClient` di
 import { StitchToolClient } from "@google/stitch-sdk";
 
 const client = new StitchToolClient({ apiKey: "your-api-key" });
-const result = await client.callTool("create_project", { title: "Agent Project" });
+const result = await client.callTool("create_project", {
+  title: "Agent Project",
+});
 await client.close();
 ```
 
@@ -141,7 +145,7 @@ const { text, steps } = await generateText({
 });
 
 // The model autonomously calls create_project, generate_screen, get_screen
-const toolCalls = steps.flatMap(s => s.toolCalls);
+const toolCalls = steps.flatMap((s) => s.toolCalls);
 console.log(`Model called ${toolCalls.length} tools`);
 ```
 
@@ -187,28 +191,28 @@ const tools = stitchAdkTools({
 
 The root class. Manages projects.
 
-| Method | Parameters | Returns | Description |
-|---|---|---|---|
-| `projects()` | — | `Promise<Project[]>` | List all accessible projects |
-| `project(id)` | `id: string` | `Project` | Reference a project by ID (no API call) |
+| Method        | Parameters   | Returns              | Description                             |
+| ------------- | ------------ | -------------------- | --------------------------------------- |
+| `projects()`  | —            | `Promise<Project[]>` | List all accessible projects            |
+| `project(id)` | `id: string` | `Project`            | Reference a project by ID (no API call) |
 
 ### `Project`
 
 A Stitch project containing screens.
 
-| Property | Type | Description |
-|---|---|---|
-| `id` | `string` | Alias for `projectId` |
+| Property    | Type     | Description                             |
+| ----------- | -------- | --------------------------------------- |
+| `id`        | `string` | Alias for `projectId`                   |
 | `projectId` | `string` | Bare project ID (no `projects/` prefix) |
 
-| Method | Parameters | Returns | Description |
-|---|---|---|---|
-| `generate(prompt, deviceType?)` | `prompt: string`, `deviceType?: DeviceType` | `Promise<Screen>` | Generate a screen from a text prompt |
-| `screens()` | — | `Promise<Screen[]>` | List all screens in the project |
-| `getScreen(screenId)` | `screenId: string` | `Promise<Screen>` | Retrieve a specific screen by ID |
-| `createDesignSystem(designSystem)` | `designSystem: object` | `Promise<DesignSystem>` | Create a design system for this project |
-| `listDesignSystems()` | — | `Promise<DesignSystem[]>` | List all design systems in this project |
-| `designSystem(id)` | `id: string` | `DesignSystem` | Reference a design system by ID (no API call) |
+| Method                             | Parameters                                  | Returns                   | Description                                   |
+| ---------------------------------- | ------------------------------------------- | ------------------------- | --------------------------------------------- |
+| `generate(prompt, deviceType?)`    | `prompt: string`, `deviceType?: DeviceType` | `Promise<Screen>`         | Generate a screen from a text prompt          |
+| `screens()`                        | —                                           | `Promise<Screen[]>`       | List all screens in the project               |
+| `getScreen(screenId)`              | `screenId: string`                          | `Promise<Screen>`         | Retrieve a specific screen by ID              |
+| `createDesignSystem(designSystem)` | `designSystem: object`                      | `Promise<DesignSystem>`   | Create a design system for this project       |
+| `listDesignSystems()`              | —                                           | `Promise<DesignSystem[]>` | List all design systems in this project       |
+| `designSystem(id)`                 | `id: string`                                | `DesignSystem`            | Reference a design system by ID (no API call) |
 
 `DeviceType`: `"MOBILE"` \| `"DESKTOP"` \| `"TABLET"` \| `"AGNOSTIC"`
 
@@ -216,18 +220,18 @@ A Stitch project containing screens.
 
 A generated UI screen. Provides access to HTML and screenshots.
 
-| Property | Type | Description |
-|---|---|---|
-| `id` | `string` | Alias for `screenId` |
-| `screenId` | `string` | Bare screen ID |
-| `projectId` | `string` | Parent project ID |
+| Property    | Type     | Description          |
+| ----------- | -------- | -------------------- |
+| `id`        | `string` | Alias for `screenId` |
+| `screenId`  | `string` | Bare screen ID       |
+| `projectId` | `string` | Parent project ID    |
 
-| Method | Parameters | Returns | Description |
-|---|---|---|---|
-| `edit(prompt, deviceType?, modelId?)` | `prompt: string` | `Promise<Screen>` | Edit the screen with a text prompt |
-| `variants(prompt, variantOptions, deviceType?, modelId?)` | `prompt: string`, `variantOptions: object` | `Promise<Screen[]>` | Generate design variants |
-| `getHtml()` | — | `Promise<string>` | Get the screen's HTML download URL |
-| `getImage()` | — | `Promise<string>` | Get the screen's screenshot download URL |
+| Method                                                    | Parameters                                 | Returns             | Description                              |
+| --------------------------------------------------------- | ------------------------------------------ | ------------------- | ---------------------------------------- |
+| `edit(prompt, deviceType?, modelId?)`                     | `prompt: string`                           | `Promise<Screen>`   | Edit the screen with a text prompt       |
+| `variants(prompt, variantOptions, deviceType?, modelId?)` | `prompt: string`, `variantOptions: object` | `Promise<Screen[]>` | Generate design variants                 |
+| `getHtml()`                                               | —                                          | `Promise<string>`   | Get the screen's HTML download URL       |
+| `getImage()`                                              | —                                          | `Promise<string>`   | Get the screen's screenshot download URL |
 
 `getHtml()` and `getImage()` use cached data from the generation response when available. If the screen was loaded from `screens()` or `getScreen()`, they call the `get_screen` API automatically.
 
@@ -237,16 +241,16 @@ A generated UI screen. Provides access to HTML and screenshots.
 
 A visual theme or branding applied to projects and screens.
 
-| Property | Type | Description |
-|---|---|---|
-| `id` | `string` | Alias for `assetId` |
-| `assetId` | `string` | Bare asset ID (no `assets/` prefix) |
-| `projectId` | `string` | Parent project ID |
+| Property    | Type     | Description                         |
+| ----------- | -------- | ----------------------------------- |
+| `id`        | `string` | Alias for `assetId`                 |
+| `assetId`   | `string` | Bare asset ID (no `assets/` prefix) |
+| `projectId` | `string` | Parent project ID                   |
 
-| Method | Parameters | Returns | Description |
-|---|---|---|---|
-| `update(designSystem)` | `designSystem: object` | `Promise<DesignSystem>` | Update the design system's theme |
-| `apply(selectedScreenInstances)` | `selectedScreenInstances: object[]` | `Promise<Screen[]>` | Apply this design system to screens |
+| Method                           | Parameters                          | Returns                 | Description                         |
+| -------------------------------- | ----------------------------------- | ----------------------- | ----------------------------------- |
+| `update(designSystem)`           | `designSystem: object`              | `Promise<DesignSystem>` | Update the design system's theme    |
+| `apply(selectedScreenInstances)` | `selectedScreenInstances: object[]` | `Promise<Screen[]>`     | Apply this design system to screens |
 
 `selectedScreenInstances` is an array of `{ id: string, sourceScreen: string }` objects. Get these from `project.data.screenInstances`.
 
@@ -260,12 +264,12 @@ const result = await client.callTool<any>("tool_name", { arg: "value" });
 await client.close();
 ```
 
-| Method | Parameters | Returns | Description |
-|---|---|---|---|
-| `callTool<T>(name, args)` | `name: string`, `args: Record<string, any>` | `Promise<T>` | Call an MCP tool |
-| `listTools()` | — | `Promise<{ tools }>` | List available tools |
-| `connect()` | — | `Promise<void>` | Explicitly connect (auto-called by `callTool`) |
-| `close()` | — | `Promise<void>` | Close the connection |
+| Method                    | Parameters                                  | Returns              | Description                                    |
+| ------------------------- | ------------------------------------------- | -------------------- | ---------------------------------------------- |
+| `callTool<T>(name, args)` | `name: string`, `args: Record<string, any>` | `Promise<T>`         | Call an MCP tool                               |
+| `listTools()`             | —                                           | `Promise<{ tools }>` | List available tools                           |
+| `connect()`               | —                                           | `Promise<void>`      | Explicitly connect (auto-called by `callTool`) |
+| `close()`                 | —                                           | `Promise<void>`      | Close the connection                           |
 
 ### `stitchTools()`
 
@@ -283,10 +287,10 @@ const { text } = await generateText({
 });
 ```
 
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `apiKey` | `string` | `STITCH_API_KEY` | Override env var |
-| `include` | `string[]` | all tools | Only expose specific tool names |
+| Option    | Type       | Default          | Description                     |
+| --------- | ---------- | ---------------- | ------------------------------- |
+| `apiKey`  | `string`   | `STITCH_API_KEY` | Override env var                |
+| `include` | `string[]` | all tools        | Only expose specific tool names |
 
 Each tool's `execute` function calls `StitchToolClient.callTool()` under the hood. The client is lazily initialized via the singleton.
 
@@ -318,12 +322,12 @@ const projects = await stitch.projects();
 
 ### Environment Variables
 
-| Variable | Required | Description |
-|---|---|---|
-| `STITCH_API_KEY` | Yes (or use OAuth) | API key for authentication |
-| `STITCH_ACCESS_TOKEN` | No | OAuth access token (alternative to API key) |
-| `GOOGLE_CLOUD_PROJECT` | With OAuth | Google Cloud project ID |
-| `STITCH_HOST` | No | Override the MCP server URL |
+| Variable               | Required           | Description                                 |
+| ---------------------- | ------------------ | ------------------------------------------- |
+| `STITCH_API_KEY`       | Yes (or use OAuth) | API key for authentication                  |
+| `STITCH_ACCESS_TOKEN`  | No                 | OAuth access token (alternative to API key) |
+| `GOOGLE_CLOUD_PROJECT` | With OAuth         | Google Cloud project ID                     |
+| `STITCH_HOST`          | No                 | Override the MCP server URL                 |
 
 ### Explicit Configuration
 
@@ -340,13 +344,13 @@ const sdk = new Stitch(client);
 const projects = await sdk.projects();
 ```
 
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `apiKey` | `string` | `STITCH_API_KEY` | API key |
-| `accessToken` | `string` | `STITCH_ACCESS_TOKEN` | OAuth token |
-| `projectId` | `string` | `GOOGLE_CLOUD_PROJECT` | Cloud project ID |
-| `baseUrl` | `string` | `https://stitch.googleapis.com/mcp` | MCP server URL |
-| `timeout` | `number` | `300000` | Request timeout (ms) |
+| Option        | Type     | Default                             | Description          |
+| ------------- | -------- | ----------------------------------- | -------------------- |
+| `apiKey`      | `string` | `STITCH_API_KEY`                    | API key              |
+| `accessToken` | `string` | `STITCH_ACCESS_TOKEN`               | OAuth token          |
+| `projectId`   | `string` | `GOOGLE_CLOUD_PROJECT`              | Cloud project ID     |
+| `baseUrl`     | `string` | `https://stitch.googleapis.com/mcp` | MCP server URL       |
+| `timeout`     | `number` | `300000`                            | Request timeout (ms) |
 
 Authentication requires either `apiKey` or both `accessToken` and `projectId`.
 
@@ -362,8 +366,8 @@ try {
   await project.screens();
 } catch (error) {
   if (error instanceof StitchError) {
-    console.error(error.code);        // "UNKNOWN_ERROR"
-    console.error(error.message);     // Human-readable description
+    console.error(error.code); // "UNKNOWN_ERROR"
+    console.error(error.message); // Human-readable description
     console.error(error.recoverable); // false
   }
 }

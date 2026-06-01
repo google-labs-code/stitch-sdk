@@ -1,6 +1,7 @@
 ---
 milestone: "1"
 ---
+
 # Use-Case Code Snippets
 
 Create runnable TypeScript code snippets that demonstrate the Stitch SDK (`@google/stitch-sdk`) from a user's perspective. Each snippet tells a short story — a developer trying to accomplish something real. Snippets live in `packages/sdk/examples/` as standalone `.ts` files using top-level `await`.
@@ -16,6 +17,7 @@ cat packages/sdk/src/index.ts
 ```
 
 This shows every export. The SDK has three modalities:
+
 1. **Domain classes** — `Stitch`, `Project`, `Screen` (generated from `generated/src/`)
 2. **Singleton** — `stitch` (pre-configured instance, reads `STITCH_API_KEY` from env)
 3. **AI SDK adapter** — `stitchTools()` (returns tools for Vercel AI SDK `generateText`)
@@ -157,6 +159,7 @@ Before creating a new snippet, review the existing files in `packages/sdk/exampl
 Snippets that call the live API should import the shared gate helper:
 
 **`packages/sdk/examples/_require-key.ts`** (shared, not a snippet itself):
+
 ```typescript
 if (!process.env.STITCH_API_KEY) {
   console.log("⏭️  Set STITCH_API_KEY to run this snippet.");
@@ -188,6 +191,7 @@ Keep snippets under 80 lines. Prefer clarity over cleverness — a developer new
 ## Insight Hints
 
 After creating snippets, report:
+
 - Which SDK methods are covered by at least one snippet and which are uncovered
 - Any API capabilities (from `stitch.listTools()` or the domain-map) that would make compelling use cases but aren't represented yet
 - Whether the HTML output shapes (Tailwind config, Google Fonts, Material Symbols) suggest additional snippet ideas
@@ -212,6 +216,7 @@ If a snippet fails, determine whether the issue is in the snippet or in the SDK:
 
 - **Snippet bug** (wrong method name, missing import, bad argument) — fix the snippet and re-run.
 - **SDK bug** (a field returns `undefined` when the API populates it, an endpoint returns an unexpected status, or projection logic crashes on valid API data) — write a detailed report:
+
   ```bash
   cat > /tmp/bug-report.md << 'EOF'
   ## Steps to Reproduce

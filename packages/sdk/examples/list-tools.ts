@@ -19,7 +19,9 @@ for (const tool of tools) {
   console.log(`   Description: ${tool.description}`);
   if (tool.inputSchema) {
     console.log("   Input Schema:");
-    console.log(JSON.stringify(tool.inputSchema, null, 2).replace(/^/gm, "     "));
+    console.log(
+      JSON.stringify(tool.inputSchema, null, 2).replace(/^/gm, "     "),
+    );
   }
   console.log("");
 }

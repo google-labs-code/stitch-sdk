@@ -62,7 +62,9 @@ describe("stitchTools()", () => {
 
     await createProject.execute({ title: "Test Project" });
 
-    expect(mockCallTool).toHaveBeenCalledWith("create_project", { title: "Test Project" });
+    expect(mockCallTool).toHaveBeenCalledWith("create_project", {
+      title: "Test Project",
+    });
   });
 
   it("include filter restricts returned tools", async () => {

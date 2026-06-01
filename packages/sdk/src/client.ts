@@ -50,7 +50,11 @@ export class StitchToolClient implements StitchToolClientSpec {
   private localVirtualTools: VirtualToolDefinition[] = [];
   public entities: EntityManager;
 
-  constructor(inputConfig?: Partial<StitchConfig> & { localVirtualTools?: VirtualToolDefinition[] }) {
+  constructor(
+    inputConfig?: Partial<StitchConfig> & {
+      localVirtualTools?: VirtualToolDefinition[];
+    },
+  ) {
     const rawConfig = {
       accessToken: inputConfig?.accessToken || process.env.STITCH_ACCESS_TOKEN,
       apiKey: inputConfig?.apiKey || process.env.STITCH_API_KEY,
@@ -178,7 +182,7 @@ export class StitchToolClient implements StitchToolClientSpec {
   async callTool<T>(name: string, args: Record<string, any>): Promise<T> {
     if (!this.isConnected) await this.connect();
 
-    const localTool = this.localVirtualTools.find(t => t.name === name);
+    const localTool = this.localVirtualTools.find((t) => t.name === name);
     if (localTool) {
       return localTool.execute(this, args);
     }
@@ -205,33 +209,38 @@ export class StitchToolClient implements StitchToolClientSpec {
    *   Neither means "API keys are unsupported." See upload-handler.ts for full context.
    */
   async httpPost<T>(path: string, body: unknown): Promise<T> {
-    const url = `${this.config.baseUrl.replace(/\/mcp$/, '').replace(/\/$/, '')}/v1/${path}`;
+    const url = `${this.config.baseUrl.replace(/\/mcp$/, "").replace(/\/$/, "")}/v1/${path}`;
     const response = await fetch(url, {
-      method: 'POST',
+      method: "POST",
       headers: {
         ...this.buildAuthHeaders(),
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
     });
 
     if (!response.ok) {
-      const text = await response.text().catch(() => '');
+      const text = await response.text().catch(() => "");
       const lowerText = text.toLowerCase();
-      let code: StitchErrorCode = 'UNKNOWN_ERROR';
-      if (response.status === 429 || lowerText.includes('rate limit')) {
-        code = 'RATE_LIMITED';
-      } else if (response.status === 404 || lowerText.includes('not found')) {
-        code = 'NOT_FOUND';
-      } else if (response.status === 403 || lowerText.includes('permission')) {
-        code = 'PERMISSION_DENIED';
-      } else if (response.status === 401 || lowerText.includes('401') || lowerText.includes('unauthorized') || lowerText.includes('unauthenticated')) {
-        code = 'AUTH_FAILED';
+      let code: StitchErrorCode = "UNKNOWN_ERROR";
+      if (response.status === 429 || lowerText.includes("rate limit")) {
+        code = "RATE_LIMITED";
+      } else if (response.status === 404 || lowerText.includes("not found")) {
+        code = "NOT_FOUND";
+      } else if (response.status === 403 || lowerText.includes("permission")) {
+        code = "PERMISSION_DENIED";
+      } else if (
+        response.status === 401 ||
+        lowerText.includes("401") ||
+        lowerText.includes("unauthorized") ||
+        lowerText.includes("unauthenticated")
+      ) {
+        code = "AUTH_FAILED";
       }
       throw new StitchError({
         code,
         message: `HTTP ${response.status}: ${text || response.statusText}`,
-        recoverable: code === 'RATE_LIMITED',
+        recoverable: code === "RATE_LIMITED",
       });
     }
 
@@ -250,24 +259,24 @@ export class StitchToolClient implements StitchToolClientSpec {
     // By using request() directly, we get the raw tool list, apply schema
     // repair to inject missing $defs, and avoid the AJV crash entirely.
     const remoteTools = await (this.client as any).request(
-      { method: 'tools/list', params: {} },
+      { method: "tools/list", params: {} },
       ListToolsResultSchema,
     );
-    
+
     const tools = remoteTools.tools || [];
-    
+
     // Resilient Schema Repair: Inject missing $defs BEFORE any AJV
     // compilation can occur. Repairs both inputSchema and outputSchema.
     repairToolSchemas(tools);
 
-    const localTools = this.localVirtualTools.map(t => ({
+    const localTools = this.localVirtualTools.map((t) => ({
       name: t.name,
       description: t.description,
       inputSchema: t.inputSchema,
-      source: t.source
+      source: t.source,
     }));
     return {
-      tools: [...tools, ...localTools]
+      tools: [...tools, ...localTools],
     };
   }
 

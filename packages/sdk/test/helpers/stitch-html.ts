@@ -31,7 +31,9 @@ export interface StitchAssets {
  * block and Google Fonts links in the `<head>`.
  */
 export function extractStitchAssets(html: string): StitchAssets {
-  const configMatch = html.match(/<script id="tailwind-config">([\s\S]*?)<\/script>/);
+  const configMatch = html.match(
+    /<script id="tailwind-config">([\s\S]*?)<\/script>/,
+  );
   const fontLinks = html.match(/<link[^>]*fonts\.googleapis\.com[^>]*>/g) ?? [];
   return {
     tailwindConfig: configMatch?.[1] ?? null,
@@ -53,21 +55,32 @@ export function parseGeneratedFiles(output: string): Record<string, string> {
   return files;
 }
 
-const ROOT_FILES = new Set(["index.html", "package.json", "vite.config.ts", "tsconfig.json"]);
+const ROOT_FILES = new Set([
+  "index.html",
+  "package.json",
+  "vite.config.ts",
+  "tsconfig.json",
+]);
 
 /**
  * Writes generated files to a Vite preview app directory.
  * Root-level files (index.html, package.json, etc.) go in `outputDir`,
  * everything else goes in `outputDir/src/`.
  */
-export function writePreviewApp(files: Record<string, string>, outputDir: string): void {
+export function writePreviewApp(
+  files: Record<string, string>,
+  outputDir: string,
+): void {
   // Clear previous output
   fs.rmSync(outputDir, { recursive: true, force: true });
   const srcDir = path.join(outputDir, "src");
   fs.mkdirSync(srcDir, { recursive: true });
 
   for (const [filename, content] of Object.entries(files)) {
-    const dest = path.join(ROOT_FILES.has(filename) ? outputDir : srcDir, filename);
+    const dest = path.join(
+      ROOT_FILES.has(filename) ? outputDir : srcDir,
+      filename,
+    );
     fs.mkdirSync(path.dirname(dest), { recursive: true });
     fs.writeFileSync(dest, content);
   }
@@ -76,6 +89,9 @@ export function writePreviewApp(files: Record<string, string>, outputDir: string
   const indexPath = path.join(outputDir, "index.html");
   if (fs.existsSync(indexPath)) {
     const html = fs.readFileSync(indexPath, "utf-8");
-    fs.writeFileSync(indexPath, html.replace(/src="\/main\.tsx"/, 'src="/src/main.tsx"'));
+    fs.writeFileSync(
+      indexPath,
+      html.replace(/src="\/main\.tsx"/, 'src="/src/main.tsx"'),
+    );
   }
 }

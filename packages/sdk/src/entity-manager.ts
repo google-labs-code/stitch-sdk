@@ -28,7 +28,7 @@ export class EntityManager {
   resolve<T>(
     EntityClass: new (...args: any[]) => T,
     referenceKeys: string[],
-    data: any
+    data: any,
   ): T {
     let canonicalId = "";
     const parsedValues: Record<string, string> = {};
@@ -38,7 +38,7 @@ export class EntityManager {
       Object.assign(parsedValues, parseAllSegments(data));
       // Fallback if data is just the bare ID
       if (!parsedValues[referenceKeys[referenceKeys.length - 1]]) {
-         parsedValues[referenceKeys[referenceKeys.length - 1]] = canonicalId;
+        parsedValues[referenceKeys[referenceKeys.length - 1]] = canonicalId;
       }
     } else if (data && typeof data === "object") {
       if (data.name) {
@@ -49,7 +49,7 @@ export class EntityManager {
         const lastKey = referenceKeys[referenceKeys.length - 1];
         canonicalId = data[lastKey] || data.id || "";
       }
-      
+
       // Populate keys from data
       for (const key of referenceKeys) {
         if (data[key]) {
@@ -82,7 +82,7 @@ export class EntityManager {
 
     // Direct instantiation is restricted for users, but allowed here
     const instance = new EntityClass(this.client, data) as any;
-    
+
     // Assign reference keys dynamically based on parsed values
     for (const key of referenceKeys) {
       if (parsedValues[key]) {

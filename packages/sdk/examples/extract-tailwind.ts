@@ -16,7 +16,9 @@ if (projects.length === 0) {
 const project = projects[0];
 
 console.log(`🎨 Generating a screen in project ${project.id}...`);
-const screen = await project.generate("A modern login page with a custom Tailwind theme");
+const screen = await project.generate(
+  "A modern login page with a custom Tailwind theme",
+);
 console.log(`✅ Screen generated: ${screen.id}`);
 
 const htmlOrUrl = await screen.getHtml();
@@ -36,7 +38,9 @@ if (htmlOrUrl.startsWith("http")) {
 
 // Parse out the Tailwind configuration
 console.log("🔍 Parsing Tailwind config...");
-const configMatch = html.match(/<script id="tailwind-config">([\s\S]*?)<\/script>/);
+const configMatch = html.match(
+  /<script id="tailwind-config">([\s\S]*?)<\/script>/,
+);
 
 if (configMatch) {
   console.log("✅ Found Tailwind config!");
@@ -47,11 +51,12 @@ if (configMatch) {
 
 // Parse Google Fonts links
 console.log("🔍 Parsing Google Fonts links...");
-const fontsMatches = html.match(/<link[^>]*fonts\.googleapis\.com[^>]*>/g) || [];
+const fontsMatches =
+  html.match(/<link[^>]*fonts\.googleapis\.com[^>]*>/g) || [];
 
 if (fontsMatches.length > 0) {
   console.log(`✅ Found ${fontsMatches.length} Google Fonts link(s):`);
-  fontsMatches.forEach(link => console.log(`  - ${link}`));
+  fontsMatches.forEach((link) => console.log(`  - ${link}`));
 } else {
   console.log("❌ No Google Fonts links found.");
 }

@@ -4,47 +4,82 @@ DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:2f1a623ec115...)
         domain-map.json     (sha256:0ee09d686be6...)
-Generated: 2026-05-29T22:05:20.536Z
+Generated: 2026-06-01T03:47:10.743Z
  */
 import { type StitchToolClient } from "../../src/client.js";
 import { StitchError } from "../../src/spec/errors.js";
-import { DesignTheme, File, ProjectMetadata, ScreenInstance, Typography, UserFeedback, ProjectInput, ScreenInput, Asset, BoundingBox, ComponentRegion, Design, DesignSuggestion, DesignSystemInput, ProgressUpdate, ProgressUpdates, PrototypeLink, PrototypeLinks, PrototypeState, PrototypeV2Spec, ScreenMetadata, SessionOutputComponent, VariantOptions, SelectedScreenInstance } from "./types.generated.js";
-import { ListProjectsResponse, CreateProjectResponse } from "./responses.generated.js";
+import {
+  DesignTheme,
+  File,
+  ProjectMetadata,
+  ScreenInstance,
+  Typography,
+  UserFeedback,
+  ProjectInput,
+  ScreenInput,
+  Asset,
+  BoundingBox,
+  ComponentRegion,
+  Design,
+  DesignSuggestion,
+  DesignSystemInput,
+  ProgressUpdate,
+  ProgressUpdates,
+  PrototypeLink,
+  PrototypeLinks,
+  PrototypeState,
+  PrototypeV2Spec,
+  ScreenMetadata,
+  SessionOutputComponent,
+  VariantOptions,
+  SelectedScreenInstance,
+} from "./types.generated.js";
+import {
+  ListProjectsResponse,
+  CreateProjectResponse,
+} from "./responses.generated.js";
 import { Project } from "../../src/project-ext.js";
 
 /** Main entry point. Manages projects. */
 export class Stitch {
-    constructor(private client: StitchToolClient) {
-    }
+  constructor(private client: StitchToolClient) {}
 
-    /**
-     * Lists all Stitch projects accessible to the user. By default, it lists projects owned by the user.
-     * Tool: list_projects
-     */
-    async projects(): Promise<Project[]> {
-        try {
-          const raw = await this.client.callTool<ListProjectsResponse>("list_projects", {  });
-          return (raw?.projects || []).map((item) => this.client.entities.resolve(Project, ["projectId"], item));
-        } catch (error) {
-          throw StitchError.fromUnknown(error);
-        }
+  /**
+   * Lists all Stitch projects accessible to the user. By default, it lists projects owned by the user.
+   * Tool: list_projects
+   */
+  async projects(): Promise<Project[]> {
+    try {
+      const raw = await this.client.callTool<ListProjectsResponse>(
+        "list_projects",
+        {},
+      );
+      return (raw?.projects || []).map((item) =>
+        this.client.entities.resolve(Project, ["projectId"], item),
+      );
+    } catch (error) {
+      throw StitchError.fromUnknown(error);
     }
+  }
 
-    /**
-     * Creates a new Stitch project. A project is a container for UI designs and frontend code.
-     * Tool: create_project
-     */
-    async createProject(title?: string): Promise<Project> {
-        try {
-          const raw = await this.client.callTool<CreateProjectResponse>("create_project", { title });
-          return this.client.entities.resolve(Project, ["projectId"], raw);
-        } catch (error) {
-          throw StitchError.fromUnknown(error);
-        }
+  /**
+   * Creates a new Stitch project. A project is a container for UI designs and frontend code.
+   * Tool: create_project
+   */
+  async createProject(title?: string): Promise<Project> {
+    try {
+      const raw = await this.client.callTool<CreateProjectResponse>(
+        "create_project",
+        { title },
+      );
+      return this.client.entities.resolve(Project, ["projectId"], raw);
+    } catch (error) {
+      throw StitchError.fromUnknown(error);
     }
+  }
 
-    /** Create a Project handle from an existing ID without an API call. */
-    project(id: string): Project {
-        return this.client.entities.resolve(Project, ["projectId"], id);
-    }
+  /** Create a Project handle from an existing ID without an API call. */
+  project(id: string): Project {
+    return this.client.entities.resolve(Project, ["projectId"], id);
+  }
 }

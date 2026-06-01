@@ -29,14 +29,36 @@
 
 import { resolve } from "node:path";
 import { createHash } from "node:crypto";
-import { readdirSync, mkdirSync, rmSync, existsSync, readFileSync } from "node:fs";
-import { Project as TsProject, Scope, type SourceFile, type ClassDeclaration } from "ts-morph";
-import { DomainMap, type ProjectionStep, type Binding, type ArgSpec } from "./ir-schema.js";
+import {
+  readdirSync,
+  mkdirSync,
+  rmSync,
+  existsSync,
+  readFileSync,
+} from "node:fs";
+import {
+  Project as TsProject,
+  Scope,
+  type SourceFile,
+  type ClassDeclaration,
+} from "ts-morph";
+import {
+  DomainMap,
+  type ProjectionStep,
+  type Binding,
+  type ArgSpec,
+} from "./ir-schema.js";
 import type { Tool, ToolSchema } from "./tool-schema.js";
 
 const ROOT_DIR = resolve(import.meta.dir, "..");
-const MANIFEST_PATH = resolve(ROOT_DIR, "packages/sdk/generated/tools-manifest.json");
-const DOMAIN_MAP_PATH = resolve(ROOT_DIR, "packages/sdk/generated/domain-map.json");
+const MANIFEST_PATH = resolve(
+  ROOT_DIR,
+  "packages/sdk/generated/tools-manifest.json",
+);
+const DOMAIN_MAP_PATH = resolve(
+  ROOT_DIR,
+  "packages/sdk/generated/domain-map.json",
+);
 const GENERATED_DIR = resolve(ROOT_DIR, "packages/sdk/generated/src");
 const LOCK_PATH = resolve(ROOT_DIR, "packages/sdk/generated/stitch-sdk.lock");
 
@@ -73,7 +95,10 @@ function getAllFiles(dir: string): string[] {
 /**
  * Resolve a $ref in a JSON Schema, returning the referenced schema.
  */
-export function resolveRef(schema: ToolSchema, ref: string): ToolSchema | undefined {
+export function resolveRef(
+  schema: ToolSchema,
+  ref: string,
+): ToolSchema | undefined {
   // $ref format: "#/$defs/Foo"
   const parts = ref.replace("#/", "").split("/");
   let node: any = schema;
@@ -124,9 +149,9 @@ export function validateProjection(
       const available = Object.keys(props).join(", ");
       throw new Error(
         `❌ Binding "${bindingLabel}" projection step ${i + 1}: ` +
-        `property "${step.prop}" not found in outputSchema.\n` +
-        `   Available properties: ${available}\n` +
-        `   Fix: check the projection in domain-map.json for this binding.`
+          `property "${step.prop}" not found in outputSchema.\n` +
+          `   Available properties: ${available}\n` +
+          `   Fix: check the projection in domain-map.json for this binding.`,
       );
     }
 
@@ -139,7 +164,11 @@ export function validateProjection(
     }
 
     // If accessing array items (index or each), unwrap to items schema
-    if ((step.index !== undefined || step.each) && currentSchema?.type === "array" && currentSchema?.items) {
+    if (
+      (step.index !== undefined || step.each) &&
+      currentSchema?.type === "array" &&
+      currentSchema?.items
+    ) {
       currentSchema = currentSchema.items;
       if (currentSchema?.$ref) {
         currentSchema = resolveRef(rootSchema, currentSchema.$ref);
@@ -156,18 +185,21 @@ export function validateProjection(
  * Walks the ProjectionStep[] array and emits property access,
  * [index], .flatMap() for each step, or .map().find() for find steps.
  */
-export function emitProjection(steps: ProjectionStep[], rawVar: string = "raw"): string {
+export function emitProjection(
+  steps: ProjectionStep[],
+  rawVar: string = "raw",
+): string {
   if (steps.length === 0) return rawVar;
 
   // Check if any step uses 'each' (flatMap pattern)
-  const hasEach = steps.some(s => s.each);
+  const hasEach = steps.some((s) => s.each);
 
   if (hasEach) {
     return emitFlatMapProjection(steps, rawVar);
   }
 
   // Check if any step uses 'find' (scan pattern)
-  const findIndex = steps.findIndex(s => s.find);
+  const findIndex = steps.findIndex((s) => s.find);
   if (findIndex !== -1) {
     return emitFindProjection(steps, findIndex, rawVar);
   }
@@ -193,7 +225,11 @@ export function emitProjection(steps: ProjectionStep[], rawVar: string = "raw"):
  * whose nested path (dot-separated) is non-null. Remaining steps
  * after the find step continue as a normal optional chain on that element.
  */
-function emitFindProjection(steps: ProjectionStep[], findIdx: number, rawVar: string): string {
+function emitFindProjection(
+  steps: ProjectionStep[],
+  findIdx: number,
+  rawVar: string,
+): string {
   const findStep = steps[findIdx];
   const findPath = findStep.find!;
 
@@ -208,7 +244,10 @@ function emitFindProjection(steps: ProjectionStep[], findIdx: number, rawVar: st
 
   // Build the find-scan expression
   // (prefix?.prop ?? []).find((c: any) => c?.a?.b != null)
-  const innerChain = findPath.split('.').map(p => `?.${p}`).join('');
+  const innerChain = findPath
+    .split(".")
+    .map((p) => `?.${p}`)
+    .join("");
   let code = `(${prefix}?.${findStep.prop} ?? []).find((c: any) => c${innerChain} != null)`;
 
   // Chain remaining steps after the find step
@@ -227,7 +266,10 @@ function emitFindProjection(steps: ProjectionStep[], findIdx: number, rawVar: st
  * e.g. [each:outputComponents, prop:design, each:screens] →
  *   (raw.outputComponents || []).flatMap((a: any) => a.design.screens || [])
  */
-function emitFlatMapProjection(steps: ProjectionStep[], rawVar: string): string {
+function emitFlatMapProjection(
+  steps: ProjectionStep[],
+  rawVar: string,
+): string {
   let code = rawVar;
   let tempVar = "a";
   let i = 0;
@@ -300,7 +342,9 @@ export function jsonSchemaToTs(
     const refName = prop.$ref.replace("#/$defs/", "");
     const mappedName = namedTypes?.get(refName);
     if (mappedName) return mappedName;
-    console.log(`[DEBUG] Resolving $ref "${refName}" recursively because it was not in namedTypes.`);
+    console.log(
+      `[DEBUG] Resolving $ref "${refName}" recursively because it was not in namedTypes.`,
+    );
     const resolved = defs?.[refName];
     return resolved ? jsonSchemaToTs(resolved, defs, namedTypes) : "any";
   }
@@ -312,12 +356,16 @@ export function jsonSchemaToTs(
     return prop.enum.map((v: string) => `"${v}"`).join(" | ");
   }
   switch (prop.type) {
-    case "string": return "string";
+    case "string":
+      return "string";
     case "integer":
-    case "number": return "number";
-    case "boolean": return "boolean";
+    case "number":
+      return "number";
+    case "boolean":
+      return "boolean";
     case "array":
-      if (prop.items) return `${jsonSchemaToTs(prop.items, allDefs, namedTypes)}[]`;
+      if (prop.items)
+        return `${jsonSchemaToTs(prop.items, allDefs, namedTypes)}[]`;
       return "any[]";
     case "object":
       if (prop.properties) {
@@ -327,7 +375,8 @@ export function jsonSchemaToTs(
         return `Record<string, ${jsonSchemaToTs(prop.additionalProperties, allDefs, namedTypes)}>`;
       }
       return "Record<string, unknown>";
-    default: return "any";
+    default:
+      return "any";
   }
 }
 
@@ -353,16 +402,22 @@ function emitObjectLiteral(
 /**
  * Emit TypeScript interfaces from JSON Schema $defs.
  */
-export function emitNamedInterfaces(defs: Record<string, ToolSchema>, namedTypes: Map<string, string>): string {
+export function emitNamedInterfaces(
+  defs: Record<string, ToolSchema>,
+  namedTypes: Map<string, string>,
+): string {
   const interfaces: string[] = [];
   for (const [name, schema] of Object.entries(defs)) {
     const desc = schema.description ? `/** ${schema.description} */\n` : "";
     const typeLit = emitObjectLiteral(schema, defs, namedTypes);
     // Convert `{ a: string; b: string }` -> `{\n  a: string;\n  b: string;\n}`
-    const intf = typeLit === "{  }" ? "{}" : typeLit
-      .replace(/^{ /, "{\n  ")
-      .replace(/ }$/, ";\n}")
-      .replace(/; /g, ";\n  ");
+    const intf =
+      typeLit === "{  }"
+        ? "{}"
+        : typeLit
+            .replace(/^{ /, "{\n  ")
+            .replace(/ }$/, ";\n}")
+            .replace(/; /g, ";\n  ");
     interfaces.push(`${desc}export interface ${name} ${intf}`);
   }
   return interfaces.join("\n\n");
@@ -373,23 +428,40 @@ export function emitNamedInterfaces(defs: Record<string, ToolSchema>, namedTypes
  * e.g. "list_screens" -> "ListScreensResponse"
  */
 function toResponseName(toolName: string): string {
-  return toolName.split("_").map(part => part.charAt(0).toUpperCase() + part.slice(1)).join("") + "Response";
+  return (
+    toolName
+      .split("_")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join("") + "Response"
+  );
 }
 
 /**
  * Emit TypeScript interfaces for a tool's outputSchema.
  */
-export function emitResponseType(tool: Tool, namedTypes?: Map<string, string>): string {
+export function emitResponseType(
+  tool: Tool,
+  namedTypes?: Map<string, string>,
+): string {
   const schema = tool.outputSchema;
   if (!schema || schema.type !== "object" || !schema.properties) {
     return `export interface ${toResponseName(tool.name)} {}`;
   }
-  const desc = tool.description ? `/** Response message for ${tool.name}. */\n` : "";
-  const typeLit = emitObjectLiteral(schema, tool.outputSchema?.$defs, namedTypes);
-  const intf = typeLit === "{  }" ? "{}" : typeLit
-    .replace(/^{ /, "{\n  ")
-    .replace(/ }$/, ";\n}")
-    .replace(/; /g, ";\n  ");
+  const desc = tool.description
+    ? `/** Response message for ${tool.name}. */\n`
+    : "";
+  const typeLit = emitObjectLiteral(
+    schema,
+    tool.outputSchema?.$defs,
+    namedTypes,
+  );
+  const intf =
+    typeLit === "{  }"
+      ? "{}"
+      : typeLit
+          .replace(/^{ /, "{\n  ")
+          .replace(/ }$/, ";\n}")
+          .replace(/; /g, ";\n  ");
   return `${desc}export interface ${toResponseName(tool.name)} ${intf}`;
 }
 
@@ -430,15 +502,13 @@ export function generateArgsObject(args: Record<string, ArgSpec>): string {
       entries.push(name === paramName ? name : `${name}: ${paramName}`);
     } else if (spec.from === "computed") {
       const templateStr = spec.template || "";
-      const interpolated = templateStr.replace(
-        /\{(\w+)\}/g,
-        (_, key) => {
-          const argSpec = args[key];
-          if (argSpec?.from === "self" || argSpec?.from === "selfArray") return `\${this.${key}}`;
-          if (!argSpec) return `\${this.${key}}`; // Assume it's a field on the class if not in args
-          return `\${${argSpec?.from === "param" && argSpec?.rename ? argSpec.rename : key}}`;
-        }
-      );
+      const interpolated = templateStr.replace(/\{(\w+)\}/g, (_, key) => {
+        const argSpec = args[key];
+        if (argSpec?.from === "self" || argSpec?.from === "selfArray")
+          return `\${this.${key}}`;
+        if (!argSpec) return `\${this.${key}}`; // Assume it's a field on the class if not in args
+        return `\${${argSpec?.from === "param" && argSpec?.rename ? argSpec.rename : key}}`;
+      });
       entries.push(`${name}: \`${interpolated}\``);
     }
   }
@@ -458,7 +528,9 @@ function generateReturnExpression(
   if (binding.returns.class) {
     const childClass = domainMap.classes[binding.returns.class];
     const parentField = childClass?.parentField;
-    const keys = childClass?.reference?.keys ? JSON.stringify(childClass.reference.keys) : '[]';
+    const keys = childClass?.reference?.keys
+      ? JSON.stringify(childClass.reference.keys)
+      : "[]";
 
     if (binding.returns.array) {
       const itemExpr = parentField
@@ -475,9 +547,11 @@ function generateReturnExpression(
         ? `{ ...${guardVar}, ${parentField}: this.${parentField} }`
         : guardVar;
       const toolName = binding.tool;
-      return `const ${guardVar} = ${projectionExpr};\n` +
+      return (
+        `const ${guardVar} = ${projectionExpr};\n` +
         `  if (!${guardVar}) throw new StitchError({ code: "UNKNOWN_ERROR", message: "Incomplete API response from ${toolName}: expected object at projection path", recoverable: false });\n` +
-        `  return this.client.entities.resolve(${binding.returns.class}, ${keys}, ${dataExpr})`;
+        `  return this.client.entities.resolve(${binding.returns.class}, ${keys}, ${dataExpr})`
+      );
     }
 
     // Direct return — projection is empty, raw is the result itself
@@ -519,7 +593,9 @@ function buildMethodBody(
 
   statements.push(`try {`);
   const responseName = toResponseName(binding.tool);
-  statements.push(`  const raw = await this.client.callTool<${responseName}>("${binding.tool}", ${generateArgsObject(binding.args)});`);
+  statements.push(
+    `  const raw = await this.client.callTool<${responseName}>("${binding.tool}", ${generateArgsObject(binding.args)});`,
+  );
   const retExpr = generateReturnExpression(binding, className, domainMap);
   // If retExpr contains newlines, it has guard statements — don't wrap in return
   if (retExpr.includes("\n")) {
@@ -551,7 +627,7 @@ async function main() {
   // Validate projections against output schemas
   console.log("🔍 Validating projections against output schemas...");
   for (const binding of domainMap.bindings) {
-    const tool = manifest.find(t => t.name === binding.tool);
+    const tool = manifest.find((t) => t.name === binding.tool);
     if (!tool?.outputSchema) continue;
 
     validateProjection(
@@ -567,12 +643,12 @@ async function main() {
   // and that each spec file exists.
   for (const [className, config] of Object.entries(domainMap.classes)) {
     if (!config.sideEffects?.length) continue;
-    
+
     // Collect generated method names for this class
     const generatedMethods = new Set(
       domainMap.bindings
-        .filter(b => b.class === className)
-        .map(b => b.method)
+        .filter((b) => b.class === className)
+        .map((b) => b.method),
     );
 
     for (const se of config.sideEffects) {
@@ -580,8 +656,8 @@ async function main() {
       if (generatedMethods.has(se.method)) {
         throw new Error(
           `❌ Side-effect collision: ${className}.${se.method} is declared as both a ` +
-          `generated binding and a handwritten sideEffect. Extension methods must NOT ` +
-          `shadow generated methods.`
+            `generated binding and a handwritten sideEffect. Extension methods must NOT ` +
+            `shadow generated methods.`,
         );
       }
 
@@ -590,7 +666,7 @@ async function main() {
       if (!existsSync(specAbsPath)) {
         throw new Error(
           `❌ Missing spec file: ${className}.${se.method} declares specPath ` +
-          `"${se.specPath}" but file does not exist at ${specAbsPath}`
+            `"${se.specPath}" but file does not exist at ${specAbsPath}`,
         );
       }
     }
@@ -644,11 +720,16 @@ async function main() {
     namedTypes.set(name, newName);
     renamedDefs[newName] = def;
   }
-  
+
   let fileCount = 0;
   const typesFile = tsProject.createSourceFile("types.generated.ts");
-  typesFile.addStatements(`/**\n * ${headerComment}\n */\n\n${emitNamedInterfaces(renamedDefs, namedTypes)}`);
-  await Bun.write(resolve(GENERATED_DIR, "types.generated.ts"), typesFile.getFullText());
+  typesFile.addStatements(
+    `/**\n * ${headerComment}\n */\n\n${emitNamedInterfaces(renamedDefs, namedTypes)}`,
+  );
+  await Bun.write(
+    resolve(GENERATED_DIR, "types.generated.ts"),
+    typesFile.getFullText(),
+  );
   fileCount++;
 
   // ── Phase B: Generate named response types ────────────────────
@@ -663,15 +744,22 @@ async function main() {
   for (const tool of manifest) {
     responseTypes.push(emitResponseType(tool, namedTypes));
   }
-  responsesFile.addStatements(`/**\n * ${headerComment}\n */\n\n${responseTypes.join("\n\n")}`);
-  await Bun.write(resolve(GENERATED_DIR, "responses.generated.ts"), responsesFile.getFullText());
+  responsesFile.addStatements(
+    `/**\n * ${headerComment}\n */\n\n${responseTypes.join("\n\n")}`,
+  );
+  await Bun.write(
+    resolve(GENERATED_DIR, "responses.generated.ts"),
+    responsesFile.getFullText(),
+  );
   fileCount++;
 
   let fileCountTotal = fileCount;
 
   // Generate a class file for each domain class
   for (const [className, config] of Object.entries(domainMap.classes)) {
-    const classBindings = domainMap.bindings.filter(b => b.class === className);
+    const classBindings = domainMap.bindings.filter(
+      (b) => b.class === className,
+    );
     const classFileName = className.toLowerCase();
 
     console.log(`  📄 ${classFileName}.ts (${classBindings.length} methods)`);
@@ -712,7 +800,7 @@ async function main() {
         namedImports: Array.from(namedTypes.values()),
       });
     }
-    
+
     // Import response types used by bindings in this class
     const requiredResponses = new Set<string>();
     for (const b of classBindings) {
@@ -751,12 +839,20 @@ async function main() {
     const clientScope = config.extensionPath ? Scope.Protected : Scope.Private;
     if (config.isRoot) {
       cls.addConstructor({
-        parameters: [{ name: "client", type: "StitchToolClient", scope: clientScope }],
+        parameters: [
+          { name: "client", type: "StitchToolClient", scope: clientScope },
+        ],
       });
     } else {
       // Declare fields
       for (const p of config.constructorParams) {
-        cls.addProperty({ name: p, type: "string", scope: Scope.Public, isReadonly: true });
+        cls.addProperty({
+          name: p,
+          type: "string",
+          scope: Scope.Public,
+          isReadonly: true,
+          hasExclamationToken: true,
+        });
       }
       cls.addProperty({ name: "data", type: "any", scope: Scope.Public });
 
@@ -769,7 +865,10 @@ async function main() {
       });
 
       // ID getter
-      const idParam = (config.reference?.keys && config.reference.keys.length > 0) ? config.reference.keys[config.reference.keys.length - 1] : config.constructorParams[0];
+      const idParam =
+        config.reference?.keys && config.reference.keys.length > 0
+          ? config.reference.keys[config.reference.keys.length - 1]
+          : config.constructorParams[0];
       if (idParam && idParam !== "id") {
         cls.addGetAccessor({
           name: "id",
@@ -782,30 +881,38 @@ async function main() {
 
     // Methods from bindings
     for (const binding of classBindings) {
-      const tool = manifest.find(t => t.name === binding.tool);
+      const tool = manifest.find((t) => t.name === binding.tool);
       if (!tool) {
-        console.warn(`  ⚠️  Tool "${binding.tool}" not found in manifest, skipping.`);
+        console.warn(
+          `  ⚠️  Tool "${binding.tool}" not found in manifest, skipping.`,
+        );
         continue;
       }
 
       const paramTypes = generateParamType(tool, binding.args, namedTypes);
       const returnTypeStr = binding.returns.class
-        ? (binding.returns.array ? `${binding.returns.class}[]` : binding.returns.class)
-        : (binding.returns.type || "any");
+        ? binding.returns.array
+          ? `${binding.returns.class}[]`
+          : binding.returns.class
+        : binding.returns.type || "any";
 
       cls.addMethod({
         name: binding.method,
         isAsync: true,
         returnType: `Promise<${returnTypeStr}>`,
-        docs: [{
-          description: `${tool.description?.split("\n")[0].trim() || binding.method}\nTool: ${binding.tool}`,
-        }],
+        docs: [
+          {
+            description: `${tool.description?.split("\n")[0].trim() || binding.method}\nTool: ${binding.tool}`,
+          },
+        ],
         // Parameters as raw string (ts-morph doesn't easily support "prompt: string, opts?: Enum" inline)
         statements: buildMethodBody(binding, className, domainMap),
       });
 
       // Add parameters manually (from the paramTypes string) by editing the method
-      const method = cls.getMethods().find(m => m.getName() === binding.method);
+      const method = cls
+        .getMethods()
+        .find((m) => m.getName() === binding.method);
       if (method && paramTypes) {
         // Parse paramTypes string into individual params
         const paramParts = paramTypes.split(", ").filter(Boolean);
@@ -827,13 +934,20 @@ async function main() {
       for (const factory of config.factories) {
         const factoryClass = domainMap.classes[factory.returns];
         if (!factoryClass) {
-          console.warn(`  ⚠️  Factory returns "${factory.returns}" but class not found, skipping.`);
+          console.warn(
+            `  ⚠️  Factory returns "${factory.returns}" but class not found, skipping.`,
+          );
           continue;
         }
 
         const parentField = factoryClass.parentField;
-        let idKey = (factoryClass.reference?.keys && factoryClass.reference.keys.length > 0) ? factoryClass.reference.keys[factoryClass.reference.keys.length - 1] : "id";
-        
+        let idKey =
+          factoryClass.reference?.keys && factoryClass.reference.keys.length > 0
+            ? factoryClass.reference.keys[
+                factoryClass.reference.keys.length - 1
+              ]
+            : "id";
+
         const factoryDataExpr = parentField
           ? `{ ${idKey}: id, ${parentField}: this.${parentField} }`
           : "id";
@@ -841,8 +955,16 @@ async function main() {
           name: factory.method,
           returnType: factory.returns,
           parameters: [{ name: "id", type: "string" }],
-          docs: [{ description: factory.description || `Create a ${factory.returns} from an ID.` }],
-          statements: [`return this.client.entities.resolve(${factory.returns}, ${JSON.stringify(factoryClass.reference?.keys || [])}, ${factoryDataExpr});`],
+          docs: [
+            {
+              description:
+                factory.description ||
+                `Create a ${factory.returns} from an ID.`,
+            },
+          ],
+          statements: [
+            `return this.client.entities.resolve(${factory.returns}, ${JSON.stringify(factoryClass.reference?.keys || [])}, ${factoryDataExpr});`,
+          ],
         });
       }
     }
@@ -862,40 +984,109 @@ async function main() {
     isExported: true,
     docs: ["JSON Schema property descriptor for a tool parameter."],
     properties: [
-      { name: "type", type: "string", hasQuestionToken: true, docs: ["JSON Schema type (string, integer, array, etc.)"] },
-      { name: "description", type: "string", hasQuestionToken: true, docs: ["Human-readable parameter description"] },
-      { name: "enum", type: "string[]", hasQuestionToken: true, docs: ["Allowed values for constrained parameters"] },
-      { name: "items", type: "ToolPropertySchema", hasQuestionToken: true, docs: ["Schema for array items"] },
-      { name: "deprecated", type: "boolean", hasQuestionToken: true, docs: ["Whether the parameter is deprecated"] },
+      {
+        name: "type",
+        type: "string",
+        hasQuestionToken: true,
+        docs: ["JSON Schema type (string, integer, array, etc.)"],
+      },
+      {
+        name: "description",
+        type: "string",
+        hasQuestionToken: true,
+        docs: ["Human-readable parameter description"],
+      },
+      {
+        name: "enum",
+        type: "string[]",
+        hasQuestionToken: true,
+        docs: ["Allowed values for constrained parameters"],
+      },
+      {
+        name: "items",
+        type: "ToolPropertySchema",
+        hasQuestionToken: true,
+        docs: ["Schema for array items"],
+      },
+      {
+        name: "deprecated",
+        type: "boolean",
+        hasQuestionToken: true,
+        docs: ["Whether the parameter is deprecated"],
+      },
     ],
-    indexSignatures: [{ keyName: "key", keyType: "string", returnType: "unknown", docs: ["Additional JSON Schema properties"] }],
+    indexSignatures: [
+      {
+        keyName: "key",
+        keyType: "string",
+        returnType: "unknown",
+        docs: ["Additional JSON Schema properties"],
+      },
+    ],
   });
   toolDefsFile.addInterface({
     name: "ToolInputSchema",
     isExported: true,
     docs: ["Typed JSON Schema for a tool's input parameters."],
     properties: [
-      { name: "type", type: '"object"', docs: ["Always 'object' for tool inputs"] },
-      { name: "description", type: "string", hasQuestionToken: true, docs: ["Schema-level description"] },
-      { name: "properties", type: "Record<string, ToolPropertySchema>", docs: ["Map of parameter names to their schemas"] },
-      { name: "required", type: "string[]", hasQuestionToken: true, docs: ["Names of required parameters"] },
+      {
+        name: "type",
+        type: '"object"',
+        docs: ["Always 'object' for tool inputs"],
+      },
+      {
+        name: "description",
+        type: "string",
+        hasQuestionToken: true,
+        docs: ["Schema-level description"],
+      },
+      {
+        name: "properties",
+        type: "Record<string, ToolPropertySchema>",
+        docs: ["Map of parameter names to their schemas"],
+      },
+      {
+        name: "required",
+        type: "string[]",
+        hasQuestionToken: true,
+        docs: ["Names of required parameters"],
+      },
     ],
-    indexSignatures: [{ keyName: "key", keyType: "string", returnType: "unknown", docs: ["Additional JSON Schema properties"] }],
+    indexSignatures: [
+      {
+        keyName: "key",
+        keyType: "string",
+        returnType: "unknown",
+        docs: ["Additional JSON Schema properties"],
+      },
+    ],
   });
   toolDefsFile.addInterface({
     name: "ToolDefinition",
     isExported: true,
     docs: ["Static tool definition from the Stitch MCP server manifest."],
     properties: [
-      { name: "name", type: "string", docs: ['MCP tool name, e.g. "create_project"'] },
-      { name: "description", type: "string", docs: ["Human-readable description of what the tool does"] },
-      { name: "inputSchema", type: "ToolInputSchema", docs: ["Typed JSON Schema for the tool's input parameters"] },
+      {
+        name: "name",
+        type: "string",
+        docs: ['MCP tool name, e.g. "create_project"'],
+      },
+      {
+        name: "description",
+        type: "string",
+        docs: ["Human-readable description of what the tool does"],
+      },
+      {
+        name: "inputSchema",
+        type: "ToolInputSchema",
+        docs: ["Typed JSON Schema for the tool's input parameters"],
+      },
     ],
   });
   // Use ts-morph for the declaration, but inject the JSON data directly.
   // (addStatements chokes on very large JSON literals, so we build the output string.)
   const toolDefsJson = JSON.stringify(
-    manifest.map(t => ({
+    manifest.map((t) => ({
       name: t.name,
       description: t.description || "",
       inputSchema: t.inputSchema || {},
@@ -907,7 +1098,10 @@ async function main() {
     toolDefsFile.getFullText() +
     `\n/** All tools available on the Stitch MCP server, generated from tools-manifest.json. */\n` +
     `export const toolDefinitions: ToolDefinition[] = ${toolDefsJson};\n`;
-  await Bun.write(resolve(GENERATED_DIR, "tool-definitions.ts"), toolDefsOutput);
+  await Bun.write(
+    resolve(GENERATED_DIR, "tool-definitions.ts"),
+    toolDefsOutput,
+  );
   fileCount++;
 
   // Generate barrel export
@@ -941,7 +1135,9 @@ async function main() {
   await Bun.write(resolve(GENERATED_DIR, "index.ts"), indexFile.getFullText());
   fileCount++;
 
-  console.log(`\n📦 Generated ${fileCount} files in packages/sdk/generated/src/`);
+  console.log(
+    `\n📦 Generated ${fileCount} files in packages/sdk/generated/src/`,
+  );
 
   // Update stitch-sdk.lock
   const generatedHash = hashDirectory(GENERATED_DIR);

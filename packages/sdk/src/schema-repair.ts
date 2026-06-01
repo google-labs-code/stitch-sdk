@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import type { Tool } from '@modelcontextprotocol/sdk/types.js';
+import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 
 /**
  * Well-known $defs definitions that the Stitch backend may reference via
@@ -25,51 +25,51 @@ import type { Tool } from '@modelcontextprotocol/sdk/types.js';
  */
 const WELL_KNOWN_DEFS: Record<string, object> = {
   ScreenInstance: {
-    type: 'object',
-    description: 'An instance of a screen on the project.',
+    type: "object",
+    description: "An instance of a screen on the project.",
     properties: {
-      groupId: { type: 'string' },
-      groupName: { type: 'string' },
-      height: { type: 'integer', format: 'int32' },
-      hidden: { type: 'boolean' },
-      id: { type: 'string' },
-      isFavourite: { type: 'boolean' },
-      label: { type: 'string' },
-      sourceAsset: { type: 'string' },
-      sourceScreen: { type: 'string' },
+      groupId: { type: "string" },
+      groupName: { type: "string" },
+      height: { type: "integer", format: "int32" },
+      hidden: { type: "boolean" },
+      id: { type: "string" },
+      isFavourite: { type: "boolean" },
+      label: { type: "string" },
+      sourceAsset: { type: "string" },
+      sourceScreen: { type: "string" },
       type: {
-        type: 'string',
+        type: "string",
         enum: [
-          'SCREEN_INSTANCE_TYPE_UNSPECIFIED',
-          'SCREEN_INSTANCE',
-          'DESIGN_SYSTEM_INSTANCE',
-          'GROUP_INSTANCE',
+          "SCREEN_INSTANCE_TYPE_UNSPECIFIED",
+          "SCREEN_INSTANCE",
+          "DESIGN_SYSTEM_INSTANCE",
+          "GROUP_INSTANCE",
         ],
       },
-      width: { type: 'integer', format: 'int32' },
-      x: { type: 'integer', format: 'int32' },
-      y: { type: 'integer', format: 'int32' },
+      width: { type: "integer", format: "int32" },
+      x: { type: "integer", format: "int32" },
+      y: { type: "integer", format: "int32" },
     },
   },
 
   SelectedScreenInstance: {
-    type: 'object',
-    description: 'A selected screen instance reference.',
+    type: "object",
+    description: "A selected screen instance reference.",
     properties: {
-      screenId: { type: 'string' },
-      instanceId: { type: 'string' },
+      screenId: { type: "string" },
+      instanceId: { type: "string" },
     },
   },
 
   File: {
-    type: 'object',
-    description: 'A File resource.',
+    type: "object",
+    description: "A File resource.",
     properties: {
-      downloadUrl: { type: 'string' },
-      fileContentBase64: { type: 'string' },
-      mimeType: { type: 'string' },
-      name: { type: 'string' },
-      uploadBlobId: { type: 'string' },
+      downloadUrl: { type: "string" },
+      fileContentBase64: { type: "string" },
+      mimeType: { type: "string" },
+      name: { type: "string" },
+      uploadBlobId: { type: "string" },
     },
   },
 };
@@ -78,8 +78,11 @@ const WELL_KNOWN_DEFS: Record<string, object> = {
  * Collect every `$ref` target of the form `#/$defs/<Name>` from a schema
  * object (recursively). Returns the set of referenced definition names.
  */
-function collectRefTargets(obj: unknown, refs: Set<string> = new Set()): Set<string> {
-  if (obj === null || typeof obj !== 'object') return refs;
+function collectRefTargets(
+  obj: unknown,
+  refs: Set<string> = new Set(),
+): Set<string> {
+  if (obj === null || typeof obj !== "object") return refs;
 
   if (Array.isArray(obj)) {
     for (const item of obj) collectRefTargets(item, refs);
@@ -87,7 +90,7 @@ function collectRefTargets(obj: unknown, refs: Set<string> = new Set()): Set<str
   }
 
   const record = obj as Record<string, unknown>;
-  if (typeof record.$ref === 'string') {
+  if (typeof record.$ref === "string") {
     const match = record.$ref.match(/^#\/\$defs\/(.+)$/);
     if (match) refs.add(match[1]);
   }
@@ -106,7 +109,7 @@ function collectRefTargets(obj: unknown, refs: Set<string> = new Set()): Set<str
  * Mutates the schema in place and returns it for convenience.
  */
 export function repairSchema(schema: Record<string, any>): Record<string, any> {
-  if (!schema || typeof schema !== 'object') return schema;
+  if (!schema || typeof schema !== "object") return schema;
 
   const referencedDefs = collectRefTargets(schema);
   if (referencedDefs.size === 0) return schema;
@@ -132,13 +135,13 @@ export function repairSchema(schema: Record<string, any>): Record<string, any> {
  */
 export function repairToolSchemas(tools: Tool[]): void {
   for (const tool of tools) {
-    if (tool.inputSchema && typeof tool.inputSchema === 'object') {
+    if (tool.inputSchema && typeof tool.inputSchema === "object") {
       repairSchema(tool.inputSchema as Record<string, any>);
     }
     // outputSchema was added in MCP SDK ≥1.27 and is the primary crash vector:
     // Client.cacheToolMetadata() eagerly compiles outputSchema with AJV.
     const anyTool = tool as any;
-    if (anyTool.outputSchema && typeof anyTool.outputSchema === 'object') {
+    if (anyTool.outputSchema && typeof anyTool.outputSchema === "object") {
       repairSchema(anyTool.outputSchema);
     }
   }

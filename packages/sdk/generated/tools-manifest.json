@@ -101,11 +101,7 @@
             },
             "colorMode": {
               "description": "Required. The mode of appearance of the design.",
-              "enum": [
-                "COLOR_MODE_UNSPECIFIED",
-                "LIGHT",
-                "DARK"
-              ],
+              "enum": ["COLOR_MODE_UNSPECIFIED", "LIGHT", "DARK"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "Unspecified color mode.",
@@ -479,11 +475,7 @@
             },
             "userRole": {
               "description": "The Role of the user accessing the project.",
-              "enum": [
-                "ROLE_UNSPECIFIED",
-                "OWNER",
-                "READER"
-              ],
+              "enum": ["ROLE_UNSPECIFIED", "OWNER", "READER"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "go/protodosdonts#unspecified-enum",
@@ -631,11 +623,7 @@
             },
             "rating": {
               "description": "Optional. The user rating of the interaction.",
-              "enum": [
-                "RATING_UNSPECIFIED",
-                "POSITIVE",
-                "NEGATIVE"
-              ],
+              "enum": ["RATING_UNSPECIFIED", "POSITIVE", "NEGATIVE"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "Unspecified rating.",
@@ -694,11 +682,7 @@
         },
         "origin": {
           "description": "Output only. The origin of the project.",
-          "enum": [
-            "ORIGIN_UNSPECIFIED",
-            "STITCH",
-            "IMPORTED_FROM_GALILEO"
-          ],
+          "enum": ["ORIGIN_UNSPECIFIED", "STITCH", "IMPORTED_FROM_GALILEO"],
           "readOnly": true,
           "type": "string",
           "x-google-enum-descriptions": [
@@ -759,11 +743,7 @@
         },
         "visibility": {
           "description": "Optional. The visibility setting of the project.",
-          "enum": [
-            "VISIBILITY_UNSPECIFIED",
-            "PUBLIC",
-            "PRIVATE"
-          ],
+          "enum": ["VISIBILITY_UNSPECIFIED", "PUBLIC", "PRIVATE"],
           "type": "string",
           "x-google-enum-descriptions": [
             "Unspecified visibility. By default, the project is private.",
@@ -791,9 +771,7 @@
           "x-google-identifier": true
         }
       },
-      "required": [
-        "name"
-      ],
+      "required": ["name"],
       "type": "object"
     },
     "name": "get_project",
@@ -880,11 +858,7 @@
             },
             "colorMode": {
               "description": "Required. The mode of appearance of the design.",
-              "enum": [
-                "COLOR_MODE_UNSPECIFIED",
-                "LIGHT",
-                "DARK"
-              ],
+              "enum": ["COLOR_MODE_UNSPECIFIED", "LIGHT", "DARK"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "Unspecified color mode.",
@@ -1258,11 +1232,7 @@
             },
             "userRole": {
               "description": "The Role of the user accessing the project.",
-              "enum": [
-                "ROLE_UNSPECIFIED",
-                "OWNER",
-                "READER"
-              ],
+              "enum": ["ROLE_UNSPECIFIED", "OWNER", "READER"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "go/protodosdonts#unspecified-enum",
@@ -1410,11 +1380,7 @@
             },
             "rating": {
               "description": "Optional. The user rating of the interaction.",
-              "enum": [
-                "RATING_UNSPECIFIED",
-                "POSITIVE",
-                "NEGATIVE"
-              ],
+              "enum": ["RATING_UNSPECIFIED", "POSITIVE", "NEGATIVE"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "Unspecified rating.",
@@ -1473,11 +1439,7 @@
         },
         "origin": {
           "description": "Output only. The origin of the project.",
-          "enum": [
-            "ORIGIN_UNSPECIFIED",
-            "STITCH",
-            "IMPORTED_FROM_GALILEO"
-          ],
+          "enum": ["ORIGIN_UNSPECIFIED", "STITCH", "IMPORTED_FROM_GALILEO"],
           "readOnly": true,
           "type": "string",
           "x-google-enum-descriptions": [
@@ -1538,11 +1500,7 @@
         },
         "visibility": {
           "description": "Optional. The visibility setting of the project.",
-          "enum": [
-            "VISIBILITY_UNSPECIFIED",
-            "PUBLIC",
-            "PRIVATE"
-          ],
+          "enum": ["VISIBILITY_UNSPECIFIED", "PUBLIC", "PRIVATE"],
           "type": "string",
           "x-google-enum-descriptions": [
             "Unspecified visibility. By default, the project is private.",
@@ -1654,11 +1612,7 @@
             },
             "colorMode": {
               "description": "Required. The mode of appearance of the design.",
-              "enum": [
-                "COLOR_MODE_UNSPECIFIED",
-                "LIGHT",
-                "DARK"
-              ],
+              "enum": ["COLOR_MODE_UNSPECIFIED", "LIGHT", "DARK"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "Unspecified color mode.",
@@ -2071,11 +2025,7 @@
             },
             "origin": {
               "description": "Output only. The origin of the project.",
-              "enum": [
-                "ORIGIN_UNSPECIFIED",
-                "STITCH",
-                "IMPORTED_FROM_GALILEO"
-              ],
+              "enum": ["ORIGIN_UNSPECIFIED", "STITCH", "IMPORTED_FROM_GALILEO"],
               "readOnly": true,
               "type": "string",
               "x-google-enum-descriptions": [
@@ -2136,11 +2086,7 @@
             },
             "visibility": {
               "description": "Optional. The visibility setting of the project.",
-              "enum": [
-                "VISIBILITY_UNSPECIFIED",
-                "PUBLIC",
-                "PRIVATE"
-              ],
+              "enum": ["VISIBILITY_UNSPECIFIED", "PUBLIC", "PRIVATE"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "Unspecified visibility. By default, the project is private.",
@@ -2160,11 +2106,7 @@
             },
             "userRole": {
               "description": "The Role of the user accessing the project.",
-              "enum": [
-                "ROLE_UNSPECIFIED",
-                "OWNER",
-                "READER"
-              ],
+              "enum": ["ROLE_UNSPECIFIED", "OWNER", "READER"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "go/protodosdonts#unspecified-enum",
@@ -2312,11 +2254,7 @@
             },
             "rating": {
               "description": "Optional. The user rating of the interaction.",
-              "enum": [
-                "RATING_UNSPECIFIED",
-                "POSITIVE",
-                "NEGATIVE"
-              ],
+              "enum": ["RATING_UNSPECIFIED", "POSITIVE", "NEGATIVE"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "Unspecified rating.",
@@ -2356,9 +2294,7 @@
           "x-google-identifier": true
         }
       },
-      "required": [
-        "projectId"
-      ],
+      "required": ["projectId"],
       "type": "object"
     },
     "name": "list_screens",
@@ -2479,11 +2415,7 @@
             },
             "rating": {
               "description": "Optional. The user rating of the interaction.",
-              "enum": [
-                "RATING_UNSPECIFIED",
-                "POSITIVE",
-                "NEGATIVE"
-              ],
+              "enum": ["RATING_UNSPECIFIED", "POSITIVE", "NEGATIVE"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "Unspecified rating.",
@@ -2533,11 +2465,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "name",
-        "projectId",
-        "screenId"
-      ],
+      "required": ["name", "projectId", "screenId"],
       "type": "object"
     },
     "name": "get_screen",
@@ -2609,11 +2537,7 @@
             },
             "rating": {
               "description": "Optional. The user rating of the interaction.",
-              "enum": [
-                "RATING_UNSPECIFIED",
-                "POSITIVE",
-                "NEGATIVE"
-              ],
+              "enum": ["RATING_UNSPECIFIED", "POSITIVE", "NEGATIVE"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "Unspecified rating.",
@@ -2712,12 +2636,7 @@
             "GEMINI_3_1_PRO"
           ],
           "type": "string",
-          "x-google-enum-deprecated": [
-            false,
-            true,
-            false,
-            false
-          ],
+          "x-google-enum-deprecated": [false, true, false, false],
           "x-google-enum-descriptions": [
             "Unspecified model.",
             "Deprecated: Gemini 3 Pro is deprecated. Use `GEMINI_3_1_PRO` or `GEMINI_3_FLASH` instead.",
@@ -2734,10 +2653,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "projectId",
-        "prompt"
-      ],
+      "required": ["projectId", "prompt"],
       "type": "object"
     },
     "name": "generate_screen_from_text",
@@ -2988,11 +2904,7 @@
             },
             "colorMode": {
               "description": "Required. The mode of appearance of the design.",
-              "enum": [
-                "COLOR_MODE_UNSPECIFIED",
-                "LIGHT",
-                "DARK"
-              ],
+              "enum": ["COLOR_MODE_UNSPECIFIED", "LIGHT", "DARK"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "Unspecified color mode.",
@@ -3363,19 +3275,9 @@
               "type": "string"
             },
             "status": {
-              "enum": [
-                "STATUS_UNSPECIFIED",
-                "STARTED",
-                "COMPLETED",
-                "FAILED"
-              ],
+              "enum": ["STATUS_UNSPECIFIED", "STARTED", "COMPLETED", "FAILED"],
               "type": "string",
-              "x-google-enum-descriptions": [
-                "",
-                "",
-                "",
-                ""
-              ]
+              "x-google-enum-descriptions": ["", "", "", ""]
             },
             "toolCallId": {
               "type": "string"
@@ -3791,11 +3693,7 @@
             },
             "rating": {
               "description": "Optional. The user rating of the interaction.",
-              "enum": [
-                "RATING_UNSPECIFIED",
-                "POSITIVE",
-                "NEGATIVE"
-              ],
+              "enum": ["RATING_UNSPECIFIED", "POSITIVE", "NEGATIVE"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "Unspecified rating.",
@@ -3866,12 +3764,7 @@
             "GEMINI_3_1_PRO"
           ],
           "type": "string",
-          "x-google-enum-deprecated": [
-            false,
-            true,
-            false,
-            false
-          ],
+          "x-google-enum-deprecated": [false, true, false, false],
           "x-google-enum-descriptions": [
             "Unspecified model.",
             "Deprecated: Gemini 3 Pro is deprecated. Use `GEMINI_3_1_PRO` or `GEMINI_3_FLASH` instead.",
@@ -3895,11 +3788,7 @@
           "type": "array"
         }
       },
-      "required": [
-        "projectId",
-        "selectedScreenIds",
-        "prompt"
-      ],
+      "required": ["projectId", "selectedScreenIds", "prompt"],
       "type": "object"
     },
     "name": "edit_screens",
@@ -4150,11 +4039,7 @@
             },
             "colorMode": {
               "description": "Required. The mode of appearance of the design.",
-              "enum": [
-                "COLOR_MODE_UNSPECIFIED",
-                "LIGHT",
-                "DARK"
-              ],
+              "enum": ["COLOR_MODE_UNSPECIFIED", "LIGHT", "DARK"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "Unspecified color mode.",
@@ -4525,19 +4410,9 @@
               "type": "string"
             },
             "status": {
-              "enum": [
-                "STATUS_UNSPECIFIED",
-                "STARTED",
-                "COMPLETED",
-                "FAILED"
-              ],
+              "enum": ["STATUS_UNSPECIFIED", "STARTED", "COMPLETED", "FAILED"],
               "type": "string",
-              "x-google-enum-descriptions": [
-                "",
-                "",
-                "",
-                ""
-              ]
+              "x-google-enum-descriptions": ["", "", "", ""]
             },
             "toolCallId": {
               "type": "string"
@@ -4953,11 +4828,7 @@
             },
             "rating": {
               "description": "Optional. The user rating of the interaction.",
-              "enum": [
-                "RATING_UNSPECIFIED",
-                "POSITIVE",
-                "NEGATIVE"
-              ],
+              "enum": ["RATING_UNSPECIFIED", "POSITIVE", "NEGATIVE"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "Unspecified rating.",
@@ -5080,12 +4951,7 @@
             "GEMINI_3_1_PRO"
           ],
           "type": "string",
-          "x-google-enum-deprecated": [
-            false,
-            true,
-            false,
-            false
-          ],
+          "x-google-enum-deprecated": [false, true, false, false],
           "x-google-enum-descriptions": [
             "Unspecified model.",
             "Deprecated: Gemini 3 Pro is deprecated. Use `GEMINI_3_1_PRO` or `GEMINI_3_FLASH` instead.",
@@ -5369,11 +5235,7 @@
             },
             "colorMode": {
               "description": "Required. The mode of appearance of the design.",
-              "enum": [
-                "COLOR_MODE_UNSPECIFIED",
-                "LIGHT",
-                "DARK"
-              ],
+              "enum": ["COLOR_MODE_UNSPECIFIED", "LIGHT", "DARK"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "Unspecified color mode.",
@@ -5744,19 +5606,9 @@
               "type": "string"
             },
             "status": {
-              "enum": [
-                "STATUS_UNSPECIFIED",
-                "STARTED",
-                "COMPLETED",
-                "FAILED"
-              ],
+              "enum": ["STATUS_UNSPECIFIED", "STARTED", "COMPLETED", "FAILED"],
               "type": "string",
-              "x-google-enum-descriptions": [
-                "",
-                "",
-                "",
-                ""
-              ]
+              "x-google-enum-descriptions": ["", "", "", ""]
             },
             "toolCallId": {
               "type": "string"
@@ -6172,11 +6024,7 @@
             },
             "rating": {
               "description": "Optional. The user rating of the interaction.",
-              "enum": [
-                "RATING_UNSPECIFIED",
-                "POSITIVE",
-                "NEGATIVE"
-              ],
+              "enum": ["RATING_UNSPECIFIED", "POSITIVE", "NEGATIVE"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "Unspecified rating.",
@@ -6231,10 +6079,7 @@
               "description": "Required. Specifies the theme of the design system."
             }
           },
-          "required": [
-            "displayName",
-            "theme"
-          ],
+          "required": ["displayName", "theme"],
           "type": "object"
         },
         "DesignTheme": {
@@ -6308,11 +6153,7 @@
             },
             "colorMode": {
               "description": "Required. Specifies the mode of appearance of the design.",
-              "enum": [
-                "COLOR_MODE_UNSPECIFIED",
-                "LIGHT",
-                "DARK"
-              ],
+              "enum": ["COLOR_MODE_UNSPECIFIED", "LIGHT", "DARK"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "Unspecified color mode.",
@@ -6594,9 +6435,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "designSystem"
-      ],
+      "required": ["designSystem"],
       "type": "object"
     },
     "name": "create_design_system",
@@ -6705,11 +6544,7 @@
             },
             "colorMode": {
               "description": "Required. The mode of appearance of the design.",
-              "enum": [
-                "COLOR_MODE_UNSPECIFIED",
-                "LIGHT",
-                "DARK"
-              ],
+              "enum": ["COLOR_MODE_UNSPECIFIED", "LIGHT", "DARK"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "Unspecified color mode.",
@@ -7115,10 +6950,7 @@
               "description": "Required. Specifies the theme of the design system."
             }
           },
-          "required": [
-            "displayName",
-            "theme"
-          ],
+          "required": ["displayName", "theme"],
           "type": "object"
         },
         "DesignTheme": {
@@ -7192,11 +7024,7 @@
             },
             "colorMode": {
               "description": "Required. Specifies the mode of appearance of the design.",
-              "enum": [
-                "COLOR_MODE_UNSPECIFIED",
-                "LIGHT",
-                "DARK"
-              ],
+              "enum": ["COLOR_MODE_UNSPECIFIED", "LIGHT", "DARK"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "Unspecified color mode.",
@@ -7483,11 +7311,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "name",
-        "projectId",
-        "designSystem"
-      ],
+      "required": ["name", "projectId", "designSystem"],
       "type": "object"
     },
     "name": "update_design_system",
@@ -7596,11 +7420,7 @@
             },
             "colorMode": {
               "description": "Required. The mode of appearance of the design.",
-              "enum": [
-                "COLOR_MODE_UNSPECIFIED",
-                "LIGHT",
-                "DARK"
-              ],
+              "enum": ["COLOR_MODE_UNSPECIFIED", "LIGHT", "DARK"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "Unspecified color mode.",
@@ -8131,11 +7951,7 @@
             },
             "colorMode": {
               "description": "Required. The mode of appearance of the design.",
-              "enum": [
-                "COLOR_MODE_UNSPECIFIED",
-                "LIGHT",
-                "DARK"
-              ],
+              "enum": ["COLOR_MODE_UNSPECIFIED", "LIGHT", "DARK"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "Unspecified color mode.",
@@ -8529,10 +8345,7 @@
               "type": "string"
             }
           },
-          "required": [
-            "id",
-            "sourceScreen"
-          ],
+          "required": ["id", "sourceScreen"],
           "type": "object"
         }
       },
@@ -8554,11 +8367,7 @@
           "type": "array"
         }
       },
-      "required": [
-        "projectId",
-        "selectedScreenInstances",
-        "assetId"
-      ],
+      "required": ["projectId", "selectedScreenInstances", "assetId"],
       "type": "object"
     },
     "name": "apply_design_system",
@@ -8809,11 +8618,7 @@
             },
             "colorMode": {
               "description": "Required. The mode of appearance of the design.",
-              "enum": [
-                "COLOR_MODE_UNSPECIFIED",
-                "LIGHT",
-                "DARK"
-              ],
+              "enum": ["COLOR_MODE_UNSPECIFIED", "LIGHT", "DARK"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "Unspecified color mode.",
@@ -9184,19 +8989,9 @@
               "type": "string"
             },
             "status": {
-              "enum": [
-                "STATUS_UNSPECIFIED",
-                "STARTED",
-                "COMPLETED",
-                "FAILED"
-              ],
+              "enum": ["STATUS_UNSPECIFIED", "STARTED", "COMPLETED", "FAILED"],
               "type": "string",
-              "x-google-enum-descriptions": [
-                "",
-                "",
-                "",
-                ""
-              ]
+              "x-google-enum-descriptions": ["", "", "", ""]
             },
             "toolCallId": {
               "type": "string"
@@ -9612,11 +9407,7 @@
             },
             "rating": {
               "description": "Optional. The user rating of the interaction.",
-              "enum": [
-                "RATING_UNSPECIFIED",
-                "POSITIVE",
-                "NEGATIVE"
-              ],
+              "enum": ["RATING_UNSPECIFIED", "POSITIVE", "NEGATIVE"],
               "type": "string",
               "x-google-enum-descriptions": [
                 "Unspecified rating.",

@@ -15,12 +15,12 @@
 
 /**
  * Stage 1: Capture Tools
- * 
+ *
  * Connects to the Stitch MCP server, calls tools/list, and writes
  * the raw tool schemas to core/generated/tools-manifest.json.
- * 
+ *
  * Updates the manifest section of core/generated/stitch-sdk.lock.
- * 
+ *
  * Usage: bun scripts/capture-tools.ts
  * Requires: STITCH_API_KEY environment variable
  */
@@ -31,7 +31,10 @@ import { initializeStitchConnection } from "../packages/sdk/src/proxy/client.js"
 import type { ProxyContext } from "../packages/sdk/src/proxy/client.js";
 
 const ROOT_DIR = resolve(import.meta.dir, "..");
-const MANIFEST_PATH = resolve(ROOT_DIR, "packages/sdk/generated/tools-manifest.json");
+const MANIFEST_PATH = resolve(
+  ROOT_DIR,
+  "packages/sdk/generated/tools-manifest.json",
+);
 const LOCK_PATH = resolve(ROOT_DIR, "packages/sdk/generated/stitch-sdk.lock");
 
 async function main() {
@@ -41,7 +44,8 @@ async function main() {
     process.exit(1);
   }
 
-  const baseUrl = process.env.STITCH_MCP_URL || "https://stitch.googleapis.com/mcp";
+  const baseUrl =
+    process.env.STITCH_MCP_URL || "https://stitch.googleapis.com/mcp";
 
   console.log(`🔌 Connecting to ${baseUrl}...`);
 
@@ -69,7 +73,9 @@ async function main() {
   console.log(`\n📦 Wrote ${MANIFEST_PATH}`);
 
   // Update stitch-sdk.lock
-  const manifestHash = createHash("sha256").update(manifestContent).digest("hex");
+  const manifestHash = createHash("sha256")
+    .update(manifestContent)
+    .digest("hex");
   let lock: any = {};
   try {
     lock = JSON.parse(await Bun.file(LOCK_PATH).text());
@@ -87,7 +93,9 @@ async function main() {
 
   await Bun.write(LOCK_PATH, JSON.stringify(lock, null, 2) + "\n");
   console.log(`🔒 Updated ${LOCK_PATH} (manifest section)`);
-  console.log(`\n✅ Stage 1 complete. Run Stage 2 (agent) to produce domain-map.json.`);
+  console.log(
+    `\n✅ Stage 1 complete. Run Stage 2 (agent) to produce domain-map.json.`,
+  );
 }
 
 main().catch((err) => {

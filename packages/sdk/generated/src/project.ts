@@ -4,103 +4,203 @@ DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:2f1a623ec115...)
         domain-map.json     (sha256:0ee09d686be6...)
-Generated: 2026-05-29T22:05:20.536Z
+Generated: 2026-06-01T03:47:10.743Z
  */
 import { type StitchToolClient } from "../../src/client.js";
 import { StitchError } from "../../src/spec/errors.js";
-import { DesignTheme, File, ProjectMetadata, ScreenInstance, Typography, UserFeedback, ProjectInput, ScreenInput, Asset, BoundingBox, ComponentRegion, Design, DesignSuggestion, DesignSystemInput, ProgressUpdate, ProgressUpdates, PrototypeLink, PrototypeLinks, PrototypeState, PrototypeV2Spec, ScreenMetadata, SessionOutputComponent, VariantOptions, SelectedScreenInstance } from "./types.generated.js";
-import { GenerateScreenFromTextResponse, ListScreensResponse, GetScreenResponse, CreateDesignSystemResponse, ListDesignSystemsResponse } from "./responses.generated.js";
+import {
+  DesignTheme,
+  File,
+  ProjectMetadata,
+  ScreenInstance,
+  Typography,
+  UserFeedback,
+  ProjectInput,
+  ScreenInput,
+  Asset,
+  BoundingBox,
+  ComponentRegion,
+  Design,
+  DesignSuggestion,
+  DesignSystemInput,
+  ProgressUpdate,
+  ProgressUpdates,
+  PrototypeLink,
+  PrototypeLinks,
+  PrototypeState,
+  PrototypeV2Spec,
+  ScreenMetadata,
+  SessionOutputComponent,
+  VariantOptions,
+  SelectedScreenInstance,
+} from "./types.generated.js";
+import {
+  GenerateScreenFromTextResponse,
+  ListScreensResponse,
+  GetScreenResponse,
+  CreateDesignSystemResponse,
+  ListDesignSystemsResponse,
+} from "./responses.generated.js";
 import { Screen } from "./screen.js";
 import { DesignSystem } from "./designsystem.js";
 
 /** A Stitch project containing screens. */
 export class Project {
-    public readonly projectId: string;
-    public data: any;
+  public readonly projectId!: string;
+  public data: any;
 
-    constructor(protected client: StitchToolClient, data: any) {
-        this.data = typeof data === "object" ? data : undefined;
-    }
+  constructor(
+    protected client: StitchToolClient,
+    data: any,
+  ) {
+    this.data = typeof data === "object" ? data : undefined;
+  }
 
-    /** Convenience alias for projectId */
-    get id(): string {
-        return this.projectId;
-    }
+  /** Convenience alias for projectId */
+  get id(): string {
+    return this.projectId;
+  }
 
-    /**
-     * Generates a new screen within a project from a text prompt.
-     * Tool: generate_screen_from_text
-     */
-    async generate(prompt: string, deviceType?: "DEVICE_TYPE_UNSPECIFIED" | "MOBILE" | "DESKTOP" | "TABLET" | "AGNOSTIC", modelId?: "MODEL_ID_UNSPECIFIED" | "GEMINI_3_PRO" | "GEMINI_3_FLASH" | "GEMINI_3_1_PRO"): Promise<Screen> {
-        try {
-          const raw = await this.client.callTool<GenerateScreenFromTextResponse>("generate_screen_from_text", { projectId: this.projectId, prompt, deviceType, modelId });
-          const _projected = (raw?.outputComponents ?? []).find((c: any) => c?.design?.screens != null)?.design?.screens?.[0];
-          if (!_projected) throw new StitchError({ code: "UNKNOWN_ERROR", message: "Incomplete API response from generate_screen_from_text: expected object at projection path", recoverable: false });
-          return this.client.entities.resolve(Screen, ["projectId","screenId"], { ..._projected, projectId: this.projectId })
-        } catch (error) {
-          throw StitchError.fromUnknown(error);
-        }
+  /**
+   * Generates a new screen within a project from a text prompt.
+   * Tool: generate_screen_from_text
+   */
+  async generate(
+    prompt: string,
+    deviceType?:
+      | "DEVICE_TYPE_UNSPECIFIED"
+      | "MOBILE"
+      | "DESKTOP"
+      | "TABLET"
+      | "AGNOSTIC",
+    modelId?:
+      | "MODEL_ID_UNSPECIFIED"
+      | "GEMINI_3_PRO"
+      | "GEMINI_3_FLASH"
+      | "GEMINI_3_1_PRO",
+  ): Promise<Screen> {
+    try {
+      const raw = await this.client.callTool<GenerateScreenFromTextResponse>(
+        "generate_screen_from_text",
+        { projectId: this.projectId, prompt, deviceType, modelId },
+      );
+      const _projected = (raw?.outputComponents ?? []).find(
+        (c: any) => c?.design?.screens != null,
+      )?.design?.screens?.[0];
+      if (!_projected)
+        throw new StitchError({
+          code: "UNKNOWN_ERROR",
+          message:
+            "Incomplete API response from generate_screen_from_text: expected object at projection path",
+          recoverable: false,
+        });
+      return this.client.entities.resolve(Screen, ["projectId", "screenId"], {
+        ..._projected,
+        projectId: this.projectId,
+      });
+    } catch (error) {
+      throw StitchError.fromUnknown(error);
     }
+  }
 
-    /**
-     * Lists all screens within a given Stitch project.
-     * Tool: list_screens
-     */
-    async screens(): Promise<Screen[]> {
-        try {
-          const raw = await this.client.callTool<ListScreensResponse>("list_screens", { projectId: this.projectId });
-          return (raw?.screens || []).map((item) => this.client.entities.resolve(Screen, ["projectId","screenId"], { ...item, projectId: this.projectId }));
-        } catch (error) {
-          throw StitchError.fromUnknown(error);
-        }
+  /**
+   * Lists all screens within a given Stitch project.
+   * Tool: list_screens
+   */
+  async screens(): Promise<Screen[]> {
+    try {
+      const raw = await this.client.callTool<ListScreensResponse>(
+        "list_screens",
+        { projectId: this.projectId },
+      );
+      return (raw?.screens || []).map((item) =>
+        this.client.entities.resolve(Screen, ["projectId", "screenId"], {
+          ...item,
+          projectId: this.projectId,
+        }),
+      );
+    } catch (error) {
+      throw StitchError.fromUnknown(error);
     }
+  }
 
-    /**
-     * Retrieves the details of a specific screen within a project.
-     * Tool: get_screen
-     */
-    async getScreen(screenId: string): Promise<Screen> {
-        try {
-          const raw = await this.client.callTool<GetScreenResponse>("get_screen", { projectId: this.projectId, screenId, name: `projects/${this.projectId}/screens/${screenId}` });
-          return this.client.entities.resolve(Screen, ["projectId","screenId"], { ...raw, projectId: this.projectId });
-        } catch (error) {
-          throw StitchError.fromUnknown(error);
-        }
+  /**
+   * Retrieves the details of a specific screen within a project.
+   * Tool: get_screen
+   */
+  async getScreen(screenId: string): Promise<Screen> {
+    try {
+      const raw = await this.client.callTool<GetScreenResponse>("get_screen", {
+        projectId: this.projectId,
+        screenId,
+        name: `projects/${this.projectId}/screens/${screenId}`,
+      });
+      return this.client.entities.resolve(Screen, ["projectId", "screenId"], {
+        ...raw,
+        projectId: this.projectId,
+      });
+    } catch (error) {
+      throw StitchError.fromUnknown(error);
     }
+  }
 
-    /**
-     * Creates a new design system for a project. Use this tool when the user wants to set or update the overall visual theme, style, or branding of the application.
-     * Tool: create_design_system
-     */
-    async createDesignSystem(designSystem: DesignSystemInput): Promise<DesignSystem> {
-        try {
-          const raw = await this.client.callTool<CreateDesignSystemResponse>("create_design_system", { projectId: this.projectId, designSystem });
-          return this.client.entities.resolve(DesignSystem, ["projectId","assetId"], { ...raw, projectId: this.projectId });
-        } catch (error) {
-          throw StitchError.fromUnknown(error);
-        }
+  /**
+   * Creates a new design system for a project. Use this tool when the user wants to set or update the overall visual theme, style, or branding of the application.
+   * Tool: create_design_system
+   */
+  async createDesignSystem(
+    designSystem: DesignSystemInput,
+  ): Promise<DesignSystem> {
+    try {
+      const raw = await this.client.callTool<CreateDesignSystemResponse>(
+        "create_design_system",
+        { projectId: this.projectId, designSystem },
+      );
+      return this.client.entities.resolve(
+        DesignSystem,
+        ["projectId", "assetId"],
+        { ...raw, projectId: this.projectId },
+      );
+    } catch (error) {
+      throw StitchError.fromUnknown(error);
     }
+  }
 
-    /**
-     * Lists all design systems for a given project.
-     * Tool: list_design_systems
-     */
-    async listDesignSystems(): Promise<DesignSystem[]> {
-        try {
-          const raw = await this.client.callTool<ListDesignSystemsResponse>("list_design_systems", { projectId: this.projectId });
-          return (raw?.designSystems || []).map((item) => this.client.entities.resolve(DesignSystem, ["projectId","assetId"], { ...item, projectId: this.projectId }));
-        } catch (error) {
-          throw StitchError.fromUnknown(error);
-        }
+  /**
+   * Lists all design systems for a given project.
+   * Tool: list_design_systems
+   */
+  async listDesignSystems(): Promise<DesignSystem[]> {
+    try {
+      const raw = await this.client.callTool<ListDesignSystemsResponse>(
+        "list_design_systems",
+        { projectId: this.projectId },
+      );
+      return (raw?.designSystems || []).map((item) =>
+        this.client.entities.resolve(DesignSystem, ["projectId", "assetId"], {
+          ...item,
+          projectId: this.projectId,
+        }),
+      );
+    } catch (error) {
+      throw StitchError.fromUnknown(error);
     }
+  }
 
-    /** Create a DesignSystem handle from an existing ID without an API call. */
-    designSystem(id: string): DesignSystem {
-        return this.client.entities.resolve(DesignSystem, ["projectId","assetId"], { assetId: id, projectId: this.projectId });
-    }
+  /** Create a DesignSystem handle from an existing ID without an API call. */
+  designSystem(id: string): DesignSystem {
+    return this.client.entities.resolve(
+      DesignSystem,
+      ["projectId", "assetId"],
+      { assetId: id, projectId: this.projectId },
+    );
+  }
 
-    /** Create a Screen handle from an existing ID without an API call. */
-    screen(id: string): Screen {
-        return this.client.entities.resolve(Screen, ["projectId","screenId"], { screenId: id, projectId: this.projectId });
-    }
+  /** Create a Screen handle from an existing ID without an API call. */
+  screen(id: string): Screen {
+    return this.client.entities.resolve(Screen, ["projectId", "screenId"], {
+      screenId: id,
+      projectId: this.projectId,
+    });
+  }
 }

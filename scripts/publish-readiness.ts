@@ -76,12 +76,18 @@ if (pkg.exports) {
     const exp = value as any;
     if (exp.import) {
       check(`exports["${key}"].import exists: ${exp.import}`, () => {
-        assert(existsSync(resolve(SDK_DIR, exp.import)), `${exp.import} not found`);
+        assert(
+          existsSync(resolve(SDK_DIR, exp.import)),
+          `${exp.import} not found`,
+        );
       });
     }
     if (exp.types) {
       check(`exports["${key}"].types exists: ${exp.types}`, () => {
-        assert(existsSync(resolve(SDK_DIR, exp.types)), `${exp.types} not found`);
+        assert(
+          existsSync(resolve(SDK_DIR, exp.types)),
+          `${exp.types} not found`,
+        );
       });
     }
   }
@@ -89,7 +95,16 @@ if (pkg.exports) {
 
 // ── 3. Package Metadata ─────────────────────────────────────────────────────
 console.log("\n📋 Package Metadata");
-const requiredFields = ["name", "version", "description", "license", "main", "types", "files", "exports"];
+const requiredFields = [
+  "name",
+  "version",
+  "description",
+  "license",
+  "main",
+  "types",
+  "files",
+  "exports",
+];
 for (const field of requiredFields) {
   check(`"${field}" is set`, () => {
     assert(pkg[field] !== undefined, `Missing "${field}" in package.json`);
@@ -97,7 +112,11 @@ for (const field of requiredFields) {
 }
 
 check('"license" is Apache-2.0', () => {
-  assert.strictEqual(pkg.license, "Apache-2.0", `Expected Apache-2.0, got ${pkg.license}`);
+  assert.strictEqual(
+    pkg.license,
+    "Apache-2.0",
+    `Expected Apache-2.0, got ${pkg.license}`,
+  );
 });
 
 check('"type" is "module"', () => {
@@ -105,7 +124,10 @@ check('"type" is "module"', () => {
 });
 
 check("README.md exists in package dir", () => {
-  assert(existsSync(resolve(SDK_DIR, "README.md")), "README.md not found in packages/sdk/");
+  assert(
+    existsSync(resolve(SDK_DIR, "README.md")),
+    "README.md not found in packages/sdk/",
+  );
 });
 
 // ── 4. Pack Contents ────────────────────────────────────────────────────────
@@ -120,26 +142,45 @@ const packFileNames = packFiles.map((f) => f.path);
 
 check("no .ts source files in pack", () => {
   const tsFiles = packFileNames.filter(
-    (f) => f.endsWith(".ts") && !f.endsWith(".d.ts") && f !== "package.json"
+    (f) => f.endsWith(".ts") && !f.endsWith(".d.ts") && f !== "package.json",
   );
-  assert.strictEqual(tsFiles.length, 0, `Found .ts source files: ${tsFiles.join(", ")}`);
+  assert.strictEqual(
+    tsFiles.length,
+    0,
+    `Found .ts source files: ${tsFiles.join(", ")}`,
+  );
 });
 
 check("no test files in pack", () => {
-  const testFiles = packFileNames.filter((f) => f.includes("test/") || f.includes(".test."));
-  assert.strictEqual(testFiles.length, 0, `Found test files: ${testFiles.join(", ")}`);
+  const testFiles = packFileNames.filter(
+    (f) => f.includes("test/") || f.includes(".test."),
+  );
+  assert.strictEqual(
+    testFiles.length,
+    0,
+    `Found test files: ${testFiles.join(", ")}`,
+  );
 });
 
 check("no generated source (.ts) in pack", () => {
   const genTs = packFileNames.filter(
-    (f) => f.includes("generated/") && f.endsWith(".ts") && !f.endsWith(".d.ts")
+    (f) =>
+      f.includes("generated/") && f.endsWith(".ts") && !f.endsWith(".d.ts"),
   );
-  assert.strictEqual(genTs.length, 0, `Found generated .ts: ${genTs.join(", ")}`);
+  assert.strictEqual(
+    genTs.length,
+    0,
+    `Found generated .ts: ${genTs.join(", ")}`,
+  );
 });
 
 check("no tools-manifest.json in pack", () => {
   const manifest = packFileNames.filter((f) => f.includes("tools-manifest"));
-  assert.strictEqual(manifest.length, 0, `Found manifest: ${manifest.join(", ")}`);
+  assert.strictEqual(
+    manifest.length,
+    0,
+    `Found manifest: ${manifest.join(", ")}`,
+  );
 });
 
 check("dist/ files are present", () => {
@@ -153,7 +194,10 @@ const totalSize = packData[0].unpackedSize;
 const totalKB = Math.round(totalSize / 1024);
 
 check(`pack size is reasonable (${totalKB} KB, limit: 300 KB)`, () => {
-  assert(totalSize < 300 * 1024, `Pack is ${totalKB} KB — too large for a library`);
+  assert(
+    totalSize < 300 * 1024,
+    `Pack is ${totalKB} KB — too large for a library`,
+  );
 });
 
 const fileCount = packFiles.length;

@@ -8,8 +8,13 @@
 import { StitchToolClient } from "@google/stitch-sdk";
 
 if (!process.env.STITCH_ACCESS_TOKEN || !process.env.GOOGLE_CLOUD_PROJECT) {
-  console.log("⏭️  Set STITCH_ACCESS_TOKEN and GOOGLE_CLOUD_PROJECT to run this snippet.");
-  console.log("   STITCH_ACCESS_TOKEN=... GOOGLE_CLOUD_PROJECT=... bun", process.argv[1]);
+  console.log(
+    "⏭️  Set STITCH_ACCESS_TOKEN and GOOGLE_CLOUD_PROJECT to run this snippet.",
+  );
+  console.log(
+    "   STITCH_ACCESS_TOKEN=... GOOGLE_CLOUD_PROJECT=... bun",
+    process.argv[1],
+  );
   process.exit(0);
 }
 

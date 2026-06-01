@@ -51,28 +51,29 @@ export function stitchTools(options?: {
   const client = getOrCreateClient(options);
 
   const filtered = options?.include
-    ? toolDefinitions.filter(t => options.include!.includes(t.name))
+    ? toolDefinitions.filter((t) => options.include!.includes(t.name))
     : toolDefinitions;
 
   return Object.fromEntries(
-    filtered.map(t => [
+    filtered.map((t) => [
       t.name,
       // Construct a plain object that is runtime-identical to what
       // dynamicTool() + jsonSchema() would produce. The `ai` package
       // is NOT imported at runtime — only the type is used above.
       {
-        type: 'dynamic' as const,
+        type: "dynamic" as const,
         description: t.description,
         inputSchema: {
           [schemaSymbol]: true,
           _type: undefined as unknown,
           validate: undefined,
-          get jsonSchema() { return t.inputSchema; },
+          get jsonSchema() {
+            return t.inputSchema;
+          },
         },
         execute: async (args: unknown) =>
           client.callTool(t.name, args as Record<string, any>),
       } as unknown as Tool,
-    ])
+    ]),
   );
 }
-

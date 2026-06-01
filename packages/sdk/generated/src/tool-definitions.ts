@@ -4,432 +4,425 @@ DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:2f1a623ec115...)
         domain-map.json     (sha256:0ee09d686be6...)
-Generated: 2026-05-29T22:05:20.536Z
+Generated: 2026-06-01T03:47:10.743Z
  */
 /** JSON Schema property descriptor for a tool parameter. */
 export interface ToolPropertySchema {
-    /** Additional JSON Schema properties */
-    [key: string]: unknown;
-    /** JSON Schema type (string, integer, array, etc.) */
-    type?: string;
-    /** Human-readable parameter description */
-    description?: string;
-    /** Allowed values for constrained parameters */
-    enum?: string[];
-    /** Schema for array items */
-    items?: ToolPropertySchema;
-    /** Whether the parameter is deprecated */
-    deprecated?: boolean;
+  /** Additional JSON Schema properties */
+  [key: string]: unknown;
+  /** JSON Schema type (string, integer, array, etc.) */
+  type?: string;
+  /** Human-readable parameter description */
+  description?: string;
+  /** Allowed values for constrained parameters */
+  enum?: string[];
+  /** Schema for array items */
+  items?: ToolPropertySchema;
+  /** Whether the parameter is deprecated */
+  deprecated?: boolean;
 }
 
 /** Typed JSON Schema for a tool's input parameters. */
 export interface ToolInputSchema {
-    /** Additional JSON Schema properties */
-    [key: string]: unknown;
-    /** Always 'object' for tool inputs */
-    type: "object";
-    /** Schema-level description */
-    description?: string;
-    /** Map of parameter names to their schemas */
-    properties: Record<string, ToolPropertySchema>;
-    /** Names of required parameters */
-    required?: string[];
+  /** Additional JSON Schema properties */
+  [key: string]: unknown;
+  /** Always 'object' for tool inputs */
+  type: "object";
+  /** Schema-level description */
+  description?: string;
+  /** Map of parameter names to their schemas */
+  properties: Record<string, ToolPropertySchema>;
+  /** Names of required parameters */
+  required?: string[];
 }
 
 /** Static tool definition from the Stitch MCP server manifest. */
 export interface ToolDefinition {
-    /** MCP tool name, e.g. "create_project" */
-    name: string;
-    /** Human-readable description of what the tool does */
-    description: string;
-    /** Typed JSON Schema for the tool's input parameters */
-    inputSchema: ToolInputSchema;
+  /** MCP tool name, e.g. "create_project" */
+  name: string;
+  /** Human-readable description of what the tool does */
+  description: string;
+  /** Typed JSON Schema for the tool's input parameters */
+  inputSchema: ToolInputSchema;
 }
 
 /** All tools available on the Stitch MCP server, generated from tools-manifest.json. */
 export const toolDefinitions: ToolDefinition[] = [
   {
-    "name": "create_project",
-    "description": "Creates a new Stitch project. A project is a container for UI designs and frontend code.\n",
-    "inputSchema": {
-      "description": "Request message for CreateProject.",
-      "properties": {
-        "title": {
-          "description": "Optional. The title of the project.",
-          "type": "string"
-        }
-      },
-      "type": "object"
-    }
-  },
-  {
-    "name": "get_project",
-    "description": "Retrieves the details of a specific Stitch project using its project name.\n",
-    "inputSchema": {
-      "description": "Request message for GetProject.",
-      "properties": {
-        "name": {
-          "description": "Required. Identifier. The resource name of the project to retrieve. Format: `projects/{project}` Example: `projects/4044680601076201931`",
-          "type": "string",
-          "x-google-identifier": true
-        }
-      },
-      "required": [
-        "name"
-      ],
-      "type": "object"
-    }
-  },
-  {
-    "name": "list_projects",
-    "description": "Lists all Stitch projects accessible to the user. By default, it lists projects owned by the user.\n",
-    "inputSchema": {
-      "description": "Request message for ListProjects.",
-      "properties": {
-        "filter": {
-          "description": "Optional. A filter to apply to the list of projects, following a subset of AIP-160. This service supports filtering on the `view` field. Supported filters: * `view=owned`: Lists only projects owned by the user. This is the default behavior if no filter is specified. * `view=shared`: Lists only projects shared with the user. Example: `view=owned`",
-          "type": "string"
-        }
-      },
-      "type": "object"
-    }
-  },
-  {
-    "name": "list_screens",
-    "description": "Lists all screens within a given Stitch project.\n",
-    "inputSchema": {
-      "description": "Request message for ListScreens.",
-      "properties": {
-        "projectId": {
-          "description": "Required. Identifier. The project ID to list screens for, example: '4044680601076201931', without the `projects/` prefix.",
-          "type": "string",
-          "x-google-identifier": true
-        }
-      },
-      "required": [
-        "projectId"
-      ],
-      "type": "object"
-    }
-  },
-  {
-    "name": "get_screen",
-    "description": "Retrieves the details of a specific screen within a project.\n",
-    "inputSchema": {
-      "description": "Request message for GetScreen.",
-      "properties": {
-        "name": {
-          "description": "Required. Identifier. The resource name of the screen to retrieve. Format: `projects/{project}/screens/{screen}` Example: `projects/4044680601076201931/screens/98b50e2ddc9943efb387052637738f61`",
-          "type": "string",
-          "x-google-identifier": true
+    name: "create_project",
+    description:
+      "Creates a new Stitch project. A project is a container for UI designs and frontend code.\n",
+    inputSchema: {
+      description: "Request message for CreateProject.",
+      properties: {
+        title: {
+          description: "Optional. The title of the project.",
+          type: "string",
         },
-        "projectId": {
-          "deprecated": true,
-          "description": "Required. The project ID of screen to retrieve. Example: `4044680601076201931`, without the `projects/` prefix.",
-          "type": "string"
-        },
-        "screenId": {
-          "deprecated": true,
-          "description": "Required. The screen ID of screen to retrieve. Example: `98b50e2ddc9943efb387052637738f61`, without the `screens/` prefix.",
-          "type": "string"
-        }
       },
-      "required": [
-        "name",
-        "projectId",
-        "screenId"
-      ],
-      "type": "object"
-    }
+      type: "object",
+    },
   },
   {
-    "name": "generate_screen_from_text",
-    "description": "Generates a new screen within a project from a text prompt.\n\n**Instructions for Tool Call:**\n*  This action can take a few minutes to complete. Please be patient. DO NOT RETRY.\n*  If the tool call fails due to connection error, the generation process may still succeed. Please try to get the screen with `get_screen` method later.\n\n**Output:**\n*  **`output_components`**: If `output_components` contains text, return it to the user. If `output_components` contains suggestions (e.g. \"Yes, make them all\"), present these suggestions to the user. If the user accepts one of the suggestions, call `generate_screen_from_text` again with `prompt` set to the accepted suggestion.\n",
-    "inputSchema": {
-      "description": "Request message for GenerateScreenFromText.",
-      "properties": {
-        "deviceType": {
-          "description": "The type of device that captured the screenshot, e.g., mobile or desktop.",
-          "enum": [
+    name: "get_project",
+    description:
+      "Retrieves the details of a specific Stitch project using its project name.\n",
+    inputSchema: {
+      description: "Request message for GetProject.",
+      properties: {
+        name: {
+          description:
+            "Required. Identifier. The resource name of the project to retrieve. Format: `projects/{project}` Example: `projects/4044680601076201931`",
+          type: "string",
+          "x-google-identifier": true,
+        },
+      },
+      required: ["name"],
+      type: "object",
+    },
+  },
+  {
+    name: "list_projects",
+    description:
+      "Lists all Stitch projects accessible to the user. By default, it lists projects owned by the user.\n",
+    inputSchema: {
+      description: "Request message for ListProjects.",
+      properties: {
+        filter: {
+          description:
+            "Optional. A filter to apply to the list of projects, following a subset of AIP-160. This service supports filtering on the `view` field. Supported filters: * `view=owned`: Lists only projects owned by the user. This is the default behavior if no filter is specified. * `view=shared`: Lists only projects shared with the user. Example: `view=owned`",
+          type: "string",
+        },
+      },
+      type: "object",
+    },
+  },
+  {
+    name: "list_screens",
+    description: "Lists all screens within a given Stitch project.\n",
+    inputSchema: {
+      description: "Request message for ListScreens.",
+      properties: {
+        projectId: {
+          description:
+            "Required. Identifier. The project ID to list screens for, example: '4044680601076201931', without the `projects/` prefix.",
+          type: "string",
+          "x-google-identifier": true,
+        },
+      },
+      required: ["projectId"],
+      type: "object",
+    },
+  },
+  {
+    name: "get_screen",
+    description:
+      "Retrieves the details of a specific screen within a project.\n",
+    inputSchema: {
+      description: "Request message for GetScreen.",
+      properties: {
+        name: {
+          description:
+            "Required. Identifier. The resource name of the screen to retrieve. Format: `projects/{project}/screens/{screen}` Example: `projects/4044680601076201931/screens/98b50e2ddc9943efb387052637738f61`",
+          type: "string",
+          "x-google-identifier": true,
+        },
+        projectId: {
+          deprecated: true,
+          description:
+            "Required. The project ID of screen to retrieve. Example: `4044680601076201931`, without the `projects/` prefix.",
+          type: "string",
+        },
+        screenId: {
+          deprecated: true,
+          description:
+            "Required. The screen ID of screen to retrieve. Example: `98b50e2ddc9943efb387052637738f61`, without the `screens/` prefix.",
+          type: "string",
+        },
+      },
+      required: ["name", "projectId", "screenId"],
+      type: "object",
+    },
+  },
+  {
+    name: "generate_screen_from_text",
+    description:
+      'Generates a new screen within a project from a text prompt.\n\n**Instructions for Tool Call:**\n*  This action can take a few minutes to complete. Please be patient. DO NOT RETRY.\n*  If the tool call fails due to connection error, the generation process may still succeed. Please try to get the screen with `get_screen` method later.\n\n**Output:**\n*  **`output_components`**: If `output_components` contains text, return it to the user. If `output_components` contains suggestions (e.g. "Yes, make them all"), present these suggestions to the user. If the user accepts one of the suggestions, call `generate_screen_from_text` again with `prompt` set to the accepted suggestion.\n',
+    inputSchema: {
+      description: "Request message for GenerateScreenFromText.",
+      properties: {
+        deviceType: {
+          description:
+            "The type of device that captured the screenshot, e.g., mobile or desktop.",
+          enum: [
             "DEVICE_TYPE_UNSPECIFIED",
             "MOBILE",
             "DESKTOP",
             "TABLET",
-            "AGNOSTIC"
+            "AGNOSTIC",
           ],
-          "type": "string",
+          type: "string",
           "x-google-enum-descriptions": [
             "Unspecified device type.",
             "A design for a mobile device.",
             "A design for a desktop device.",
             "A design for a tablet device.",
-            "A design that is not tied to a specific device."
-          ]
+            "A design that is not tied to a specific device.",
+          ],
         },
-        "modelId": {
-          "description": "Optional. The model to use for generation.",
-          "enum": [
+        modelId: {
+          description: "Optional. The model to use for generation.",
+          enum: [
             "MODEL_ID_UNSPECIFIED",
             "GEMINI_3_PRO",
             "GEMINI_3_FLASH",
-            "GEMINI_3_1_PRO"
+            "GEMINI_3_1_PRO",
           ],
-          "type": "string",
-          "x-google-enum-deprecated": [
-            false,
-            true,
-            false,
-            false
-          ],
+          type: "string",
+          "x-google-enum-deprecated": [false, true, false, false],
           "x-google-enum-descriptions": [
             "Unspecified model.",
             "Deprecated: Gemini 3 Pro is deprecated. Use `GEMINI_3_1_PRO` or `GEMINI_3_FLASH` instead.",
             "Gemini 3 Flash.",
-            "Gemini 3.1 Pro."
-          ]
+            "Gemini 3.1 Pro.",
+          ],
         },
-        "projectId": {
-          "description": "Required. The project ID to generate the screen for, example: '4044680601076201931', without the `projects/` prefix.",
-          "type": "string"
+        projectId: {
+          description:
+            "Required. The project ID to generate the screen for, example: '4044680601076201931', without the `projects/` prefix.",
+          type: "string",
         },
-        "prompt": {
-          "description": "Required. The input text to generate the screen from.",
-          "type": "string"
-        }
+        prompt: {
+          description: "Required. The input text to generate the screen from.",
+          type: "string",
+        },
       },
-      "required": [
-        "projectId",
-        "prompt"
-      ],
-      "type": "object"
-    }
+      required: ["projectId", "prompt"],
+      type: "object",
+    },
   },
   {
-    "name": "edit_screens",
-    "description": "Edits existing screens within a project using a text prompt.\n\n**Instructions for Tool Call:**\n*  This action can take a few minutes to complete. Please be patient. DO NOT RETRY.\n*  If the tool call fails due to connection error, the process may still succeed.\n",
-    "inputSchema": {
-      "description": "Request message for EditScreens.",
-      "properties": {
-        "deviceType": {
-          "description": "Optional. The type of device that captured the screenshot, e.g., mobile or desktop.",
-          "enum": [
+    name: "edit_screens",
+    description:
+      "Edits existing screens within a project using a text prompt.\n\n**Instructions for Tool Call:**\n*  This action can take a few minutes to complete. Please be patient. DO NOT RETRY.\n*  If the tool call fails due to connection error, the process may still succeed.\n",
+    inputSchema: {
+      description: "Request message for EditScreens.",
+      properties: {
+        deviceType: {
+          description:
+            "Optional. The type of device that captured the screenshot, e.g., mobile or desktop.",
+          enum: [
             "DEVICE_TYPE_UNSPECIFIED",
             "MOBILE",
             "DESKTOP",
             "TABLET",
-            "AGNOSTIC"
+            "AGNOSTIC",
           ],
-          "type": "string",
+          type: "string",
           "x-google-enum-descriptions": [
             "Unspecified device type.",
             "A design for a mobile device.",
             "A design for a desktop device.",
             "A design for a tablet device.",
-            "A design that is not tied to a specific device."
-          ]
+            "A design that is not tied to a specific device.",
+          ],
         },
-        "modelId": {
-          "description": "Optional. The model to use for generation.",
-          "enum": [
+        modelId: {
+          description: "Optional. The model to use for generation.",
+          enum: [
             "MODEL_ID_UNSPECIFIED",
             "GEMINI_3_PRO",
             "GEMINI_3_FLASH",
-            "GEMINI_3_1_PRO"
+            "GEMINI_3_1_PRO",
           ],
-          "type": "string",
-          "x-google-enum-deprecated": [
-            false,
-            true,
-            false,
-            false
-          ],
+          type: "string",
+          "x-google-enum-deprecated": [false, true, false, false],
           "x-google-enum-descriptions": [
             "Unspecified model.",
             "Deprecated: Gemini 3 Pro is deprecated. Use `GEMINI_3_1_PRO` or `GEMINI_3_FLASH` instead.",
             "Gemini 3 Flash.",
-            "Gemini 3.1 Pro."
-          ]
+            "Gemini 3.1 Pro.",
+          ],
         },
-        "projectId": {
-          "description": "Required. The project ID of screens to edit, example: '4044680601076201931', without the `projects/` prefix.",
-          "type": "string"
+        projectId: {
+          description:
+            "Required. The project ID of screens to edit, example: '4044680601076201931', without the `projects/` prefix.",
+          type: "string",
         },
-        "prompt": {
-          "description": "Required. The input text to generate the screen from.",
-          "type": "string"
+        prompt: {
+          description: "Required. The input text to generate the screen from.",
+          type: "string",
         },
-        "selectedScreenIds": {
-          "description": "Required. The screen IDs of screens to edit, example: ['98b50e2ddc9943efb387052637738f61', '98b50e2ddc9943efb387052637738f62'], without the `screens/` prefix.",
-          "items": {
-            "type": "string"
+        selectedScreenIds: {
+          description:
+            "Required. The screen IDs of screens to edit, example: ['98b50e2ddc9943efb387052637738f61', '98b50e2ddc9943efb387052637738f62'], without the `screens/` prefix.",
+          items: {
+            type: "string",
           },
-          "type": "array"
-        }
+          type: "array",
+        },
       },
-      "required": [
-        "projectId",
-        "selectedScreenIds",
-        "prompt"
-      ],
-      "type": "object"
-    }
+      required: ["projectId", "selectedScreenIds", "prompt"],
+      type: "object",
+    },
   },
   {
-    "name": "generate_variants",
-    "description": "Generates variants of existing screens within a project using a text prompt.\n",
-    "inputSchema": {
-      "$defs": {
-        "VariantOptions": {
-          "description": "Configuration options for design variant generation. This message captures all parameters used to generate variants, allowing the configuration to be stored, replayed, or analyzed.",
-          "properties": {
-            "aspects": {
-              "description": "Optional. Specific aspects to focus on. If empty, all aspects may be varied.",
-              "items": {
-                "enum": [
+    name: "generate_variants",
+    description:
+      "Generates variants of existing screens within a project using a text prompt.\n",
+    inputSchema: {
+      $defs: {
+        VariantOptions: {
+          description:
+            "Configuration options for design variant generation. This message captures all parameters used to generate variants, allowing the configuration to be stored, replayed, or analyzed.",
+          properties: {
+            aspects: {
+              description:
+                "Optional. Specific aspects to focus on. If empty, all aspects may be varied.",
+              items: {
+                enum: [
                   "VARIANT_ASPECT_UNSPECIFIED",
                   "LAYOUT",
                   "COLOR_SCHEME",
                   "IMAGES",
                   "TEXT_FONT",
-                  "TEXT_CONTENT"
+                  "TEXT_CONTENT",
                 ],
-                "type": "string",
+                type: "string",
                 "x-google-enum-descriptions": [
                   "Unspecified aspect.",
                   "Layout: Arrangement of elements on the screen.",
                   "Color scheme: Colors used on the screen.",
                   "Images: Images used on the screen.",
                   "Text font: Fonts used for text on the screen.",
-                  "Text content: Text content on the screen."
-                ]
+                  "Text content: Text content on the screen.",
+                ],
               },
-              "type": "array"
+              type: "array",
             },
-            "creativeRange": {
-              "description": "Optional. Creative range for variations. Default: EXPLORE",
-              "enum": [
+            creativeRange: {
+              description:
+                "Optional. Creative range for variations. Default: EXPLORE",
+              enum: [
                 "CREATIVE_RANGE_UNSPECIFIED",
                 "REFINE",
                 "EXPLORE",
-                "REIMAGINE"
+                "REIMAGINE",
               ],
-              "type": "string",
+              type: "string",
               "x-google-enum-descriptions": [
                 "Unspecified creative range.",
                 "Subtle refinements, closely adhering to original.",
                 "Balanced exploration. Default.",
-                "Radical explorations, fundamentally challenging the original."
-              ]
+                "Radical explorations, fundamentally challenging the original.",
+              ],
             },
-            "variantCount": {
-              "description": "Optional. Number of variants to generate (1-5). Default: 3",
-              "format": "int32",
-              "type": "integer"
-            }
+            variantCount: {
+              description:
+                "Optional. Number of variants to generate (1-5). Default: 3",
+              format: "int32",
+              type: "integer",
+            },
           },
-          "type": "object"
-        }
+          type: "object",
+        },
       },
-      "description": "Request message for GenerateVariants.",
-      "properties": {
-        "deviceType": {
-          "description": "Optional. The type of device that captured the screenshot, e.g., mobile or desktop.",
-          "enum": [
+      description: "Request message for GenerateVariants.",
+      properties: {
+        deviceType: {
+          description:
+            "Optional. The type of device that captured the screenshot, e.g., mobile or desktop.",
+          enum: [
             "DEVICE_TYPE_UNSPECIFIED",
             "MOBILE",
             "DESKTOP",
             "TABLET",
-            "AGNOSTIC"
+            "AGNOSTIC",
           ],
-          "type": "string",
+          type: "string",
           "x-google-enum-descriptions": [
             "Unspecified device type.",
             "A design for a mobile device.",
             "A design for a desktop device.",
             "A design for a tablet device.",
-            "A design that is not tied to a specific device."
-          ]
+            "A design that is not tied to a specific device.",
+          ],
         },
-        "modelId": {
-          "description": "Optional. The model to use for generation.",
-          "enum": [
+        modelId: {
+          description: "Optional. The model to use for generation.",
+          enum: [
             "MODEL_ID_UNSPECIFIED",
             "GEMINI_3_PRO",
             "GEMINI_3_FLASH",
-            "GEMINI_3_1_PRO"
+            "GEMINI_3_1_PRO",
           ],
-          "type": "string",
-          "x-google-enum-deprecated": [
-            false,
-            true,
-            false,
-            false
-          ],
+          type: "string",
+          "x-google-enum-deprecated": [false, true, false, false],
           "x-google-enum-descriptions": [
             "Unspecified model.",
             "Deprecated: Gemini 3 Pro is deprecated. Use `GEMINI_3_1_PRO` or `GEMINI_3_FLASH` instead.",
             "Gemini 3 Flash.",
-            "Gemini 3.1 Pro."
-          ]
+            "Gemini 3.1 Pro.",
+          ],
         },
-        "projectId": {
-          "description": "Required. The project ID of screens to generate variants for, example: '4044680601076201931', without the `projects/` prefix.",
-          "type": "string"
+        projectId: {
+          description:
+            "Required. The project ID of screens to generate variants for, example: '4044680601076201931', without the `projects/` prefix.",
+          type: "string",
         },
-        "prompt": {
-          "description": "Required. The input text used to generate the variants.",
-          "type": "string"
+        prompt: {
+          description:
+            "Required. The input text used to generate the variants.",
+          type: "string",
         },
-        "selectedScreenIds": {
-          "description": "Required. The screen ids of screen to generate variants for, example: ['98b50e2ddc9943efb387052637738f61', '98b50e2ddc9943efb387052637738f62'], without the `screens/` prefix.",
-          "items": {
-            "type": "string"
+        selectedScreenIds: {
+          description:
+            "Required. The screen ids of screen to generate variants for, example: ['98b50e2ddc9943efb387052637738f61', '98b50e2ddc9943efb387052637738f62'], without the `screens/` prefix.",
+          items: {
+            type: "string",
           },
-          "type": "array"
+          type: "array",
         },
-        "variantOptions": {
-          "$ref": "#/$defs/VariantOptions",
-          "description": "Required. The variant options for generation, including the number of variants, creative range, and aspects to focus on."
-        }
+        variantOptions: {
+          $ref: "#/$defs/VariantOptions",
+          description:
+            "Required. The variant options for generation, including the number of variants, creative range, and aspects to focus on.",
+        },
       },
-      "required": [
-        "projectId",
-        "selectedScreenIds",
-        "prompt",
-        "variantOptions"
-      ],
-      "type": "object"
-    }
+      required: ["projectId", "selectedScreenIds", "prompt", "variantOptions"],
+      type: "object",
+    },
   },
   {
-    "name": "create_design_system",
-    "description": "Creates a new design system for a project. Use this tool when the user wants to set or update the overall visual theme, style, or branding of the application.\nThis includes configuring:\n- Color Palette: Presets, custom primary colors, and saturation levels.\n- Typography: Font families (e.g., Inter, Roboto, etc.).\n- Shape: Corner roundness for UI elements.\n- Appearance: Light and dark mode background colors.\n- Design MD: Free-form design instructions in markdown.\nThis tool establishes the foundational design tokens that apply across all screens in the project.\n\n**Instructions for Tool Call:**\n*  Call `update_design_system` tool immediately after this tool to apply the design system to the project, and display the design system in the UI.\n",
-    "inputSchema": {
-      "$defs": {
-        "DesignSystem": {
-          "description": "Represents a collection of guidelines, design tokens, and reusable components that define the visual and functional characteristics of a product's design. This is used to guide the generation of consistent and branded designs. LINT.IfChange",
-          "properties": {
-            "displayName": {
-              "description": "Required. Specifies the display name of the design system.",
-              "type": "string"
+    name: "create_design_system",
+    description:
+      "Creates a new design system for a project. Use this tool when the user wants to set or update the overall visual theme, style, or branding of the application.\nThis includes configuring:\n- Color Palette: Presets, custom primary colors, and saturation levels.\n- Typography: Font families (e.g., Inter, Roboto, etc.).\n- Shape: Corner roundness for UI elements.\n- Appearance: Light and dark mode background colors.\n- Design MD: Free-form design instructions in markdown.\nThis tool establishes the foundational design tokens that apply across all screens in the project.\n\n**Instructions for Tool Call:**\n*  Call `update_design_system` tool immediately after this tool to apply the design system to the project, and display the design system in the UI.\n",
+    inputSchema: {
+      $defs: {
+        DesignSystem: {
+          description:
+            "Represents a collection of guidelines, design tokens, and reusable components that define the visual and functional characteristics of a product's design. This is used to guide the generation of consistent and branded designs. LINT.IfChange",
+          properties: {
+            displayName: {
+              description:
+                "Required. Specifies the display name of the design system.",
+              type: "string",
             },
-            "theme": {
-              "$ref": "#/$defs/DesignTheme",
-              "description": "Required. Specifies the theme of the design system."
-            }
+            theme: {
+              $ref: "#/$defs/DesignTheme",
+              description:
+                "Required. Specifies the theme of the design system.",
+            },
           },
-          "required": [
-            "displayName",
-            "theme"
-          ],
-          "type": "object"
+          required: ["displayName", "theme"],
+          type: "object",
         },
-        "DesignTheme": {
-          "description": "The theme of the design. Next ID: 15 LINT.IfChange",
-          "properties": {
-            "bodyFont": {
-              "description": "Required. Specifies the body font.",
-              "enum": [
+        DesignTheme: {
+          description: "The theme of the design. Next ID: 15 LINT.IfChange",
+          properties: {
+            bodyFont: {
+              description: "Required. Specifies the body font.",
+              enum: [
                 "FONT_UNSPECIFIED",
                 "BE_VIETNAM_PRO",
                 "EPILOGUE",
@@ -458,9 +451,9 @@ export const toolDefinitions: ToolDefinition[] = [
                 "GEIST",
                 "DM_SANS",
                 "IBM_PLEX_SANS",
-                "SORA"
+                "SORA",
               ],
-              "type": "string",
+              type: "string",
               "x-google-enum-descriptions": [
                 "Unspecified font.",
                 "Be Vietnam Pro font.",
@@ -490,26 +483,24 @@ export const toolDefinitions: ToolDefinition[] = [
                 "Geist font.",
                 "DM Sans font.",
                 "IBM Plex Sans font.",
-                "Sora font."
-              ]
-            },
-            "colorMode": {
-              "description": "Required. Specifies the mode of appearance of the design.",
-              "enum": [
-                "COLOR_MODE_UNSPECIFIED",
-                "LIGHT",
-                "DARK"
+                "Sora font.",
               ],
-              "type": "string",
+            },
+            colorMode: {
+              description:
+                "Required. Specifies the mode of appearance of the design.",
+              enum: ["COLOR_MODE_UNSPECIFIED", "LIGHT", "DARK"],
+              type: "string",
               "x-google-enum-descriptions": [
                 "Unspecified color mode.",
                 "Light mode.",
-                "Dark mode."
-              ]
+                "Dark mode.",
+              ],
             },
-            "colorVariant": {
-              "description": "Optional. Specifies the variant of the dynamic color system.",
-              "enum": [
+            colorVariant: {
+              description:
+                "Optional. Specifies the variant of the dynamic color system.",
+              enum: [
                 "COLOR_VARIANT_UNSPECIFIED",
                 "MONOCHROME",
                 "NEUTRAL",
@@ -519,9 +510,9 @@ export const toolDefinitions: ToolDefinition[] = [
                 "FIDELITY",
                 "CONTENT",
                 "RAINBOW",
-                "FRUIT_SALAD"
+                "FRUIT_SALAD",
               ],
-              "type": "string",
+              type: "string",
               "x-google-enum-descriptions": [
                 "Unspecified color variant.",
                 "Monochrome variant.",
@@ -532,20 +523,22 @@ export const toolDefinitions: ToolDefinition[] = [
                 "Fidelity variant.",
                 "Content variant.",
                 "Rainbow variant.",
-                "Fruit salad variant."
-              ]
+                "Fruit salad variant.",
+              ],
             },
-            "customColor": {
-              "description": "Required. Specifies a custom theme primary color, or a seed color for the dynamic color system (hex format, e.g., \"#ff0000\").",
-              "type": "string"
+            customColor: {
+              description:
+                'Required. Specifies a custom theme primary color, or a seed color for the dynamic color system (hex format, e.g., "#ff0000").',
+              type: "string",
             },
-            "designMd": {
-              "description": "Optional. Specifies a markdown file that describes the design system.",
-              "type": "string"
+            designMd: {
+              description:
+                "Optional. Specifies a markdown file that describes the design system.",
+              type: "string",
             },
-            "headlineFont": {
-              "description": "Required. Specifies the headline font.",
-              "enum": [
+            headlineFont: {
+              description: "Required. Specifies the headline font.",
+              enum: [
                 "FONT_UNSPECIFIED",
                 "BE_VIETNAM_PRO",
                 "EPILOGUE",
@@ -574,9 +567,9 @@ export const toolDefinitions: ToolDefinition[] = [
                 "GEIST",
                 "DM_SANS",
                 "IBM_PLEX_SANS",
-                "SORA"
+                "SORA",
               ],
-              "type": "string",
+              type: "string",
               "x-google-enum-descriptions": [
                 "Unspecified font.",
                 "Be Vietnam Pro font.",
@@ -606,12 +599,12 @@ export const toolDefinitions: ToolDefinition[] = [
                 "Geist font.",
                 "DM Sans font.",
                 "IBM Plex Sans font.",
-                "Sora font."
-              ]
+                "Sora font.",
+              ],
             },
-            "labelFont": {
-              "description": "Optional. Specifies the label font.",
-              "enum": [
+            labelFont: {
+              description: "Optional. Specifies the label font.",
+              enum: [
                 "FONT_UNSPECIFIED",
                 "BE_VIETNAM_PRO",
                 "EPILOGUE",
@@ -640,9 +633,9 @@ export const toolDefinitions: ToolDefinition[] = [
                 "GEIST",
                 "DM_SANS",
                 "IBM_PLEX_SANS",
-                "SORA"
+                "SORA",
               ],
-              "type": "string",
+              type: "string",
               "x-google-enum-descriptions": [
                 "Unspecified font.",
                 "Be Vietnam Pro font.",
@@ -672,43 +665,48 @@ export const toolDefinitions: ToolDefinition[] = [
                 "Geist font.",
                 "DM Sans font.",
                 "IBM Plex Sans font.",
-                "Sora font."
-              ]
+                "Sora font.",
+              ],
             },
-            "overrideNeutralColor": {
-              "description": "Optional. Overrides the neutral color for the dynamic color system (hex format, e.g., \"#ffffff\").",
-              "type": "string"
+            overrideNeutralColor: {
+              description:
+                'Optional. Overrides the neutral color for the dynamic color system (hex format, e.g., "#ffffff").',
+              type: "string",
             },
-            "overridePrimaryColor": {
-              "description": "Optional. Overrides the primary color for the dynamic color system (hex format, e.g., \"#ff0000\").",
-              "type": "string"
+            overridePrimaryColor: {
+              description:
+                'Optional. Overrides the primary color for the dynamic color system (hex format, e.g., "#ff0000").',
+              type: "string",
             },
-            "overrideSecondaryColor": {
-              "description": "Optional. Overrides the secondary color for the dynamic color system (hex format, e.g., \"#00ff00\").",
-              "type": "string"
+            overrideSecondaryColor: {
+              description:
+                'Optional. Overrides the secondary color for the dynamic color system (hex format, e.g., "#00ff00").',
+              type: "string",
             },
-            "overrideTertiaryColor": {
-              "description": "Optional. Overrides the tertiary color for the dynamic color system (hex format, e.g., \"#0000ff\").",
-              "type": "string"
+            overrideTertiaryColor: {
+              description:
+                'Optional. Overrides the tertiary color for the dynamic color system (hex format, e.g., "#0000ff").',
+              type: "string",
             },
-            "roundness": {
-              "description": "Required. Specifies the roundness of the design. Supported values are: \"ROUND_FOUR\", \"ROUND_EIGHT\", and \"ROUND_TWELVE\", and \"ROUND_FULL\".",
-              "enum": [
+            roundness: {
+              description:
+                'Required. Specifies the roundness of the design. Supported values are: "ROUND_FOUR", "ROUND_EIGHT", and "ROUND_TWELVE", and "ROUND_FULL".',
+              enum: [
                 "ROUNDNESS_UNSPECIFIED",
                 "ROUND_TWO",
                 "ROUND_FOUR",
                 "ROUND_EIGHT",
                 "ROUND_TWELVE",
-                "ROUND_FULL"
+                "ROUND_FULL",
               ],
-              "type": "string",
+              type: "string",
               "x-google-enum-deprecated": [
                 false,
                 true,
                 false,
                 false,
                 false,
-                false
+                false,
               ],
               "x-google-enum-descriptions": [
                 "Unspecified roundness.",
@@ -716,106 +714,114 @@ export const toolDefinitions: ToolDefinition[] = [
                 "Round 4.",
                 "Round 8.",
                 "Round 12 or full",
-                "Round full."
-              ]
+                "Round full.",
+              ],
             },
-            "spacing": {
-              "additionalProperties": {
-                "type": "string"
+            spacing: {
+              additionalProperties: {
+                type: "string",
               },
-              "description": "Optional. Spacing units for the design system. Maps spacing names to their values.",
-              "type": "object"
+              description:
+                "Optional. Spacing units for the design system. Maps spacing names to their values.",
+              type: "object",
             },
-            "typography": {
-              "additionalProperties": {
-                "$ref": "#/$defs/Typography"
+            typography: {
+              additionalProperties: {
+                $ref: "#/$defs/Typography",
               },
-              "description": "Optional. Typography scale for the design system. Maps level names (e.g. \"display-lg\", \"body-md\") to their Typography token.",
-              "type": "object"
-            }
+              description:
+                'Optional. Typography scale for the design system. Maps level names (e.g. "display-lg", "body-md") to their Typography token.',
+              type: "object",
+            },
           },
-          "required": [
+          required: [
             "colorMode",
             "headlineFont",
             "bodyFont",
             "roundness",
-            "customColor"
+            "customColor",
           ],
-          "type": "object"
+          type: "object",
         },
-        "Typography": {
-          "description": "A typography style token in a design system, defining the visual properties for a single text level (e.g. \"display-lg\", \"body-md\").",
-          "properties": {
-            "fontFamily": {
-              "description": "Optional. The CSS font-family value (e.g., \"Manrope\", \"Inter\").",
-              "type": "string"
+        Typography: {
+          description:
+            'A typography style token in a design system, defining the visual properties for a single text level (e.g. "display-lg", "body-md").',
+          properties: {
+            fontFamily: {
+              description:
+                'Optional. The CSS font-family value (e.g., "Manrope", "Inter").',
+              type: "string",
             },
-            "fontSize": {
-              "description": "Optional. The CSS font-size value (e.g., \"32px\", \"1rem\").",
-              "type": "string"
+            fontSize: {
+              description:
+                'Optional. The CSS font-size value (e.g., "32px", "1rem").',
+              type: "string",
             },
-            "fontWeight": {
-              "description": "Optional. The CSS font-weight value (e.g., \"400\", \"700\").",
-              "type": "string"
+            fontWeight: {
+              description:
+                'Optional. The CSS font-weight value (e.g., "400", "700").',
+              type: "string",
             },
-            "letterSpacing": {
-              "description": "Optional. The CSS letter-spacing value (e.g., \"0px\", \"-0.02em\").",
-              "type": "string"
+            letterSpacing: {
+              description:
+                'Optional. The CSS letter-spacing value (e.g., "0px", "-0.02em").',
+              type: "string",
             },
-            "lineHeight": {
-              "description": "Optional. The CSS line-height value (e.g., \"1.5\", \"40px\").",
-              "type": "string"
-            }
+            lineHeight: {
+              description:
+                'Optional. The CSS line-height value (e.g., "1.5", "40px").',
+              type: "string",
+            },
           },
-          "type": "object"
-        }
-      },
-      "description": "Request message for CreateDesignSystem.",
-      "properties": {
-        "designSystem": {
-          "$ref": "#/$defs/DesignSystem",
-          "description": "Required. The design system to create."
+          type: "object",
         },
-        "projectId": {
-          "description": "Optional. The project ID to create design system for, example: '4044680601076201931', without the `projects/` prefix. If empty, creates a global asset (not associated with any project).",
-          "type": "string"
-        }
       },
-      "required": [
-        "designSystem"
-      ],
-      "type": "object"
-    }
+      description: "Request message for CreateDesignSystem.",
+      properties: {
+        designSystem: {
+          $ref: "#/$defs/DesignSystem",
+          description: "Required. The design system to create.",
+        },
+        projectId: {
+          description:
+            "Optional. The project ID to create design system for, example: '4044680601076201931', without the `projects/` prefix. If empty, creates a global asset (not associated with any project).",
+          type: "string",
+        },
+      },
+      required: ["designSystem"],
+      type: "object",
+    },
   },
   {
-    "name": "update_design_system",
-    "description": "Updates a design system for a project. Use this tool when the user wants to change the overall visual theme, style, or branding of the application.\nThis includes configuring:\n- Color Palette: Presets, custom primary colors, and saturation levels.\n- Typography: Font families (e.g., Inter, Roboto, etc.).\n- Shape: Corner roundness for UI elements.\n- Appearance: Light and dark mode background colors.\n- Design MD: Free-form design instructions in markdown.\nThis tool establishes the foundational design tokens that apply across all screens in the project.\n",
-    "inputSchema": {
-      "$defs": {
-        "DesignSystem": {
-          "description": "Represents a collection of guidelines, design tokens, and reusable components that define the visual and functional characteristics of a product's design. This is used to guide the generation of consistent and branded designs. LINT.IfChange",
-          "properties": {
-            "displayName": {
-              "description": "Required. Specifies the display name of the design system.",
-              "type": "string"
+    name: "update_design_system",
+    description:
+      "Updates a design system for a project. Use this tool when the user wants to change the overall visual theme, style, or branding of the application.\nThis includes configuring:\n- Color Palette: Presets, custom primary colors, and saturation levels.\n- Typography: Font families (e.g., Inter, Roboto, etc.).\n- Shape: Corner roundness for UI elements.\n- Appearance: Light and dark mode background colors.\n- Design MD: Free-form design instructions in markdown.\nThis tool establishes the foundational design tokens that apply across all screens in the project.\n",
+    inputSchema: {
+      $defs: {
+        DesignSystem: {
+          description:
+            "Represents a collection of guidelines, design tokens, and reusable components that define the visual and functional characteristics of a product's design. This is used to guide the generation of consistent and branded designs. LINT.IfChange",
+          properties: {
+            displayName: {
+              description:
+                "Required. Specifies the display name of the design system.",
+              type: "string",
             },
-            "theme": {
-              "$ref": "#/$defs/DesignTheme",
-              "description": "Required. Specifies the theme of the design system."
-            }
+            theme: {
+              $ref: "#/$defs/DesignTheme",
+              description:
+                "Required. Specifies the theme of the design system.",
+            },
           },
-          "required": [
-            "displayName",
-            "theme"
-          ],
-          "type": "object"
+          required: ["displayName", "theme"],
+          type: "object",
         },
-        "DesignTheme": {
-          "description": "The theme of the design. Next ID: 15 LINT.IfChange",
-          "properties": {
-            "bodyFont": {
-              "description": "Required. Specifies the body font.",
-              "enum": [
+        DesignTheme: {
+          description: "The theme of the design. Next ID: 15 LINT.IfChange",
+          properties: {
+            bodyFont: {
+              description: "Required. Specifies the body font.",
+              enum: [
                 "FONT_UNSPECIFIED",
                 "BE_VIETNAM_PRO",
                 "EPILOGUE",
@@ -844,9 +850,9 @@ export const toolDefinitions: ToolDefinition[] = [
                 "GEIST",
                 "DM_SANS",
                 "IBM_PLEX_SANS",
-                "SORA"
+                "SORA",
               ],
-              "type": "string",
+              type: "string",
               "x-google-enum-descriptions": [
                 "Unspecified font.",
                 "Be Vietnam Pro font.",
@@ -876,26 +882,24 @@ export const toolDefinitions: ToolDefinition[] = [
                 "Geist font.",
                 "DM Sans font.",
                 "IBM Plex Sans font.",
-                "Sora font."
-              ]
-            },
-            "colorMode": {
-              "description": "Required. Specifies the mode of appearance of the design.",
-              "enum": [
-                "COLOR_MODE_UNSPECIFIED",
-                "LIGHT",
-                "DARK"
+                "Sora font.",
               ],
-              "type": "string",
+            },
+            colorMode: {
+              description:
+                "Required. Specifies the mode of appearance of the design.",
+              enum: ["COLOR_MODE_UNSPECIFIED", "LIGHT", "DARK"],
+              type: "string",
               "x-google-enum-descriptions": [
                 "Unspecified color mode.",
                 "Light mode.",
-                "Dark mode."
-              ]
+                "Dark mode.",
+              ],
             },
-            "colorVariant": {
-              "description": "Optional. Specifies the variant of the dynamic color system.",
-              "enum": [
+            colorVariant: {
+              description:
+                "Optional. Specifies the variant of the dynamic color system.",
+              enum: [
                 "COLOR_VARIANT_UNSPECIFIED",
                 "MONOCHROME",
                 "NEUTRAL",
@@ -905,9 +909,9 @@ export const toolDefinitions: ToolDefinition[] = [
                 "FIDELITY",
                 "CONTENT",
                 "RAINBOW",
-                "FRUIT_SALAD"
+                "FRUIT_SALAD",
               ],
-              "type": "string",
+              type: "string",
               "x-google-enum-descriptions": [
                 "Unspecified color variant.",
                 "Monochrome variant.",
@@ -918,20 +922,22 @@ export const toolDefinitions: ToolDefinition[] = [
                 "Fidelity variant.",
                 "Content variant.",
                 "Rainbow variant.",
-                "Fruit salad variant."
-              ]
+                "Fruit salad variant.",
+              ],
             },
-            "customColor": {
-              "description": "Required. Specifies a custom theme primary color, or a seed color for the dynamic color system (hex format, e.g., \"#ff0000\").",
-              "type": "string"
+            customColor: {
+              description:
+                'Required. Specifies a custom theme primary color, or a seed color for the dynamic color system (hex format, e.g., "#ff0000").',
+              type: "string",
             },
-            "designMd": {
-              "description": "Optional. Specifies a markdown file that describes the design system.",
-              "type": "string"
+            designMd: {
+              description:
+                "Optional. Specifies a markdown file that describes the design system.",
+              type: "string",
             },
-            "headlineFont": {
-              "description": "Required. Specifies the headline font.",
-              "enum": [
+            headlineFont: {
+              description: "Required. Specifies the headline font.",
+              enum: [
                 "FONT_UNSPECIFIED",
                 "BE_VIETNAM_PRO",
                 "EPILOGUE",
@@ -960,9 +966,9 @@ export const toolDefinitions: ToolDefinition[] = [
                 "GEIST",
                 "DM_SANS",
                 "IBM_PLEX_SANS",
-                "SORA"
+                "SORA",
               ],
-              "type": "string",
+              type: "string",
               "x-google-enum-descriptions": [
                 "Unspecified font.",
                 "Be Vietnam Pro font.",
@@ -992,12 +998,12 @@ export const toolDefinitions: ToolDefinition[] = [
                 "Geist font.",
                 "DM Sans font.",
                 "IBM Plex Sans font.",
-                "Sora font."
-              ]
+                "Sora font.",
+              ],
             },
-            "labelFont": {
-              "description": "Optional. Specifies the label font.",
-              "enum": [
+            labelFont: {
+              description: "Optional. Specifies the label font.",
+              enum: [
                 "FONT_UNSPECIFIED",
                 "BE_VIETNAM_PRO",
                 "EPILOGUE",
@@ -1026,9 +1032,9 @@ export const toolDefinitions: ToolDefinition[] = [
                 "GEIST",
                 "DM_SANS",
                 "IBM_PLEX_SANS",
-                "SORA"
+                "SORA",
               ],
-              "type": "string",
+              type: "string",
               "x-google-enum-descriptions": [
                 "Unspecified font.",
                 "Be Vietnam Pro font.",
@@ -1058,43 +1064,48 @@ export const toolDefinitions: ToolDefinition[] = [
                 "Geist font.",
                 "DM Sans font.",
                 "IBM Plex Sans font.",
-                "Sora font."
-              ]
+                "Sora font.",
+              ],
             },
-            "overrideNeutralColor": {
-              "description": "Optional. Overrides the neutral color for the dynamic color system (hex format, e.g., \"#ffffff\").",
-              "type": "string"
+            overrideNeutralColor: {
+              description:
+                'Optional. Overrides the neutral color for the dynamic color system (hex format, e.g., "#ffffff").',
+              type: "string",
             },
-            "overridePrimaryColor": {
-              "description": "Optional. Overrides the primary color for the dynamic color system (hex format, e.g., \"#ff0000\").",
-              "type": "string"
+            overridePrimaryColor: {
+              description:
+                'Optional. Overrides the primary color for the dynamic color system (hex format, e.g., "#ff0000").',
+              type: "string",
             },
-            "overrideSecondaryColor": {
-              "description": "Optional. Overrides the secondary color for the dynamic color system (hex format, e.g., \"#00ff00\").",
-              "type": "string"
+            overrideSecondaryColor: {
+              description:
+                'Optional. Overrides the secondary color for the dynamic color system (hex format, e.g., "#00ff00").',
+              type: "string",
             },
-            "overrideTertiaryColor": {
-              "description": "Optional. Overrides the tertiary color for the dynamic color system (hex format, e.g., \"#0000ff\").",
-              "type": "string"
+            overrideTertiaryColor: {
+              description:
+                'Optional. Overrides the tertiary color for the dynamic color system (hex format, e.g., "#0000ff").',
+              type: "string",
             },
-            "roundness": {
-              "description": "Required. Specifies the roundness of the design. Supported values are: \"ROUND_FOUR\", \"ROUND_EIGHT\", and \"ROUND_TWELVE\", and \"ROUND_FULL\".",
-              "enum": [
+            roundness: {
+              description:
+                'Required. Specifies the roundness of the design. Supported values are: "ROUND_FOUR", "ROUND_EIGHT", and "ROUND_TWELVE", and "ROUND_FULL".',
+              enum: [
                 "ROUNDNESS_UNSPECIFIED",
                 "ROUND_TWO",
                 "ROUND_FOUR",
                 "ROUND_EIGHT",
                 "ROUND_TWELVE",
-                "ROUND_FULL"
+                "ROUND_FULL",
               ],
-              "type": "string",
+              type: "string",
               "x-google-enum-deprecated": [
                 false,
                 true,
                 false,
                 false,
                 false,
-                false
+                false,
               ],
               "x-google-enum-descriptions": [
                 "Unspecified roundness.",
@@ -1102,146 +1113,153 @@ export const toolDefinitions: ToolDefinition[] = [
                 "Round 4.",
                 "Round 8.",
                 "Round 12 or full",
-                "Round full."
-              ]
+                "Round full.",
+              ],
             },
-            "spacing": {
-              "additionalProperties": {
-                "type": "string"
+            spacing: {
+              additionalProperties: {
+                type: "string",
               },
-              "description": "Optional. Spacing units for the design system. Maps spacing names to their values.",
-              "type": "object"
+              description:
+                "Optional. Spacing units for the design system. Maps spacing names to their values.",
+              type: "object",
             },
-            "typography": {
-              "additionalProperties": {
-                "$ref": "#/$defs/Typography"
+            typography: {
+              additionalProperties: {
+                $ref: "#/$defs/Typography",
               },
-              "description": "Optional. Typography scale for the design system. Maps level names (e.g. \"display-lg\", \"body-md\") to their Typography token.",
-              "type": "object"
-            }
+              description:
+                'Optional. Typography scale for the design system. Maps level names (e.g. "display-lg", "body-md") to their Typography token.',
+              type: "object",
+            },
           },
-          "required": [
+          required: [
             "colorMode",
             "headlineFont",
             "bodyFont",
             "roundness",
-            "customColor"
+            "customColor",
           ],
-          "type": "object"
+          type: "object",
         },
-        "Typography": {
-          "description": "A typography style token in a design system, defining the visual properties for a single text level (e.g. \"display-lg\", \"body-md\").",
-          "properties": {
-            "fontFamily": {
-              "description": "Optional. The CSS font-family value (e.g., \"Manrope\", \"Inter\").",
-              "type": "string"
+        Typography: {
+          description:
+            'A typography style token in a design system, defining the visual properties for a single text level (e.g. "display-lg", "body-md").',
+          properties: {
+            fontFamily: {
+              description:
+                'Optional. The CSS font-family value (e.g., "Manrope", "Inter").',
+              type: "string",
             },
-            "fontSize": {
-              "description": "Optional. The CSS font-size value (e.g., \"32px\", \"1rem\").",
-              "type": "string"
+            fontSize: {
+              description:
+                'Optional. The CSS font-size value (e.g., "32px", "1rem").',
+              type: "string",
             },
-            "fontWeight": {
-              "description": "Optional. The CSS font-weight value (e.g., \"400\", \"700\").",
-              "type": "string"
+            fontWeight: {
+              description:
+                'Optional. The CSS font-weight value (e.g., "400", "700").',
+              type: "string",
             },
-            "letterSpacing": {
-              "description": "Optional. The CSS letter-spacing value (e.g., \"0px\", \"-0.02em\").",
-              "type": "string"
+            letterSpacing: {
+              description:
+                'Optional. The CSS letter-spacing value (e.g., "0px", "-0.02em").',
+              type: "string",
             },
-            "lineHeight": {
-              "description": "Optional. The CSS line-height value (e.g., \"1.5\", \"40px\").",
-              "type": "string"
-            }
+            lineHeight: {
+              description:
+                'Optional. The CSS line-height value (e.g., "1.5", "40px").',
+              type: "string",
+            },
           },
-          "type": "object"
-        }
-      },
-      "description": "Request message for UpdateDesignSystem.",
-      "properties": {
-        "designSystem": {
-          "$ref": "#/$defs/DesignSystem",
-          "description": "Required. The design system to update."
+          type: "object",
         },
-        "name": {
-          "description": "Required. Identifier. The resource name of the design system to update. Format: `assets/{asset_id}` Example: `assets/15996705518239280238`",
-          "type": "string",
-          "x-google-identifier": true
-        },
-        "projectId": {
-          "description": "Required. The project ID to update design system for, example: '4044680601076201931', without the `projects/` prefix.",
-          "type": "string"
-        }
       },
-      "required": [
-        "name",
-        "projectId",
-        "designSystem"
-      ],
-      "type": "object"
-    }
+      description: "Request message for UpdateDesignSystem.",
+      properties: {
+        designSystem: {
+          $ref: "#/$defs/DesignSystem",
+          description: "Required. The design system to update.",
+        },
+        name: {
+          description:
+            "Required. Identifier. The resource name of the design system to update. Format: `assets/{asset_id}` Example: `assets/15996705518239280238`",
+          type: "string",
+          "x-google-identifier": true,
+        },
+        projectId: {
+          description:
+            "Required. The project ID to update design system for, example: '4044680601076201931', without the `projects/` prefix.",
+          type: "string",
+        },
+      },
+      required: ["name", "projectId", "designSystem"],
+      type: "object",
+    },
   },
   {
-    "name": "list_design_systems",
-    "description": "Lists all design systems for a given project.\n",
-    "inputSchema": {
-      "description": "Request message for ListDesignSystems.",
-      "properties": {
-        "projectId": {
-          "description": "Optional. The project ID to list design systems for, example: '4044680601076201931', without the `projects/` prefix. If empty, lists all global design systems.",
-          "type": "string"
-        }
+    name: "list_design_systems",
+    description: "Lists all design systems for a given project.\n",
+    inputSchema: {
+      description: "Request message for ListDesignSystems.",
+      properties: {
+        projectId: {
+          description:
+            "Optional. The project ID to list design systems for, example: '4044680601076201931', without the `projects/` prefix. If empty, lists all global design systems.",
+          type: "string",
+        },
       },
-      "type": "object"
-    }
+      type: "object",
+    },
   },
   {
-    "name": "apply_design_system",
-    "description": "Applies a design system to a list of screens. Use this tool when the user wants to update one or more screens to match the style of a design system.\nThis tool applies the selected design system's foundational design tokens (colors, fonts, shapes, etc.) to the chosen screens, modifying their appearance to align with the design system.\n",
-    "inputSchema": {
-      "$defs": {
-        "SelectedScreenInstance": {
-          "description": "A screen instance to be edited by the agent, selected by the user.",
-          "properties": {
-            "id": {
-              "description": "Required. The id of the screen instance, **NOT** the source screen id. This is available in the screen instances in the Project info, fetched by `get_project`.",
-              "type": "string"
+    name: "apply_design_system",
+    description:
+      "Applies a design system to a list of screens. Use this tool when the user wants to update one or more screens to match the style of a design system.\nThis tool applies the selected design system's foundational design tokens (colors, fonts, shapes, etc.) to the chosen screens, modifying their appearance to align with the design system.\n",
+    inputSchema: {
+      $defs: {
+        SelectedScreenInstance: {
+          description:
+            "A screen instance to be edited by the agent, selected by the user.",
+          properties: {
+            id: {
+              description:
+                "Required. The id of the screen instance, **NOT** the source screen id. This is available in the screen instances in the Project info, fetched by `get_project`.",
+              type: "string",
             },
-            "sourceScreen": {
-              "description": "Required. The source screen of the screen instance. The resource name of the source screen. Format: projects/{project}/screens/{screen}",
-              "type": "string"
-            }
+            sourceScreen: {
+              description:
+                "Required. The source screen of the screen instance. The resource name of the source screen. Format: projects/{project}/screens/{screen}",
+              type: "string",
+            },
           },
-          "required": [
-            "id",
-            "sourceScreen"
-          ],
-          "type": "object"
-        }
+          required: ["id", "sourceScreen"],
+          type: "object",
+        },
       },
-      "description": "Request message for ApplyDesignSystem.",
-      "properties": {
-        "assetId": {
-          "description": "Required. The asset id of the design system to apply, can be fetched from 'list_design_systems'. Example: '15996705518239280238', without the `assets/` prefix.",
-          "type": "string"
+      description: "Request message for ApplyDesignSystem.",
+      properties: {
+        assetId: {
+          description:
+            "Required. The asset id of the design system to apply, can be fetched from 'list_design_systems'. Example: '15996705518239280238', without the `assets/` prefix.",
+          type: "string",
         },
-        "projectId": {
-          "description": "Required. The project ID of screen instances to edit, example: '4044680601076201931', without the `projects/` prefix.",
-          "type": "string"
+        projectId: {
+          description:
+            "Required. The project ID of screen instances to edit, example: '4044680601076201931', without the `projects/` prefix.",
+          type: "string",
         },
-        "selectedScreenInstances": {
-          "description": "Required. The screen instances to edit, which is available in the Project info, fetched by `get_project`.",
-          "items": {
-            "$ref": "#/$defs/SelectedScreenInstance"
+        selectedScreenInstances: {
+          description:
+            "Required. The screen instances to edit, which is available in the Project info, fetched by `get_project`.",
+          items: {
+            $ref: "#/$defs/SelectedScreenInstance",
           },
-          "type": "array"
-        }
+          type: "array",
+        },
       },
-      "required": [
-        "projectId",
-        "selectedScreenInstances",
-        "assetId"
-      ],
-      "type": "object"
-    }
-  }
+      required: ["projectId", "selectedScreenInstances", "assetId"],
+      type: "object",
+    },
+  },
 ];

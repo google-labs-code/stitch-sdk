@@ -23,8 +23,18 @@ for (const [name, tool] of stitch.toolMap) {
 const tool = stitch.toolMap.get("generate_screen_from_text");
 if (tool) {
   console.log(`🔎 Found tool: ${tool.name}`);
-  console.log(`   Required: ${tool.params.filter(p => p.required).map(p => p.name).join(", ")}`);
-  console.log(`   Optional: ${tool.params.filter(p => !p.required).map(p => p.name).join(", ")}`);
+  console.log(
+    `   Required: ${tool.params
+      .filter((p) => p.required)
+      .map((p) => p.name)
+      .join(", ")}`,
+  );
+  console.log(
+    `   Optional: ${tool.params
+      .filter((p) => !p.required)
+      .map((p) => p.name)
+      .join(", ")}`,
+  );
 }
 
 // Introspect a tool, then call it (requires STITCH_API_KEY)

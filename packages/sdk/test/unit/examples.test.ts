@@ -27,7 +27,7 @@ describe("Example Contract Tests", () => {
   describe("generate-variants.ts", () => {
     const source = readFileSync(
       resolve(examplesDir, "generate-variants.ts"),
-      "utf8"
+      "utf8",
     );
 
     it("should use 'variantCount' not 'numVariants' in variantOptions", () => {

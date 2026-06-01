@@ -20,13 +20,17 @@ const generatedScreen = await project.generate("A simple primary button");
 console.log(`✅ Screen generated. ID: ${generatedScreen.id}`);
 console.log(`   Initial data name: ${generatedScreen.data?.name}`);
 
-console.log(`\n🔍 Fetching screen directly via project.getScreen("${generatedScreen.id}")...`);
+console.log(
+  `\n🔍 Fetching screen directly via project.getScreen("${generatedScreen.id}")...`,
+);
 const retrievedScreen = await project.getScreen(generatedScreen.id);
 console.log(`✅ Retrieved screen. ID: ${retrievedScreen.id}`);
 console.log(`   Retrieved data name: ${retrievedScreen.data?.name}`);
 
 if (generatedScreen.id === retrievedScreen.id) {
-  console.log("\n✅ Success! Directly retrieved screen ID matches the generated screen.");
+  console.log(
+    "\n✅ Success! Directly retrieved screen ID matches the generated screen.",
+  );
 } else {
   console.log("\n❌ Mismatch in screen IDs.");
 }

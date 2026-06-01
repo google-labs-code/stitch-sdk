@@ -24,20 +24,16 @@
  * methods.
  */
 
-import { Project as GeneratedProject } from '../generated/src/project.js';
-import { Screen } from '../generated/src/screen.js';
-import { StitchError, StitchErrorCode } from './spec/errors.js';
-import { DownloadAssetsHandler } from './download-handler.js';
-import { DownloadAssetsInputSchema } from './spec/download.js';
-import type { DownloadAssetsOutput } from './spec/download.js';
-import {
-  UploadInputSchema,
-  type UploadInput,
-} from './spec/upload.js';
-import { UploadHandler } from './upload-handler.js';
+import { Project as GeneratedProject } from "../generated/src/project.js";
+import { Screen } from "../generated/src/screen.js";
+import { StitchError, StitchErrorCode } from "./spec/errors.js";
+import { DownloadAssetsHandler } from "./download-handler.js";
+import { DownloadAssetsInputSchema } from "./spec/download.js";
+import type { DownloadAssetsOutput } from "./spec/download.js";
+import { UploadInputSchema, type UploadInput } from "./spec/upload.js";
+import { UploadHandler } from "./upload-handler.js";
 
 export class Project extends GeneratedProject {
-
   /**
    * Upload any supported design or document file asset (PNG, JPG, WEBP, HTML) into the project.
    * Creates a new screen canvas entity from the file contents.
@@ -47,7 +43,7 @@ export class Project extends GeneratedProject {
    */
   async upload(
     filePath: string,
-    opts?: Partial<Omit<UploadInput, 'filePath'>>,
+    opts?: Partial<Omit<UploadInput, "filePath">>,
   ): Promise<Screen[]> {
     const input = UploadInputSchema.parse({ filePath, ...opts });
     const handler = new UploadHandler(this.client);
@@ -55,11 +51,12 @@ export class Project extends GeneratedProject {
 
     if (!result.success) {
       throw new StitchError({
-        code: result.error.code === 'FILE_NOT_FOUND'
-          ? 'NOT_FOUND'
-          : result.error.code === 'AUTH_FAILED'
-          ? 'AUTH_FAILED'
-          : 'UNKNOWN_ERROR',
+        code:
+          result.error.code === "FILE_NOT_FOUND"
+            ? "NOT_FOUND"
+            : result.error.code === "AUTH_FAILED"
+              ? "AUTH_FAILED"
+              : "UNKNOWN_ERROR",
         message: result.error.message,
         recoverable: result.error.recoverable,
       });
@@ -94,16 +91,16 @@ export class Project extends GeneratedProject {
     });
     const result = await handler.execute(input);
     if (!result.success) {
-      let code: StitchErrorCode = 'UNKNOWN_ERROR';
+      let code: StitchErrorCode = "UNKNOWN_ERROR";
       switch (result.error.code) {
-        case 'PROJECT_NOT_FOUND':
-          code = 'NOT_FOUND';
+        case "PROJECT_NOT_FOUND":
+          code = "NOT_FOUND";
           break;
-        case 'FETCH_FAILED':
-          code = 'NETWORK_ERROR';
+        case "FETCH_FAILED":
+          code = "NETWORK_ERROR";
           break;
-        case 'PATH_TRAVERSAL_ATTEMPT':
-          code = 'VALIDATION_ERROR';
+        case "PATH_TRAVERSAL_ATTEMPT":
+          code = "VALIDATION_ERROR";
           break;
       }
       throw new StitchError({

@@ -15,11 +15,11 @@
 
 /**
  * Validate Generated SDK
- * 
+ *
  * Reads stitch-sdk.lock and verifies that all generated artifacts
  * are consistent with their source inputs. Run in CI to prevent
  * publishing stale code.
- * 
+ *
  * Usage: bun scripts/validate-generated.ts
  */
 
@@ -78,22 +78,51 @@ async function main() {
   console.log("\n🔍 Validating generated SDK...\n");
 
   // Check required files exist
-  check(existsSync(LOCK_PATH), "stitch-sdk.lock exists", "Run: bun scripts/capture-tools.ts");
-  check(existsSync(MANIFEST_PATH), "tools-manifest.json exists", "Run: bun scripts/capture-tools.ts");
-  check(existsSync(DOMAIN_MAP_PATH), "domain-map.json exists", "Create domain-map.json manually or via agent");
-  check(existsSync(GENERATED_DIR), "generated/ directory exists", "Run: bun scripts/generate-sdk.ts");
+  check(
+    existsSync(LOCK_PATH),
+    "stitch-sdk.lock exists",
+    "Run: bun scripts/capture-tools.ts",
+  );
+  check(
+    existsSync(MANIFEST_PATH),
+    "tools-manifest.json exists",
+    "Run: bun scripts/capture-tools.ts",
+  );
+  check(
+    existsSync(DOMAIN_MAP_PATH),
+    "domain-map.json exists",
+    "Create domain-map.json manually or via agent",
+  );
+  check(
+    existsSync(GENERATED_DIR),
+    "generated/ directory exists",
+    "Run: bun scripts/generate-sdk.ts",
+  );
 
   if (failures > 0) {
-    console.error(`\n💥 ${failures} check(s) failed. Cannot continue validation.`);
+    console.error(
+      `\n💥 ${failures} check(s) failed. Cannot continue validation.`,
+    );
     process.exit(1);
   }
 
   // Read lockfile
   const lock = JSON.parse(readFileSync(LOCK_PATH, "utf-8"));
 
-  check(lock.schemaVersion === 1, `Lock schema version is 1 (got ${lock.schemaVersion})`);
-  check(!!lock.manifest, "Lock has manifest section", "Run: bun scripts/capture-tools.ts");
-  check(!!lock.generated, "Lock has generated section", "Run: bun scripts/generate-sdk.ts");
+  check(
+    lock.schemaVersion === 1,
+    `Lock schema version is 1 (got ${lock.schemaVersion})`,
+  );
+  check(
+    !!lock.manifest,
+    "Lock has manifest section",
+    "Run: bun scripts/capture-tools.ts",
+  );
+  check(
+    !!lock.generated,
+    "Lock has generated section",
+    "Run: bun scripts/generate-sdk.ts",
+  );
 
   if (!lock.manifest || !lock.generated) {
     console.error(`\n💥 Missing lock sections. Cannot continue.`);
@@ -106,7 +135,7 @@ async function main() {
   check(
     lock.manifest.sourceHash === currentManifestHash,
     "Manifest hash matches lock",
-    `Lock: ${lock.manifest.sourceHash}\n      Disk: ${currentManifestHash}\n      Fix: bun scripts/capture-tools.ts`
+    `Lock: ${lock.manifest.sourceHash}\n      Disk: ${currentManifestHash}\n      Fix: bun scripts/capture-tools.ts`,
   );
 
   // Verify domain-map hash
@@ -116,7 +145,7 @@ async function main() {
     check(
       lock.domainMap.sourceHash === currentDomainMapHash,
       "Domain map hash matches lock",
-      `Lock: ${lock.domainMap.sourceHash}\n      Disk: ${currentDomainMapHash}\n      Fix: bun scripts/generate-sdk.ts`
+      `Lock: ${lock.domainMap.sourceHash}\n      Disk: ${currentDomainMapHash}\n      Fix: bun scripts/generate-sdk.ts`,
     );
   }
 
@@ -124,13 +153,13 @@ async function main() {
   check(
     lock.generated.manifestHash === currentManifestHash,
     "Generated code used current manifest",
-    `Generated from: ${lock.generated.manifestHash}\n      Current:        ${currentManifestHash}\n      Fix: bun scripts/generate-sdk.ts`
+    `Generated from: ${lock.generated.manifestHash}\n      Current:        ${currentManifestHash}\n      Fix: bun scripts/generate-sdk.ts`,
   );
 
   check(
     lock.generated.domainMapHash === currentDomainMapHash,
     "Generated code used current domain map",
-    `Generated from: ${lock.generated.domainMapHash}\n      Current:        ${currentDomainMapHash}\n      Fix: bun scripts/generate-sdk.ts`
+    `Generated from: ${lock.generated.domainMapHash}\n      Current:        ${currentDomainMapHash}\n      Fix: bun scripts/generate-sdk.ts`,
   );
 
   // Verify generated directory hash
@@ -138,7 +167,7 @@ async function main() {
   check(
     lock.generated.sourceHash === currentGeneratedHash,
     "Generated files haven't been manually modified",
-    `Lock: ${lock.generated.sourceHash}\n      Disk: ${currentGeneratedHash}\n      Fix: bun scripts/generate-sdk.ts`
+    `Lock: ${lock.generated.sourceHash}\n      Disk: ${currentGeneratedHash}\n      Fix: bun scripts/generate-sdk.ts`,
   );
 
   // Summary
@@ -150,8 +179,12 @@ async function main() {
     process.exit(1);
   } else {
     console.log(`✅ All validation checks passed.`);
-    console.log(`   Manifest: ${lock.manifest.toolCount} tools (captured ${lock.manifest.capturedAt})`);
-    console.log(`   Generated: ${lock.generated.fileCount} files (${lock.generated.generatedAt})\n`);
+    console.log(
+      `   Manifest: ${lock.manifest.toolCount} tools (captured ${lock.manifest.capturedAt})`,
+    );
+    console.log(
+      `   Generated: ${lock.generated.fileCount} files (${lock.generated.generatedAt})\n`,
+    );
   }
 }
 

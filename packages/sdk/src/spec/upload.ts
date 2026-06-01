@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { z } from 'zod';
-import type { Screen } from '../../generated/src/screen.js';
+import { z } from "zod";
+import type { Screen } from "../../generated/src/screen.js";
 
 // ── Supported MIME types ───────────────────────────────────────────────────────
 
@@ -23,12 +23,12 @@ import type { Screen } from '../../generated/src/screen.js';
  * produce a typed UploadImageErrorCode instead of a generic ZodError.
  */
 export const SUPPORTED_MIME_TYPES = {
-  '.png':  'image/png',
-  '.jpg':  'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.webp': 'image/webp',
-  '.html': 'text/html',
-  '.htm':  'text/html',
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".html": "text/html",
+  ".htm": "text/html",
 } as const;
 
 export type SupportedExtension = keyof typeof SUPPORTED_MIME_TYPES;
@@ -49,11 +49,11 @@ export type UploadInput = z.infer<typeof UploadInputSchema>;
 // ── Error Codes ────────────────────────────────────────────────────────────────
 
 export const UploadErrorCode = z.enum([
-  'FILE_NOT_FOUND',
-  'UNSUPPORTED_FORMAT',
-  'UPLOAD_FAILED',
-  'AUTH_FAILED',
-  'UNKNOWN_ERROR',
+  "FILE_NOT_FOUND",
+  "UNSUPPORTED_FORMAT",
+  "UPLOAD_FAILED",
+  "AUTH_FAILED",
+  "UNKNOWN_ERROR",
 ]);
 
 export type UploadErrorCode = z.infer<typeof UploadErrorCode>;
@@ -80,5 +80,3 @@ export type UploadResult =
 export interface UploadSpec {
   execute(projectId: string, input: UploadInput): Promise<UploadResult>;
 }
-
-

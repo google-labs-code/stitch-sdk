@@ -12,7 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { toolDefinitions, type ToolDefinition, type ToolInputSchema } from "../generated/src/tool-definitions.js";
+import {
+  toolDefinitions,
+  type ToolDefinition,
+  type ToolInputSchema,
+} from "../generated/src/tool-definitions.js";
 
 /** A single tool parameter, pre-parsed from JSON Schema. */
 export interface ToolParam {
@@ -48,7 +52,7 @@ function parseParams(schema: ToolInputSchema): ToolParam[] {
 
 /** Read-only map of tool names to enriched definitions for O(1) lookup. */
 export const toolMap: ReadonlyMap<string, ToolInfo> = new Map(
-  toolDefinitions.map(t => [
+  toolDefinitions.map((t) => [
     t.name,
     { ...t, params: parseParams(t.inputSchema) },
   ]),

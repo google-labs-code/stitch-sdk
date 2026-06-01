@@ -42,7 +42,8 @@ try {
   if (htmlUrl) {
     console.log(`Downloading HTML from ${htmlUrl}...`);
     const htmlResponse = await fetch(htmlUrl);
-    if (!htmlResponse.ok) throw new Error(`HTML fetch failed: ${htmlResponse.statusText}`);
+    if (!htmlResponse.ok)
+      throw new Error(`HTML fetch failed: ${htmlResponse.statusText}`);
     const htmlCode = await htmlResponse.text();
     const htmlPath = path.join(outDir, `${screen.id}.html`);
     await fs.writeFile(htmlPath, htmlCode);
@@ -57,7 +58,8 @@ try {
   if (imageUrl) {
     console.log(`Downloading Image from ${imageUrl}...`);
     const imageResponse = await fetch(imageUrl);
-    if (!imageResponse.ok) throw new Error(`Image fetch failed: ${imageResponse.statusText}`);
+    if (!imageResponse.ok)
+      throw new Error(`Image fetch failed: ${imageResponse.statusText}`);
     const imageBuffer = await imageResponse.arrayBuffer();
     const imagePath = path.join(outDir, `${screen.id}.jpeg`);
     await fs.writeFile(imagePath, Buffer.from(imageBuffer));

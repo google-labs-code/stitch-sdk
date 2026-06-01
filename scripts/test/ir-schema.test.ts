@@ -41,7 +41,10 @@ describe("ProjectionStep", () => {
   });
 
   test("accepts step with prop + index", () => {
-    const result = ProjectionStep.safeParse({ prop: "outputComponents", index: 0 });
+    const result = ProjectionStep.safeParse({
+      prop: "outputComponents",
+      index: 0,
+    });
     expect(result.success).toBe(true);
   });
 
@@ -61,7 +64,11 @@ describe("ProjectionStep", () => {
   });
 
   test("rejects step with both index and each", () => {
-    const result = ProjectionStep.safeParse({ prop: "items", index: 0, each: true });
+    const result = ProjectionStep.safeParse({
+      prop: "items",
+      index: 0,
+      each: true,
+    });
     expect(result.success).toBe(false);
   });
 
@@ -80,12 +87,19 @@ describe("ArgSpec", () => {
   });
 
   test("accepts param arg with rename", () => {
-    const result = ArgSpec.safeParse({ from: "param", rename: "newName", optional: true });
+    const result = ArgSpec.safeParse({
+      from: "param",
+      rename: "newName",
+      optional: true,
+    });
     expect(result.success).toBe(true);
   });
 
   test("accepts computed arg with template", () => {
-    const result = ArgSpec.safeParse({ from: "computed", template: "projects/{projectId}" });
+    const result = ArgSpec.safeParse({
+      from: "computed",
+      template: "projects/{projectId}",
+    });
     expect(result.success).toBe(true);
   });
 
@@ -170,7 +184,10 @@ describe("FieldMappingSpec", () => {
   });
 
   test("accepts mapping with stripPrefix", () => {
-    const result = FieldMappingSpec.safeParse({ from: "name", stripPrefix: "projects/" });
+    const result = FieldMappingSpec.safeParse({
+      from: "name",
+      stripPrefix: "projects/",
+    });
     expect(result.success).toBe(true);
   });
 
@@ -276,13 +293,20 @@ describe("SideEffectSpec", () => {
   });
 
   test("accepts all valid reason values", () => {
-    const reasons = ["filesystem_io", "binary_data", "private_rest", "complex_orchestration"];
+    const reasons = [
+      "filesystem_io",
+      "binary_data",
+      "private_rest",
+      "complex_orchestration",
+    ];
     for (const reason of reasons) {
       const result = DomainClassConfig.safeParse({
         description: "Test class.",
         constructorParams: [],
         extensionPath: "../../src/test-ext.js",
-        sideEffects: [{ method: "doSomething", reason, specPath: "src/spec/test.ts" }],
+        sideEffects: [
+          { method: "doSomething", reason, specPath: "src/spec/test.ts" },
+        ],
       });
       expect(result.success).toBe(true);
     }
@@ -353,4 +377,3 @@ describe("SideEffectSpec", () => {
     expect(result.success).toBe(true);
   });
 });
-

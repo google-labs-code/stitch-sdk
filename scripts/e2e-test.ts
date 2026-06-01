@@ -32,7 +32,8 @@ if (!process.env.STITCH_API_KEY) {
 }
 
 // Import from built package — same as a consumer would
-const { stitch, StitchError } = await import("../packages/sdk/dist/src/index.js");
+const { stitch, StitchError } =
+  await import("../packages/sdk/dist/src/index.js");
 
 let failures = 0;
 let passed = 0;
@@ -58,18 +59,31 @@ try {
   // ── 2. Create project via callTool ────────────────────────────
   console.log("\n📦 Creating project via callTool...");
   const projectName = `E2E Test ${new Date().toISOString().slice(0, 16)}`;
-  const createResult = await stitch.callTool("create_project", { title: projectName });
-  const createdId = (createResult as any).name?.replace("projects/", "") ?? (createResult as any).projectId;
-  assert(typeof createdId === "string" && createdId.length > 0, `Created project: ${createdId}`);
+  const createResult = await stitch.callTool("create_project", {
+    title: projectName,
+  });
+  const createdId =
+    (createResult as any).name?.replace("projects/", "") ??
+    (createResult as any).projectId;
+  assert(
+    typeof createdId === "string" && createdId.length > 0,
+    `Created project: ${createdId}`,
+  );
 
   // ── 3. Retrieve project by identity map ─────────────────────
   console.log("\n🔍 Retrieving project by identity map...");
   const project = stitch.project(createdId);
-  assert(project.id === createdId, `Identity map handle matches: ${project.id}`);
+  assert(
+    project.id === createdId,
+    `Identity map handle matches: ${project.id}`,
+  );
 
   // Prove the handle works by listing screens (should be 0 on new project)
   const emptyScreens = await project.screens();
-  assert(Array.isArray(emptyScreens) && emptyScreens.length === 0, "New project has 0 screens");
+  assert(
+    Array.isArray(emptyScreens) && emptyScreens.length === 0,
+    "New project has 0 screens",
+  );
 
   // ── 4. Generate screen ──────────────────────────────────────
   console.log("\n🎨 Generating screen...");
@@ -77,14 +91,17 @@ try {
     A simple hello world page with centered text
   `);
   assert(screen !== null && screen !== undefined, "Generate returned a screen");
-  assert(typeof screen.id === "string" && screen.id.length > 0, `Screen has ID: ${screen.id}`);
+  assert(
+    typeof screen.id === "string" && screen.id.length > 0,
+    `Screen has ID: ${screen.id}`,
+  );
 
   // ── 5. Get HTML (cached path — data from generate) ──────────
   console.log("\n📄 Getting HTML (cached)...");
   const html = await screen.getHtml();
   assert(
     typeof html === "string" && html.length > 0,
-    `Got HTML (${html.length} chars)`
+    `Got HTML (${html.length} chars)`,
   );
 
   // ── 6. Get Image (cached path — data from generate) ─────────
@@ -92,40 +109,52 @@ try {
   const imageUrl = await screen.getImage();
   assert(
     typeof imageUrl === "string" && imageUrl.length > 0,
-    `Got image URL (${imageUrl.slice(0, 60)}...)`
+    `Got image URL (${imageUrl.slice(0, 60)}...)`,
   );
 
   // ── 7. Edit screen ─────────────────────────────────────────
   console.log("\n✏️  Editing screen...");
-  const edited = await screen.edit("Make the background dark and add a subtitle");
+  const edited = await screen.edit(
+    "Make the background dark and add a subtitle",
+  );
   assert(edited !== null && edited !== undefined, "Edit returned a screen");
-  assert(typeof edited.id === "string" && edited.id.length > 0, `Edited screen has ID: ${edited.id}`);
+  assert(
+    typeof edited.id === "string" && edited.id.length > 0,
+    `Edited screen has ID: ${edited.id}`,
+  );
 
   const editedHtml = await edited.getHtml();
   assert(
     typeof editedHtml === "string" && editedHtml.length > 0,
-    `Edited screen has HTML (${editedHtml.length} chars)`
+    `Edited screen has HTML (${editedHtml.length} chars)`,
   );
 
   // ── 8. Generate variants ────────────────────────────────────
   console.log("\n🎭 Generating variants...");
-  const variants = await screen.variants("Try different color schemes", { variantCount: 2 });
+  const variants = await screen.variants("Try different color schemes", {
+    variantCount: 2,
+  });
   assert(Array.isArray(variants), `Got ${variants.length} variant(s)`);
   assert(variants.length > 0, "At least 1 variant returned");
 
   if (variants.length > 0) {
     const variant = variants[0];
-    assert(typeof variant.id === "string" && variant.id.length > 0, `Variant has ID: ${variant.id}`);
+    assert(
+      typeof variant.id === "string" && variant.id.length > 0,
+      `Variant has ID: ${variant.id}`,
+    );
 
     const variantHtml = await variant.getHtml();
     assert(
       typeof variantHtml === "string" && variantHtml.length > 0,
-      `Variant has HTML (${variantHtml.length} chars)`
+      `Variant has HTML (${variantHtml.length} chars)`,
     );
   }
 
   // ── 7. Non-cached path — list existing project's screens ────
-  console.log("\n🔄 Testing non-cached screen data (get_screen API fallback)...");
+  console.log(
+    "\n🔄 Testing non-cached screen data (get_screen API fallback)...",
+  );
   if (projects.length > 0) {
     // Pick the first project that already has screens
     let foundExistingScreen = false;
@@ -133,20 +162,23 @@ try {
       const existingScreens = await existingProject.screens();
       if (existingScreens.length > 0) {
         const existingScreen = existingScreens[0];
-        assert(typeof existingScreen.id === "string", `Existing screen has ID: ${existingScreen.id}`);
+        assert(
+          typeof existingScreen.id === "string",
+          `Existing screen has ID: ${existingScreen.id}`,
+        );
 
         // This screen came from list_screens — no cached htmlCode/screenshot
         // getHtml/getImage MUST call get_screen API
         const existingHtml = await existingScreen.getHtml();
         assert(
           typeof existingHtml === "string" && existingHtml.length > 0,
-          `Got HTML from existing screen via API (${existingHtml.length} chars)`
+          `Got HTML from existing screen via API (${existingHtml.length} chars)`,
         );
 
         const existingImage = await existingScreen.getImage();
         assert(
           typeof existingImage === "string" && existingImage.length > 0,
-          `Got image from existing screen via API (${existingImage.slice(0, 60)}...)`
+          `Got image from existing screen via API (${existingImage.slice(0, 60)}...)`,
         );
 
         foundExistingScreen = true;
@@ -154,7 +186,9 @@ try {
       }
     }
     if (!foundExistingScreen) {
-      console.log("    ⚠ No existing project with screens found — skipping non-cached path test");
+      console.log(
+        "    ⚠ No existing project with screens found — skipping non-cached path test",
+      );
     }
   }
 
@@ -165,7 +199,10 @@ try {
     await badProject.screens();
     assert(false, "StitchError thrown for bad project ID");
   } catch (e) {
-    assert(e instanceof StitchError, `StitchError thrown for bad project ID (code: ${(e as any).code})`);
+    assert(
+      e instanceof StitchError,
+      `StitchError thrown for bad project ID (code: ${(e as any).code})`,
+    );
   }
 } catch (err) {
   console.error(`\n💥 Unexpected error: ${err}`);

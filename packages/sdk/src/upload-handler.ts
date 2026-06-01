@@ -35,9 +35,9 @@
  *      documentation based on these errors.
  */
 
-import * as path from 'node:path';
-import * as fs from 'node:fs/promises';
-import type { StitchToolClientSpec } from './spec/client.js';
+import * as path from "node:path";
+import * as fs from "node:fs/promises";
+import type { StitchToolClientSpec } from "./spec/client.js";
 import {
   SUPPORTED_MIME_TYPES,
   type SupportedExtension,
@@ -45,8 +45,8 @@ import {
   type UploadResult,
   type UploadErrorCode,
   type UploadSpec,
-} from './spec/upload.js';
-import { Screen } from '../generated/src/screen.js';
+} from "./spec/upload.js";
+import { Screen } from "../generated/src/screen.js";
 
 /** Build the BatchCreateScreens JSON body. */
 function buildBatchCreateScreensBody(
@@ -60,20 +60,20 @@ function buildBatchCreateScreensBody(
     mimeType,
   };
 
-  const isHtml = mimeType === 'text/html';
+  const isHtml = mimeType === "text/html";
   const screen: Record<string, unknown> = {
-    screenType: isHtml ? 'DOCUMENT' : 'IMAGE',
+    screenType: isHtml ? "DOCUMENT" : "IMAGE",
     isCreatedByClient: true,
   };
 
   if (isHtml) {
-    screen['htmlCode'] = fileObj;
+    screen["htmlCode"] = fileObj;
   } else {
-    screen['screenshot'] = fileObj;
+    screen["screenshot"] = fileObj;
   }
 
   if (input.title) {
-    screen['title'] = input.title;
+    screen["title"] = input.title;
   }
 
   return {
@@ -95,11 +95,11 @@ export class UploadHandler implements UploadSpec {
     const ext = path.extname(input.filePath).toLowerCase();
     const mimeType = SUPPORTED_MIME_TYPES[ext as SupportedExtension];
     if (!mimeType) {
-      const supported = Object.keys(SUPPORTED_MIME_TYPES).join(', ');
+      const supported = Object.keys(SUPPORTED_MIME_TYPES).join(", ");
       return {
         success: false,
         error: {
-          code: 'UNSUPPORTED_FORMAT',
+          code: "UNSUPPORTED_FORMAT",
           message: `Unsupported file extension "${ext}". Supported: ${supported}`,
           recoverable: false,
         },
@@ -109,7 +109,7 @@ export class UploadHandler implements UploadSpec {
     // ── Step 2: Read, encode, POST ───────────────────────────────────────────
     try {
       const fileContentBase64 = await fs.readFile(input.filePath, {
-        encoding: 'base64',
+        encoding: "base64",
       });
       const body = buildBatchCreateScreensBody(
         projectId,
@@ -128,7 +128,7 @@ export class UploadHandler implements UploadSpec {
       const screens: Screen[] = results.map((r) => {
         const screenData = { ...r.screen, projectId };
         if (!screenData.id && screenData.screenshot?.name) {
-          const parts = screenData.screenshot.name.split('/files/');
+          const parts = screenData.screenshot.name.split("/files/");
           if (parts.length === 2) {
             screenData.id = parts[1];
           }
@@ -138,11 +138,16 @@ export class UploadHandler implements UploadSpec {
 
       return { success: true, screens };
     } catch (err) {
-      if (err && typeof err === 'object' && 'code' in err && err.code === 'ENOENT') {
+      if (
+        err &&
+        typeof err === "object" &&
+        "code" in err &&
+        err.code === "ENOENT"
+      ) {
         return {
           success: false,
           error: {
-            code: 'FILE_NOT_FOUND',
+            code: "FILE_NOT_FOUND",
             message: `File not found: ${input.filePath}`,
             recoverable: false,
           },
@@ -150,9 +155,11 @@ export class UploadHandler implements UploadSpec {
       }
       const msg = err instanceof Error ? err.message : String(err);
       const code: UploadErrorCode =
-        msg.includes('401') || msg.includes('403') || msg.toLowerCase().includes('auth')
-          ? 'AUTH_FAILED'
-          : 'UPLOAD_FAILED';
+        msg.includes("401") ||
+        msg.includes("403") ||
+        msg.toLowerCase().includes("auth")
+          ? "AUTH_FAILED"
+          : "UPLOAD_FAILED";
 
       return {
         success: false,
@@ -161,5 +168,3 @@ export class UploadHandler implements UploadSpec {
     }
   }
 }
-
-

@@ -75,7 +75,10 @@ const CLIENT_METHODS = new Set(["listTools", "callTool", "close"]);
  * await stitch.callTool("create_project", { title: "My App" });
  */
 export const stitch = new Proxy<
-  Stitch & Pick<StitchToolClient, "listTools" | "callTool" | "close"> & { toolMap: ReadonlyMap<string, ToolInfo> }
+  Stitch &
+    Pick<StitchToolClient, "listTools" | "callTool" | "close"> & {
+      toolMap: ReadonlyMap<string, ToolInfo>;
+    }
 >({} as any, {
   get(_target, prop: string | symbol) {
     // Static properties — no auth or lazy init needed

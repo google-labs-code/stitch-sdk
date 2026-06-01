@@ -10,7 +10,9 @@ import { stitch } from "@google/stitch-sdk";
 
 console.log("🚀 Creating a project for screen generation...");
 
-const rawProject = await stitch.callTool<any>("create_project", { title: "Analytics App" });
+const rawProject = await stitch.callTool<any>("create_project", {
+  title: "Analytics App",
+});
 const project = stitch.project(rawProject.name);
 console.log(`✅ Project created: ${project.id}`);
 

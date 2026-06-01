@@ -35,20 +35,22 @@ export interface AuthHeaderOptions {
  *   and optionally `X-Goog-User-Project` for quota.
  * - Throws if neither credential is provided.
  */
-export function buildAuthHeaders(opts: AuthHeaderOptions): Record<string, string> {
+export function buildAuthHeaders(
+  opts: AuthHeaderOptions,
+): Record<string, string> {
   if (opts.apiKey) {
-    return { 'X-Goog-Api-Key': opts.apiKey };
+    return { "X-Goog-Api-Key": opts.apiKey };
   }
   if (opts.accessToken) {
     const headers: Record<string, string> = {
       Authorization: `Bearer ${opts.accessToken}`,
     };
     if (opts.quotaProjectId) {
-      headers['X-Goog-User-Project'] = opts.quotaProjectId;
+      headers["X-Goog-User-Project"] = opts.quotaProjectId;
     }
     return headers;
   }
   throw new Error(
-    'No authentication credentials provided. Supply either apiKey or accessToken.',
+    "No authentication credentials provided. Supply either apiKey or accessToken.",
   );
 }

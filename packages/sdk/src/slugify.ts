@@ -24,10 +24,17 @@
  * @param seen - Mutable set tracking slugs already used in this batch.
  * @returns A unique, filesystem-safe slug.
  */
-export function slugify(title: string | undefined, screenId: string, seen: Set<string>): string {
+export function slugify(
+  title: string | undefined,
+  screenId: string,
+  seen: Set<string>,
+): string {
   const base = title
-    ? title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
-    : '';
+    ? title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "")
+    : "";
 
   let slug = base || screenId;
   let counter = 1;

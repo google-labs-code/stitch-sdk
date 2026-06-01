@@ -17,7 +17,9 @@ This skill defines a **Vertical Slice Architecture** backed by **Design by Contr
 ## Architecture Components
 
 ### 1. The Spec (`spec.ts`)
-The "Contract" or "Port". It defines the *What*. It must contain:
+
+The "Contract" or "Port". It defines the _What_. It must contain:
+
 - **Input Schema:** A Zod schema that parses raw input into a valid DTO.
 - **Output Schema:** A Zod schema defining the successful data structure.
 - **Error Schema:** A discriminated union of specific failure modes (not generic errors).
@@ -25,7 +27,9 @@ The "Contract" or "Port". It defines the *What*. It must contain:
 - **Interface:** The capability definition (e.g., `interface ConfigureSpec`).
 
 ### 2. The Handler (`handler.ts`)
-The "Implementation" or "Adapter". It defines the *How*. It must:
+
+The "Implementation" or "Adapter". It defines the _How_. It must:
+
 - Implement the Interface defined in the Spec.
 - Be an "Impure" class that handles side effects (File System, API calls).
 - **NEVER throw** exceptions. It must catch internal errors and map them to the `Result` type.
@@ -39,12 +43,13 @@ The "Implementation" or "Adapter". It defines the *How*. It must:
 Follow this template to define the boundaries.
 
 ```typescript
-import { z } from 'zod';
+import { z } from "zod";
 
 // 1. VALIDATION HELPERS (Reusable Refinements)
-export const SafePathSchema = z.string()
+export const SafePathSchema = z
+  .string()
   .min(1)
-  .refine(p => !p.includes('..'), "No traversal allowed");
+  .refine((p) => !p.includes(".."), "No traversal allowed");
 
 // 2. INPUT (The Command) - "Parse, don't validate"
 export const MyTaskInputSchema = z.object({
@@ -55,9 +60,9 @@ export type MyTaskInput = z.infer<typeof MyTaskInputSchema>;
 
 // 3. ERROR CODES (Exhaustive)
 export const MyTaskErrorCode = z.enum([
-  'FILE_NOT_FOUND',
-  'PERMISSION_DENIED', 
-  'UNKNOWN_ERROR'
+  "FILE_NOT_FOUND",
+  "PERMISSION_DENIED",
+  "UNKNOWN_ERROR",
 ]);
 
 // 4. RESULT (The Monad)
@@ -73,18 +78,17 @@ export const MyTaskFailure = z.object({
     message: z.string(),
     suggestion: z.string().optional(),
     recoverable: z.boolean(),
-  })
+  }),
 });
 
-export type MyTaskResult = 
-  | z.infer<typeof MyTaskSuccess> 
+export type MyTaskResult =
+  | z.infer<typeof MyTaskSuccess>
   | z.infer<typeof MyTaskFailure>;
 
 // 5. INTERFACE (The Capability)
 export interface MyTaskSpec {
   execute(input: MyTaskInput): Promise<MyTaskResult>;
 }
-
 ```
 
 ### Step 2: Implement the Handler (`handler.ts`)
@@ -92,8 +96,8 @@ export interface MyTaskSpec {
 Follow this template to implement the logic.
 
 ```typescript
-import { MyTaskSpec, MyTaskInput, MyTaskResult } from './spec.js';
-import * as fs from 'fs';
+import { MyTaskSpec, MyTaskInput, MyTaskResult } from "./spec.js";
+import * as fs from "fs";
 
 export class MyTaskHandler implements MyTaskSpec {
   async execute(input: MyTaskInput): Promise<MyTaskResult> {
@@ -104,33 +108,31 @@ export class MyTaskHandler implements MyTaskSpec {
         return {
           success: false,
           error: {
-            code: 'FILE_NOT_FOUND',
+            code: "FILE_NOT_FOUND",
             message: `Path does not exist: ${input.path}`,
-            recoverable: true
-          }
+            recoverable: true,
+          },
         };
       }
 
       // 3. Success Return
       return {
         success: true,
-        data: 'Operation complete'
+        data: "Operation complete",
       };
-
     } catch (error) {
       // 4. Safety Net: Catch unknown runtime errors
       return {
         success: false,
         error: {
-          code: 'UNKNOWN_ERROR',
+          code: "UNKNOWN_ERROR",
           message: error instanceof Error ? error.message : String(error),
-          recoverable: false
-        }
+          recoverable: false,
+        },
       };
     }
   }
 }
-
 ```
 
 ### Step 3: Testing Strategy
@@ -139,52 +141,50 @@ Do not write monolithic tests. Split them into **Contract Tests** and **Logic Te
 
 #### A. Contract Tests (Schema)
 
-Test the *Bouncer*. Ensure invalid data is rejected before it reaches the handler.
+Test the _Bouncer_. Ensure invalid data is rejected before it reaches the handler.
 
-* **Focus:** Edge cases, validation rules, Zod refinements.
-* **Style:** Data-driven (Table tests).
+- **Focus:** Edge cases, validation rules, Zod refinements.
+- **Style:** Data-driven (Table tests).
 
 ```typescript
 // spec.test.ts
-import { MyTaskInputSchema } from './spec';
+import { MyTaskInputSchema } from "./spec";
 
 const invalidCases = [
-  { val: '../etc/passwd', err: 'No traversal allowed' },
-  { val: '', err: 'min(1)' },
+  { val: "../etc/passwd", err: "No traversal allowed" },
+  { val: "", err: "min(1)" },
 ];
 
-test.each(invalidCases)('validates paths', ({ val, err }) => {
+test.each(invalidCases)("validates paths", ({ val, err }) => {
   const result = MyTaskInputSchema.safeParse({ path: val });
   expect(result.success).toBe(false);
 });
-
 ```
 
 #### B. Logic Tests (Handler)
 
-Test the *Chef*. Mock external dependencies (fs, network) and assert the Result Object.
+Test the _Chef_. Mock external dependencies (fs, network) and assert the Result Object.
 
-* **Focus:** Business logic flow, error mapping, success states.
-* **Style:** Mocked unit tests or Scenario Runners.
+- **Focus:** Business logic flow, error mapping, success states.
+- **Style:** Mocked unit tests or Scenario Runners.
 
 ```typescript
 // handler.test.ts
-import { MyTaskHandler } from './handler';
-import { vi } from 'vitest'; // or jest
+import { MyTaskHandler } from "./handler";
+import { vi } from "vitest"; // or jest
 
-test('returns FILE_NOT_FOUND if path missing', async () => {
+test("returns FILE_NOT_FOUND if path missing", async () => {
   // MOCK
   vi.mocked(fs.existsSync).mockReturnValue(false);
-  
+
   // EXECUTE
   const handler = new MyTaskHandler();
-  const result = await handler.execute({ path: '/fake' });
+  const result = await handler.execute({ path: "/fake" });
 
   // ASSERT (Check the Result Object)
   expect(result.success).toBe(false);
   if (!result.success) {
-    expect(result.error.code).toBe('FILE_NOT_FOUND');
+    expect(result.error.code).toBe("FILE_NOT_FOUND");
   }
 });
-
 ```

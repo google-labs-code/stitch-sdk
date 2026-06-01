@@ -35,12 +35,23 @@ describe("SDK Unit Tests", () => {
   });
 
   describe("Screen Class", () => {
-    const screenData = { name: "projects/proj-123/screens/screen-123", title: "Login", htmlCode: { downloadUrl: "https://cached.example.com/html" }, screenshot: { downloadUrl: "https://cached.example.com/img.png" }, projectId: "proj-123" };
+    const screenData = {
+      name: "projects/proj-123/screens/screen-123",
+      title: "Login",
+      htmlCode: { downloadUrl: "https://cached.example.com/html" },
+      screenshot: { downloadUrl: "https://cached.example.com/img.png" },
+      projectId: "proj-123",
+    };
     const projectId = "proj-123";
 
     it("getHtml should return cached HTML from data if available", async () => {
-      const screen = mockClient.entities.resolve(Screen, ["projectId", "screenId"], screenData);
-      console.log("SCREEN:", screen); const result = await screen.getHtml();
+      const screen = mockClient.entities.resolve(
+        Screen,
+        ["projectId", "screenId"],
+        screenData,
+      );
+      console.log("SCREEN:", screen);
+      const result = await screen.getHtml();
 
       // Should not call API — uses cached data.htmlCode.downloadUrl
       expect(mockClient.callTool).not.toHaveBeenCalled();
@@ -48,10 +59,14 @@ describe("SDK Unit Tests", () => {
     });
 
     it("getHtml should call get_screen if no cached htmlCode", async () => {
-      const screen = mockClient.entities.resolve(Screen, ["projectId", "screenId"], { id: "screen-123", name: "Login", projectId });
+      const screen = mockClient.entities.resolve(
+        Screen,
+        ["projectId", "screenId"],
+        { id: "screen-123", name: "Login", projectId },
+      );
 
       (mockClient.callTool as Mock).mockResolvedValue({
-        htmlCode: { downloadUrl: "https://api.example.com/html" }
+        htmlCode: { downloadUrl: "https://api.example.com/html" },
       });
 
       const result = await screen.getHtml();
@@ -65,7 +80,11 @@ describe("SDK Unit Tests", () => {
     });
 
     it("getImage should return cached screenshot URL from data if available", async () => {
-      const screen = mockClient.entities.resolve(Screen, ["projectId", "screenId"], screenData);
+      const screen = mockClient.entities.resolve(
+        Screen,
+        ["projectId", "screenId"],
+        screenData,
+      );
       const result = await screen.getImage();
 
       // Should not call API — uses cached data.screenshot.downloadUrl
@@ -74,10 +93,14 @@ describe("SDK Unit Tests", () => {
     });
 
     it("getImage should call get_screen if no cached screenshot", async () => {
-      const screen = mockClient.entities.resolve(Screen, ["projectId", "screenId"], { id: "screen-123", name: "Login", projectId });
+      const screen = mockClient.entities.resolve(
+        Screen,
+        ["projectId", "screenId"],
+        { id: "screen-123", name: "Login", projectId },
+      );
 
       (mockClient.callTool as Mock).mockResolvedValue({
-        screenshot: { downloadUrl: "https://api.example.com/image.png" }
+        screenshot: { downloadUrl: "https://api.example.com/image.png" },
       });
 
       const result = await screen.getImage();
@@ -90,13 +113,16 @@ describe("SDK Unit Tests", () => {
       expect(result).toBe("https://api.example.com/image.png");
     });
 
-
     it("getHtml should fallback to empty string when raw.htmlCode.downloadUrl is missing", async () => {
-      const screen = mockClient.entities.resolve(Screen, ["projectId", "screenId"], { id: "screen-123", name: "Login", projectId });
+      const screen = mockClient.entities.resolve(
+        Screen,
+        ["projectId", "screenId"],
+        { id: "screen-123", name: "Login", projectId },
+      );
 
       // Mock missing htmlCode / downloadUrl
       (mockClient.callTool as Mock).mockResolvedValue({
-        htmlCode: {}
+        htmlCode: {},
       });
 
       const result = await screen.getHtml();
@@ -110,19 +136,39 @@ describe("SDK Unit Tests", () => {
     });
 
     it("getHtml should throw StitchError on failure", async () => {
-      const screen = mockClient.entities.resolve(Screen, ["projectId", "screenId"], { id: "screen-123", name: "Login", projectId });
-      (mockClient.callTool as Mock).mockRejectedValue(new Error("Network failure"));
+      const screen = mockClient.entities.resolve(
+        Screen,
+        ["projectId", "screenId"],
+        { id: "screen-123", name: "Login", projectId },
+      );
+      (mockClient.callTool as Mock).mockRejectedValue(
+        new Error("Network failure"),
+      );
 
       await expect(screen.getHtml()).rejects.toThrow("Network failure");
     });
 
     it("edit should call edit_screens and return new Screen", async () => {
-      const screen = mockClient.entities.resolve(Screen, ["projectId", "screenId"], screenData);
+      const screen = mockClient.entities.resolve(
+        Screen,
+        ["projectId", "screenId"],
+        screenData,
+      );
 
       (mockClient.callTool as Mock).mockResolvedValue({
-        outputComponents: [{
-          design: { screens: [{ name: "projects/proj-123/screens/edited-screen", htmlCode: "<div>Edited</div>", projectId }] },
-        }],
+        outputComponents: [
+          {
+            design: {
+              screens: [
+                {
+                  name: "projects/proj-123/screens/edited-screen",
+                  htmlCode: "<div>Edited</div>",
+                  projectId,
+                },
+              ],
+            },
+          },
+        ],
         projectId,
         sessionId: "session-1",
       });
@@ -139,12 +185,22 @@ describe("SDK Unit Tests", () => {
     });
 
     it("edit should find screen when a prefix block is present", async () => {
-      const screen = mockClient.entities.resolve(Screen, ["projectId", "screenId"], screenData);
+      const screen = mockClient.entities.resolve(
+        Screen,
+        ["projectId", "screenId"],
+        screenData,
+      );
 
       (mockClient.callTool as Mock).mockResolvedValue({
         outputComponents: [
           { designSystem: { name: "ds-update" } },
-          { design: { screens: [{ id: "edited-2", htmlCode: "<div>Dark</div>", projectId }] } },
+          {
+            design: {
+              screens: [
+                { id: "edited-2", htmlCode: "<div>Dark</div>", projectId },
+              ],
+            },
+          },
         ],
         projectId,
         sessionId: "session-2",
@@ -156,7 +212,11 @@ describe("SDK Unit Tests", () => {
     });
 
     it("edit should throw StitchError (not TypeError) when response has no screens", async () => {
-      const screen = mockClient.entities.resolve(Screen, ["projectId", "screenId"], screenData);
+      const screen = mockClient.entities.resolve(
+        Screen,
+        ["projectId", "screenId"],
+        screenData,
+      );
 
       (mockClient.callTool as Mock).mockResolvedValue({
         outputComponents: [{ design: {} }],
@@ -170,7 +230,11 @@ describe("SDK Unit Tests", () => {
     });
 
     it("edit should throw StitchError when outputComponents is empty", async () => {
-      const screen = mockClient.entities.resolve(Screen, ["projectId", "screenId"], screenData);
+      const screen = mockClient.entities.resolve(
+        Screen,
+        ["projectId", "screenId"],
+        screenData,
+      );
 
       (mockClient.callTool as Mock).mockResolvedValue({ outputComponents: [] });
 
@@ -180,17 +244,23 @@ describe("SDK Unit Tests", () => {
     });
 
     it("variants should call generate_variants and return Screen[]", async () => {
-      const screen = mockClient.entities.resolve(Screen, ["projectId", "screenId"], screenData);
+      const screen = mockClient.entities.resolve(
+        Screen,
+        ["projectId", "screenId"],
+        screenData,
+      );
 
       (mockClient.callTool as Mock).mockResolvedValue({
-        outputComponents: [{
-          design: {
-            screens: [
-              { id: "var-1", htmlCode: "<div>V1</div>", projectId },
-              { id: "var-2", htmlCode: "<div>V2</div>", projectId },
-            ],
+        outputComponents: [
+          {
+            design: {
+              screens: [
+                { id: "var-1", htmlCode: "<div>V1</div>", projectId },
+                { id: "var-2", htmlCode: "<div>V2</div>", projectId },
+              ],
+            },
           },
-        }],
+        ],
         projectId,
         sessionId: "session-1",
       });
@@ -244,7 +314,11 @@ describe("SDK Unit Tests", () => {
     const projectId = "proj-abc";
 
     it("generate should call correct tool and return a Screen instance", async () => {
-      const project = mockClient.entities.resolve(Project, ["projectId"], projectId);
+      const project = mockClient.entities.resolve(
+        Project,
+        ["projectId"],
+        projectId,
+      );
       const prompt = "Login page";
 
       (mockClient.callTool as Mock).mockResolvedValue({
@@ -252,7 +326,14 @@ describe("SDK Unit Tests", () => {
           { designSystem: { name: "ds" } },
           {
             design: {
-              screens: [{ id: "new-screen-1", name: "Generated", htmlCode: "<div>test</div>", projectId }],
+              screens: [
+                {
+                  id: "new-screen-1",
+                  name: "Generated",
+                  htmlCode: "<div>test</div>",
+                  projectId,
+                },
+              ],
             },
           },
         ],
@@ -262,12 +343,15 @@ describe("SDK Unit Tests", () => {
 
       const result = await project.generate(prompt);
 
-      expect(mockClient.callTool).toHaveBeenCalledWith("generate_screen_from_text", {
-        projectId: projectId,
-        prompt: prompt,
-        deviceType: undefined,
-        modelId: undefined
-      });
+      expect(mockClient.callTool).toHaveBeenCalledWith(
+        "generate_screen_from_text",
+        {
+          projectId: projectId,
+          prompt: prompt,
+          deviceType: undefined,
+          modelId: undefined,
+        },
+      );
 
       expect(result).toBeInstanceOf(Screen);
       expect(result.id).toBe("new-screen-1");
@@ -275,13 +359,24 @@ describe("SDK Unit Tests", () => {
     });
 
     it("generate should find screen when designSystem block is absent (issue #315)", async () => {
-      const project = mockClient.entities.resolve(Project, ["projectId"], projectId);
+      const project = mockClient.entities.resolve(
+        Project,
+        ["projectId"],
+        projectId,
+      );
 
       (mockClient.callTool as Mock).mockResolvedValue({
         outputComponents: [
           {
             design: {
-              screens: [{ id: "screen-2", name: "Second", htmlCode: "<div>2</div>", projectId }],
+              screens: [
+                {
+                  id: "screen-2",
+                  name: "Second",
+                  htmlCode: "<div>2</div>",
+                  projectId,
+                },
+              ],
             },
           },
           { text: "summary" },
@@ -297,9 +392,12 @@ describe("SDK Unit Tests", () => {
       expect(result.id).toBe("screen-2");
     });
 
-
     it("generate should throw StitchError (not TypeError) when response has no screens", async () => {
-      const project = mockClient.entities.resolve(Project, ["projectId"], projectId);
+      const project = mockClient.entities.resolve(
+        Project,
+        ["projectId"],
+        projectId,
+      );
 
       (mockClient.callTool as Mock).mockResolvedValue({
         outputComponents: [
@@ -316,11 +414,17 @@ describe("SDK Unit Tests", () => {
       const err = await project.generate("test").catch((e: unknown) => e);
       expect(err).toBeInstanceOf(StitchError);
       expect((err as StitchError).code).toBe("UNKNOWN_ERROR");
-      expect((err as StitchError).message).toContain("generate_screen_from_text");
+      expect((err as StitchError).message).toContain(
+        "generate_screen_from_text",
+      );
     });
 
     it("generate should throw StitchError when outputComponents is empty", async () => {
-      const project = mockClient.entities.resolve(Project, ["projectId"], projectId);
+      const project = mockClient.entities.resolve(
+        Project,
+        ["projectId"],
+        projectId,
+      );
 
       (mockClient.callTool as Mock).mockResolvedValue({
         outputComponents: [],
@@ -329,26 +433,38 @@ describe("SDK Unit Tests", () => {
 
       const err = await project.generate("test").catch((e: unknown) => e);
       expect(err).toBeInstanceOf(StitchError);
-      expect((err as StitchError).message).toContain("generate_screen_from_text");
+      expect((err as StitchError).message).toContain(
+        "generate_screen_from_text",
+      );
     });
 
     it("generate should throw StitchError when outputComponents is missing", async () => {
-      const project = mockClient.entities.resolve(Project, ["projectId"], projectId);
+      const project = mockClient.entities.resolve(
+        Project,
+        ["projectId"],
+        projectId,
+      );
 
       (mockClient.callTool as Mock).mockResolvedValue({ projectId: projectId });
 
       const err = await project.generate("test").catch((e: unknown) => e);
       expect(err).toBeInstanceOf(StitchError);
-      expect((err as StitchError).message).toContain("generate_screen_from_text");
+      expect((err as StitchError).message).toContain(
+        "generate_screen_from_text",
+      );
     });
 
     it("screens should list screens and return Screen instances", async () => {
-      const project = mockClient.entities.resolve(Project, ["projectId"], projectId);
+      const project = mockClient.entities.resolve(
+        Project,
+        ["projectId"],
+        projectId,
+      );
       const mockResponse = {
         screens: [
           { id: "s1", sourceScreen: "S1", projectId },
-          { id: "s2", sourceScreen: "S2", projectId }
-        ]
+          { id: "s2", sourceScreen: "S2", projectId },
+        ],
       };
 
       (mockClient.callTool as Mock).mockResolvedValue(mockResponse);
@@ -356,7 +472,7 @@ describe("SDK Unit Tests", () => {
       const result = await project.screens();
 
       expect(mockClient.callTool).toHaveBeenCalledWith("list_screens", {
-        projectId: projectId
+        projectId: projectId,
       });
 
       expect(result).toHaveLength(2);
@@ -365,9 +481,12 @@ describe("SDK Unit Tests", () => {
       expect(result[0].id).toBe("s1");
     });
 
-
     it("screens should return [] when returned data has no screens array", async () => {
-      const project = mockClient.entities.resolve(Project, ["projectId"], projectId);
+      const project = mockClient.entities.resolve(
+        Project,
+        ["projectId"],
+        projectId,
+      );
 
       // Mock with missing screens array
       (mockClient.callTool as Mock).mockResolvedValue({});
@@ -375,19 +494,26 @@ describe("SDK Unit Tests", () => {
       const result = await project.screens();
 
       expect(mockClient.callTool).toHaveBeenCalledWith("list_screens", {
-        projectId: projectId
+        projectId: projectId,
       });
 
       expect(result).toEqual([]);
     });
 
-
     it("generate should throw StitchError on failure", async () => {
-      const project = mockClient.entities.resolve(Project, ["projectId"], projectId);
+      const project = mockClient.entities.resolve(
+        Project,
+        ["projectId"],
+        projectId,
+      );
 
-      (mockClient.callTool as Mock).mockRejectedValue(new Error("Generation failed"));
+      (mockClient.callTool as Mock).mockRejectedValue(
+        new Error("Generation failed"),
+      );
 
-      await expect(project.generate("test")).rejects.toThrow("Generation failed");
+      await expect(project.generate("test")).rejects.toThrow(
+        "Generation failed",
+      );
     });
   });
 });

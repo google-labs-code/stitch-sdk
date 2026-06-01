@@ -33,7 +33,9 @@ export interface ValidationResult {
  * - No hardcoded hex color values in className attributes
  * - Has a default export
  */
-export async function validateComponent(code: string): Promise<ValidationResult> {
+export async function validateComponent(
+  code: string,
+): Promise<ValidationResult> {
   let ast: swc.Module;
   try {
     ast = await swc.parse(code, { syntax: "typescript", tsx: true });
@@ -55,14 +57,20 @@ export async function validateComponent(code: string): Promise<ValidationResult>
     if (!node || typeof node !== "object") return;
 
     // Check for *Props interface
-    if (node.type === "TsInterfaceDeclaration" && node.id?.value?.endsWith("Props")) {
+    if (
+      node.type === "TsInterfaceDeclaration" &&
+      node.id?.value?.endsWith("Props")
+    ) {
       hasPropsInterface = true;
     }
 
     // Check for hardcoded hex in className
     if (node.type === "JSXAttribute" && node.name?.value === "className") {
       const value = node.value;
-      if (value?.type === "StringLiteral" && HEX_COLOR_REGEX.test(value.value)) {
+      if (
+        value?.type === "StringLiteral" &&
+        HEX_COLOR_REGEX.test(value.value)
+      ) {
         const matches = value.value.match(HEX_COLOR_REGEX);
         if (matches) hardcodedHexValues.push(...matches);
       }
@@ -81,7 +89,10 @@ export async function validateComponent(code: string): Promise<ValidationResult>
     }
 
     // Check for default export
-    if (node.type === "ExportDefaultExpression" || node.type === "ExportDefaultDeclaration") {
+    if (
+      node.type === "ExportDefaultExpression" ||
+      node.type === "ExportDefaultDeclaration"
+    ) {
       hasDefaultExport = true;
     }
 
@@ -98,7 +109,8 @@ export async function validateComponent(code: string): Promise<ValidationResult>
 
   walk(ast);
 
-  const valid = hasPropsInterface && hardcodedHexValues.length === 0 && hasDefaultExport;
+  const valid =
+    hasPropsInterface && hardcodedHexValues.length === 0 && hasDefaultExport;
 
   return {
     valid,

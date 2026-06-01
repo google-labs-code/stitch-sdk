@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { z } from 'zod';
-import type { StitchToolClientSpec } from './client.js';
+import { z } from "zod";
+import type { StitchToolClientSpec } from "./client.js";
 
 // ── Input ──────────────────────────────────────────────────────────────────────
 
@@ -42,24 +42,25 @@ export const DownloadAssetsInputSchema = z.object({
    * Defaults to 'assets'. Override to e.g. 'static' or 'public'.
    * Path separators are stripped — only the basename is used.
    */
-  assetsSubdir: z.string().default('assets'),
+  assetsSubdir: z.string().default("assets"),
 });
 
 /** Type passed by callers — fields with defaults (fileMode, assetsSubdir) are optional. */
 export type DownloadAssetsInput = z.input<typeof DownloadAssetsInputSchema>;
 
 /** Fully-resolved input after schema.parse() — all fields present. */
-export type DownloadAssetsInputParsed = z.infer<typeof DownloadAssetsInputSchema>;
-
+export type DownloadAssetsInputParsed = z.infer<
+  typeof DownloadAssetsInputSchema
+>;
 
 // ── Error Codes ────────────────────────────────────────────────────────────────
 
 export const DownloadAssetsErrorCode = z.enum([
-  'PROJECT_NOT_FOUND',
-  'FETCH_FAILED',
-  'WRITE_FAILED',
-  'PATH_TRAVERSAL_ATTEMPT',
-  'UNKNOWN_ERROR',
+  "PROJECT_NOT_FOUND",
+  "FETCH_FAILED",
+  "WRITE_FAILED",
+  "PATH_TRAVERSAL_ATTEMPT",
+  "UNKNOWN_ERROR",
 ]);
 
 export type DownloadAssetsErrorCode = z.infer<typeof DownloadAssetsErrorCode>;
@@ -73,7 +74,11 @@ export interface DownloadedScreenTrace {
 }
 
 export type DownloadAssetsResult =
-  | { success: true; downloadedScreens: DownloadedScreenTrace[]; warnings?: string[] }
+  | {
+      success: true;
+      downloadedScreens: DownloadedScreenTrace[];
+      warnings?: string[];
+    }
   | {
       success: false;
       error: {

@@ -25,7 +25,6 @@ try {
     console.log(`\n📁 Project: ${project.id}`);
     console.log(`   📱 Screens: ${screens.length}`);
   }
-
 } catch (e: any) {
   console.error("\n❌ Failed to fetch projects:");
   console.error(e.message);

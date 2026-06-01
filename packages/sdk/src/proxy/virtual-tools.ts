@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Project } from '../project-ext.js';
-import { VirtualToolDefinition } from '../spec/client.js';
-import { forwardToStitch } from './client.js';
+import { Project } from "../project-ext.js";
+import { VirtualToolDefinition } from "../spec/client.js";
+import { forwardToStitch } from "./client.js";
 
 // Helper to create a project instance with a client
 function createProject(projectId: string, client: any) {
@@ -22,43 +22,49 @@ function createProject(projectId: string, client: any) {
 }
 
 export const downloadAssetsTool: VirtualToolDefinition = {
-  name: 'download_assets',
-  description: 'Download screens and assets to a local directory',
-  source: 'sdk',
+  name: "download_assets",
+  description: "Download screens and assets to a local directory",
+  source: "sdk",
   inputSchema: {
-    type: 'object',
+    type: "object",
     properties: {
-      projectId: { type: 'string', description: 'Project ID' },
-      outputDir: { type: 'string', description: 'Output directory' }
+      projectId: { type: "string", description: "Project ID" },
+      outputDir: { type: "string", description: "Output directory" },
     },
-    required: ['projectId', 'outputDir']
+    required: ["projectId", "outputDir"],
   },
   execute: async (client, args) => {
     const { projectId, outputDir } = args;
     const project = createProject(projectId, client);
     await project.downloadAssets(outputDir);
     return {
-      content: [{ type: 'text', text: `Assets downloaded to ${outputDir}` }]
+      content: [{ type: "text", text: `Assets downloaded to ${outputDir}` }],
     };
-  }
+  },
 };
 
-export async function handleVirtualTool(name: string, args: any, ctx: any): Promise<any> {
+export async function handleVirtualTool(
+  name: string,
+  args: any,
+  ctx: any,
+): Promise<any> {
   const dummyClient = {
     callTool: async (toolName: string, toolArgs: any) => {
-      return forwardToStitch(ctx.config, 'tools/call', {
+      return forwardToStitch(ctx.config, "tools/call", {
         name: toolName,
-        arguments: toolArgs
+        arguments: toolArgs,
       });
-    }
+    },
   };
 
   switch (name) {
-    case 'download_assets': return downloadAssetsTool.execute(dummyClient as any, args);
-    default: throw new Error(`Unknown virtual tool: ${name}`);
+    case "download_assets":
+      return downloadAssetsTool.execute(dummyClient as any, args);
+    default:
+      throw new Error(`Unknown virtual tool: ${name}`);
   }
 }
 
 export function isVirtualTool(name: string): boolean {
-  return ['download_assets'].includes(name);
+  return ["download_assets"].includes(name);
 }

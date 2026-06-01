@@ -30,7 +30,10 @@ describe("AI SDK v6: dynamicTool execution baseline", () => {
     const tools = {
       test_tool: dynamicTool({
         description: "A test tool",
-        inputSchema: jsonSchema({ type: "object", properties: { name: { type: "string" } } }),
+        inputSchema: jsonSchema({
+          type: "object",
+          properties: { name: { type: "string" } },
+        }),
         execute: executeSpy,
       }),
     };
@@ -41,12 +44,17 @@ describe("AI SDK v6: dynamicTool execution baseline", () => {
         doGenerate: async () => {
           callCount++;
           if (callCount === 1) {
-            return mockResponse([{
-              type: "tool-call" as const,
-              toolCallId: "c1",
-              toolName: "test_tool",
-              input: JSON.stringify({ name: "hello" }),
-            }], "tool-calls");
+            return mockResponse(
+              [
+                {
+                  type: "tool-call" as const,
+                  toolCallId: "c1",
+                  toolName: "test_tool",
+                  input: JSON.stringify({ name: "hello" }),
+                },
+              ],
+              "tool-calls",
+            );
           }
           return mockResponse([{ type: "text" as const, text: "Done" }]);
         },

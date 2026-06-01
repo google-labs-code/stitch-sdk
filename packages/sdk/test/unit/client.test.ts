@@ -270,17 +270,22 @@ describe("StitchToolClient", () => {
       const client = new StitchToolClient({ apiKey: "test-key" });
       let capturedHeaders: Record<string, string> = {};
 
-      (globalThis as any).fetch = vi.fn().mockImplementation((_url: string, init: RequestInit) => {
-        capturedHeaders = Object.fromEntries(
-          Object.entries(init.headers as Record<string, string>),
-        );
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({ screens: [] }),
-        } as any);
-      });
+      (globalThis as any).fetch = vi
+        .fn()
+        .mockImplementation((_url: string, init: RequestInit) => {
+          capturedHeaders = Object.fromEntries(
+            Object.entries(init.headers as Record<string, string>),
+          );
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ screens: [] }),
+          } as any);
+        });
 
-      await client.httpPost("projects/p/screens:batchCreate", { parent: "projects/p", requests: [] });
+      await client.httpPost("projects/p/screens:batchCreate", {
+        parent: "projects/p",
+        requests: [],
+      });
       expect(capturedHeaders["X-Goog-Api-Key"]).toBe("test-key");
     });
 
@@ -300,9 +305,11 @@ describe("StitchToolClient", () => {
         client.httpPost("projects/p/screens:batchCreate", {}),
       ).rejects.toThrow(StitchError);
 
-      await client.httpPost("projects/p/screens:batchCreate", {}).catch((err) => {
-        expect(err.code).toBe("AUTH_FAILED");
-      });
+      await client
+        .httpPost("projects/p/screens:batchCreate", {})
+        .catch((err) => {
+          expect(err.code).toBe("AUTH_FAILED");
+        });
     });
   });
 });

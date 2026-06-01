@@ -15,7 +15,9 @@ if (projects.length === 0) {
 const project = projects[0];
 
 console.log(`🎨 Generating a screen in project ${project.id}...`);
-const screen = await project.generate("A dashboard with many Material Design icons");
+const screen = await project.generate(
+  "A dashboard with many Material Design icons",
+);
 console.log(`✅ Screen generated: ${screen.id}`);
 
 const htmlOrUrl = await screen.getHtml();
@@ -45,13 +47,15 @@ if (html.includes("fonts.googleapis.com/css2?family=Material+Symbols")) {
 console.log("\n🔍 Parsing Material Symbols usage...");
 // Look for <span class="... material-symbols-outlined ...">icon_name</span>
 const matches = Array.from(
-  html.matchAll(/<span[^>]*class="[^"]*material-symbols-[^"]*"[^>]*>([^<]+)<\/span>/g)
+  html.matchAll(
+    /<span[^>]*class="[^"]*material-symbols-[^"]*"[^>]*>([^<]+)<\/span>/g,
+  ),
 );
 
 if (matches.length > 0) {
-  const uniqueIcons = new Set(matches.map(m => m[1].trim()));
+  const uniqueIcons = new Set(matches.map((m) => m[1].trim()));
   console.log(`✅ Found ${uniqueIcons.size} unique Material Symbol(s):`);
-  uniqueIcons.forEach(icon => console.log(`  - ${icon}`));
+  uniqueIcons.forEach((icon) => console.log(`  - ${icon}`));
 } else {
   console.log("❌ No Material Symbols usage found in HTML.");
 }

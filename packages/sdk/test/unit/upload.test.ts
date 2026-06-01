@@ -91,7 +91,11 @@ describe("UploadHandler", () => {
 
   it("returns FILE_NOT_FOUND for a nonexistent .png path", async () => {
     const fs = await import("node:fs/promises");
-    const realReadFile = (await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises")).readFile;
+    const realReadFile = (
+      await vi.importActual<typeof import("node:fs/promises")>(
+        "node:fs/promises",
+      )
+    ).readFile;
     vi.mocked(fs.readFile).mockImplementationOnce(realReadFile as any);
 
     const handler = new UploadHandler(createMockClient());
@@ -145,15 +149,17 @@ vi.mock("node:fs/promises", async (importOriginal) => {
   const real = await importOriginal<typeof import("node:fs/promises")>();
   return {
     ...real,
-    access: vi.fn().mockResolvedValue(undefined),       // file always exists
-    readFile: vi.fn().mockResolvedValue("base64data"),  // dummy base64
+    access: vi.fn().mockResolvedValue(undefined), // file always exists
+    readFile: vi.fn().mockResolvedValue("base64data"), // dummy base64
   };
 });
 
 describe("UploadHandler (fs mocked)", () => {
   it("returns Screen[] on a successful upload", async () => {
     const httpPost = vi.fn().mockResolvedValue({
-      results: [{ screen: { name: "projects/proj-1/screens/s-abc", title: "Test" } }],
+      results: [
+        { screen: { name: "projects/proj-1/screens/s-abc", title: "Test" } },
+      ],
     });
     const handler = new UploadHandler(createMockClient({ httpPost }));
     const result = await handler.execute("proj-1", {
@@ -169,20 +175,22 @@ describe("UploadHandler (fs mocked)", () => {
   it("does not call fs.access when reading file", async () => {
     const fs = await import("node:fs/promises");
     vi.mocked(fs.access).mockClear();
-    
+
     const httpPost = vi.fn().mockResolvedValue({ results: [] });
     const handler = new UploadHandler(createMockClient({ httpPost }));
-    
+
     await handler.execute("proj-1", {
       filePath: "/fake/design.png",
       createScreenInstances: true,
     });
-    
+
     expect(fs.access).not.toHaveBeenCalled();
   });
 
   it("returns UPLOAD_FAILED when httpPost throws a generic server error", async () => {
-    const httpPost = vi.fn().mockRejectedValue(new Error("Internal Server Error"));
+    const httpPost = vi
+      .fn()
+      .mockRejectedValue(new Error("Internal Server Error"));
     const handler = new UploadHandler(createMockClient({ httpPost }));
     const result = await handler.execute("proj-1", {
       filePath: "/fake/design.png",
@@ -195,7 +203,9 @@ describe("UploadHandler (fs mocked)", () => {
   });
 
   it("returns AUTH_FAILED when httpPost throws with 401 in message", async () => {
-    const httpPost = vi.fn().mockRejectedValue(new Error("HTTP 401: Unauthorized"));
+    const httpPost = vi
+      .fn()
+      .mockRejectedValue(new Error("HTTP 401: Unauthorized"));
     const handler = new UploadHandler(createMockClient({ httpPost }));
     const result = await handler.execute("proj-1", {
       filePath: "/fake/design.png",
@@ -223,23 +233,36 @@ describe("UploadHandler (fs mocked)", () => {
 
 // ─── Slice 4: Integration Tests (Project.upload) ─────────────────────────────
 
-
 describe("Project.upload (generic integration)", () => {
-  function createProjectWithMockedClient(httpPostMock: ReturnType<typeof vi.fn>) {
-    const mockClient = createMockClient({ httpPost: httpPostMock as unknown as StitchToolClientSpec['httpPost'] });
-    return new Project(mockClient as unknown as StitchToolClient, "test-project-id");
+  function createProjectWithMockedClient(
+    httpPostMock: ReturnType<typeof vi.fn>,
+  ) {
+    const mockClient = createMockClient({
+      httpPost: httpPostMock as unknown as StitchToolClientSpec["httpPost"],
+    });
+    return new Project(
+      mockClient as unknown as StitchToolClient,
+      "test-project-id",
+    );
   }
 
   it("throws StitchError when the asset format is unsupported", async () => {
     const proj = createProjectWithMockedClient(vi.fn());
-    await expect(
-      proj.upload("/path/to/animation.gif"),
-    ).rejects.toThrow(StitchError);
+    await expect(proj.upload("/path/to/animation.gif")).rejects.toThrow(
+      StitchError,
+    );
   });
 
   it("should surface a valid generic upload method capability", async () => {
     const httpPost = vi.fn().mockResolvedValue({
-      results: [{ screen: { name: "projects/test-project-id/screens/s-abc", title: "Generic" } }],
+      results: [
+        {
+          screen: {
+            name: "projects/test-project-id/screens/s-abc",
+            title: "Generic",
+          },
+        },
+      ],
     });
     const proj = createProjectWithMockedClient(httpPost);
     expect(proj.upload).toBeDefined();
@@ -247,4 +270,3 @@ describe("Project.upload (generic integration)", () => {
     expect(screens).toHaveLength(1);
   });
 });
-

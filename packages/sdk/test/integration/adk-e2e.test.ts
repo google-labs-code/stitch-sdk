@@ -16,7 +16,11 @@ import path from "node:path";
 import { describe, it, expect } from "vitest";
 import { stitchAdkTools } from "../../src/adk.js";
 import { validateComponent } from "../helpers/component-validator.js";
-import { extractStitchAssets, parseGeneratedFiles, writePreviewApp } from "../helpers/stitch-html.js";
+import {
+  extractStitchAssets,
+  parseGeneratedFiles,
+  writePreviewApp,
+} from "../helpers/stitch-html.js";
 
 const hasEnv =
   !!(process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY) &&
@@ -30,11 +34,12 @@ runIfConfigured("ADK SDK E2E with Gemini", () => {
     const { LlmAgent, InMemoryRunner, EventType } = await import("@google/adk");
 
     const tools = stitchAdkTools();
-    
+
     const agent = new LlmAgent({
       name: "Stitch_E2E_Agent",
       model: "gemini-2.5-flash",
-      instruction: "You are an agent. Your task is to Create a new Stitch project titled 'E2E Test Project'. Only use the tools provided. Finish your response when done.",
+      instruction:
+        "You are an agent. Your task is to Create a new Stitch project titled 'E2E Test Project'. Only use the tools provided. Finish your response when done.",
       tools,
     });
 
@@ -43,7 +48,11 @@ runIfConfigured("ADK SDK E2E with Gemini", () => {
       userId: "test",
       newMessage: {
         role: "user",
-        parts: [{ text: "Please create a new Stitch project titled 'E2E Test Project'." }],
+        parts: [
+          {
+            text: "Please create a new Stitch project titled 'E2E Test Project'.",
+          },
+        ],
       },
     });
 
@@ -52,7 +61,7 @@ runIfConfigured("ADK SDK E2E with Gemini", () => {
     for await (const event of generator) {
       if (
         event.content?.parts?.some(
-          (p: any) => p.functionCall || p.functionResponse
+          (p: any) => p.functionCall || p.functionResponse,
         )
       ) {
         receivedToolCall = true;
@@ -93,20 +102,27 @@ runIfConfigured("ADK SDK E2E with Gemini", () => {
           if (resp?.htmlCode?.downloadUrl) {
             screenOutput = resp;
           }
-        } else if ((part as any).functionCall && (part as any).functionCall.name === "get_screen") {
-           // Let's also collect it if it happens to be somehow exposed without functionResponse
+        } else if (
+          (part as any).functionCall &&
+          (part as any).functionCall.name === "get_screen"
+        ) {
+          // Let's also collect it if it happens to be somehow exposed without functionResponse
         }
       }
     }
-    
-    // In ADK, extracting tool execution results accurately from the stream can be tricky 
+
+    // In ADK, extracting tool execution results accurately from the stream can be tricky
     // if the model didn't perfectly yield the response in `functionResponse`.
     // But since the tool runs on the client runner, the response will be in the stream.
     expect(screenOutput).toBeDefined();
 
-    const htmlContent = await fetch(screenOutput.htmlCode.downloadUrl).then(r => r.text());
+    const htmlContent = await fetch(screenOutput.htmlCode.downloadUrl).then(
+      (r) => r.text(),
+    );
     const { tailwindConfig, fontLinks } = extractStitchAssets(htmlContent);
-    console.log(`   HTML: ${htmlContent.length} chars | config: ${tailwindConfig ? "✅" : "❌"} | fonts: ${fontLinks.length}`);
+    console.log(
+      `   HTML: ${htmlContent.length} chars | config: ${tailwindConfig ? "✅" : "❌"} | fonts: ${fontLinks.length}`,
+    );
 
     // ── Phase 2: LLM generates a complete React app ──────────────────
     console.log("⚛️  Phase 2: Generating React app...");
@@ -147,8 +163,8 @@ Rules:
 ${tailwindConfig ? `TAILWIND CONFIG (from the design):\n${tailwindConfig}\n` : ""}
 ${fontLinks.length > 0 ? `GOOGLE FONT LINKS (include in index.html <head>):\n${fontLinks.join("\n")}\n` : ""}
 HTML DESIGN:
-${htmlContent}`
-          }
+${htmlContent}`,
+          },
         ],
       },
     });
@@ -165,21 +181,29 @@ ${htmlContent}`
     }
 
     const files = parseGeneratedFiles(generatedText);
-    console.log(`   Generated ${Object.keys(files).length} files: ${Object.keys(files).join(", ")}`);
+    console.log(
+      `   Generated ${Object.keys(files).length} files: ${Object.keys(files).join(", ")}`,
+    );
     expect(Object.keys(files).length).toBeGreaterThanOrEqual(4);
 
     // ── Phase 3: Validate components via SWC ─────────────────────────
     console.log("🔍 Phase 3: Validating components...");
     const componentFiles = Object.entries(files).filter(
-      ([name]) => name.endsWith(".tsx") && !name.endsWith("App.tsx") && !name.endsWith("main.tsx"),
+      ([name]) =>
+        name.endsWith(".tsx") &&
+        !name.endsWith("App.tsx") &&
+        !name.endsWith("main.tsx"),
     );
     for (const [filename, content] of componentFiles) {
       const v = await validateComponent(content);
       const status = v.parseError ? "💥" : v.valid ? "✅" : "⚠️";
-      console.log(`   ${filename}: ${status}${v.hardcodedHexValues.length ? " hex:" + v.hardcodedHexValues : ""}`);
+      console.log(
+        `   ${filename}: ${status}${v.hardcodedHexValues.length ? " hex:" + v.hardcodedHexValues : ""}`,
+      );
       expect(v.parseError).toBeUndefined();
       expect(v.hasDefaultExport).toBe(true);
-      if (!v.hasPropsInterface) console.warn(`   ⚠️  ${filename} missing Props interface`);
+      if (!v.hasPropsInterface)
+        console.warn(`   ⚠️  ${filename} missing Props interface`);
     }
 
     // ── Phase 4: Write preview app ───────────────────────────────────

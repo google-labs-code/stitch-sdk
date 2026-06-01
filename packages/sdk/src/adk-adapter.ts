@@ -12,26 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { FunctionTool } from '@google/adk';
-import type { Schema } from '@google/genai';
-import { toolDefinitions } from '../generated/src/tool-definitions.js';
-import { getOrCreateClient } from './singleton.js';
+import { FunctionTool } from "@google/adk";
+import type { Schema } from "@google/genai";
+import { toolDefinitions } from "../generated/src/tool-definitions.js";
+import { getOrCreateClient } from "./singleton.js";
 
 /**
  * Recursively cleans and flattens a JSON Schema to make it compatible with the Google ADK/Gemini API.
  * It resolves internal `#/$defs/` references directly into the object, and removes
- * keys that the Gemini API validator rejects, such as `$defs`, `$ref`, `deprecated`, 
+ * keys that the Gemini API validator rejects, such as `$defs`, `$ref`, `deprecated`,
  * and custom `x-google-` extensions.
- * 
+ *
  * @param schema - The JSON Schema object to clean.
  * @returns The cleaned, flattened JSON schema object.
  */
 function cleanSchema(schema: any): any {
-  if (!schema || typeof schema !== 'object') return schema;
+  if (!schema || typeof schema !== "object") return schema;
   const defs = schema.$defs || {};
 
   function stripAndResolve(node: any, seen = new Map()): any {
-    if (!node || typeof node !== 'object') return node;
+    if (!node || typeof node !== "object") return node;
     if (seen.has(node)) return seen.get(node);
 
     if (Array.isArray(node)) {
@@ -43,13 +43,22 @@ function cleanSchema(schema: any): any {
       return arr;
     }
 
-    if (node.$ref && typeof node.$ref === 'string' && node.$ref.startsWith('#/$defs/')) {
-      const defName = node.$ref.replace('#/$defs/', '');
+    if (
+      node.$ref &&
+      typeof node.$ref === "string" &&
+      node.$ref.startsWith("#/$defs/")
+    ) {
+      const defName = node.$ref.replace("#/$defs/", "");
       if (defs[defName]) {
         const target = stripAndResolve(defs[defName], seen);
         const resolved = { ...target };
         for (const [k, v] of Object.entries(node)) {
-          if (k !== '$ref' && k !== 'x-google-identifier' && k !== 'deprecated' && !k.startsWith('x-google-')) {
+          if (
+            k !== "$ref" &&
+            k !== "x-google-identifier" &&
+            k !== "deprecated" &&
+            !k.startsWith("x-google-")
+          ) {
             resolved[k] = stripAndResolve(v, seen);
           }
         }
@@ -61,7 +70,12 @@ function cleanSchema(schema: any): any {
     seen.set(node, result);
 
     for (const [key, value] of Object.entries(node)) {
-      if (key === '$defs' || key === '$ref' || key === 'deprecated' || key.startsWith('x-google-')) {
+      if (
+        key === "$defs" ||
+        key === "$ref" ||
+        key === "deprecated" ||
+        key.startsWith("x-google-")
+      ) {
         continue;
       }
       result[key] = stripAndResolve(value, seen);
@@ -98,17 +112,17 @@ export function stitchAdkTools(options?: {
   const client = getOrCreateClient(options);
 
   const filtered = options?.include
-    ? toolDefinitions.filter(t => options.include!.includes(t.name))
+    ? toolDefinitions.filter((t) => options.include!.includes(t.name))
     : toolDefinitions;
 
   return filtered.map(
-    t =>
+    (t) =>
       new FunctionTool({
         name: t.name,
         description: t.description,
         parameters: cleanSchema(t.inputSchema) as Schema,
         execute: async (args: unknown) =>
           client.callTool(t.name, args as Record<string, any>),
-      })
+      }),
   );
 }

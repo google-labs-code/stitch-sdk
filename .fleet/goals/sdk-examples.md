@@ -9,12 +9,14 @@ Add practical examples demonstrating how to use the Stitch SDK (`@google/stitch-
 ## SDK Overview
 
 The Stitch SDK generates AI-powered UI screens and returns:
+
 - **HTML** with embedded Tailwind CDN (`cdn.tailwindcss.com`) + a `<script id="tailwind-config">` block containing custom theme colors, fonts, background images, and other design tokens
 - **Google Fonts** as `<link>` tags in the HTML `<head>` — preconnect + stylesheet
 - **Screenshot images** as CDN URLs (via `lh3.googleusercontent.com`)
 - **Material Symbols** icon font referenced in some designs
 
 The SDK has three modalities:
+
 1. **Domain classes** — `stitch.project(id)` → `project.generate(prompt)` → `screen.getHtml()` / `screen.getImage()`
 2. **Tool client** — `stitch.callTool("create_project", { title })` / `stitch.listTools()`
 3. **AI SDK adapter** — `stitchTools()` returns tools compatible with Vercel AI SDK's `generateText()`
@@ -226,6 +228,7 @@ Each example is evaluated for whether it needs agent intelligence in the loop an
 > If an example is just a linear script with no decision-making, it doesn't need an agent — it's a **Script**. Scripts are valid examples but should not be dressed up as agent workflows.
 
 ### Tier 1: Scripts (No Agent Needed)
+
 These are deterministic — the SDK calls are fixed and the output is predictable. No intelligence required.
 
 1. **Basic Design Generation** (`basic-design/`) — **Script.** `project.generate(prompt)` → `screen.getHtml()` → `screen.getImage()`. This is three SDK calls. An agent adds nothing — the inputs are known and the output is a URL. Show `callTool("create_project", ...)` for project creation.
@@ -237,6 +240,7 @@ These are deterministic — the SDK calls are fixed and the output is predictabl
 4. **Screenshot Gallery** (`screenshot-gallery/`) — **Script.** Iterate screens, collect image URLs, generate an HTML page. A glorified for-loop. No agent needed.
 
 ### Tier 2: Agent Skills (Agent Reads Instructions, Runs SDK)
+
 These require an agent to make design decisions, interpret HTML structure, or adapt output to a target framework. The best form factor is an **Agent Skill**: a `SKILL.md` that teaches the agent _how_ to use the Stitch SDK for that specific workflow, with helper scripts in `scripts/`.
 
 5. **Design to React Component** (`design-to-react/`) — **Agent Skill.** The agent must interpret Stitch HTML (varying structure per design), extract the Tailwind config block, identify semantic sections, and produce a modular React component with a Props interface. This is fundamentally a translation task that requires intelligence. The skill should include a `scripts/extract-assets.ts` helper that handles HTML parsing (extracting `<script id="tailwind-config">`, Google Fonts links), and a `SKILL.md` that teaches the agent how to transform the HTML body into JSX with Tailwind classes.
@@ -252,6 +256,7 @@ These require an agent to make design decisions, interpret HTML structure, or ad
 10. **Design System Extraction** (`design-system-extraction/`) — **Agent Skill.** Parse Tailwind configs from multiple screens, reconcile conflicting color names or font stacks, and output a unified design token file (CSS custom properties or W3C token JSON). The reconciliation step requires judgment — two screens may define `primary` as different colors. The skill teaches the agent how to merge and deduplicate.
 
 ### Tier 3: Agent CLI Tools (Expose SDK Operations for Agents)
+
 These are best as CLI tools with `--json` input/output, schema introspection, and agent-first design (per the Agent CLI best practices).
 
 11. **Stitch CLI** (`stitch-cli/`) — **Agent CLI.** A CLI wrapper around the Stitch SDK with agent-first ergonomics: `stitch generate --json '{"projectId": "...", "prompt": "..."}'`, `stitch export --json '{"projectId": "...", "format": "html"}'`, `stitch extract-theme --json '{"projectId": "...", "screenId": "..."}'`. Include `--output json` for machine-readable output, schema introspection via `stitch schema generate`, and input hardening against hallucinated project/screen IDs. Ship with `SKILL.md` files so agents discover it naturally.
@@ -259,11 +264,13 @@ These are best as CLI tools with `--json` input/output, schema introspection, an
 12. **HTML Email from Design** (`html-to-email/`) — **Agent CLI.** `stitch email --json '{"projectId": "...", "screenId": "...", "to": "user@example.com"}'`. The CLI generates the design, fetches the HTML, inlines CSS via `juice`, and outputs email-ready HTML. An agent is needed to adjust the design prompt for email constraints (single column, inline styles, no Tailwind CDN) but the CSS inlining is deterministic. The CLI handles the deterministic part; the agent handles prompt crafting.
 
 ### Tier 4: MCP Servers (Expose SDK to Any Agent Framework)
+
 These expose Stitch SDK operations as MCP tools, making them available to any agent that speaks MCP.
 
 13. **Stitch Design MCP Server** (`mcp-server/`) — **MCP Server.** Wrap the Stitch SDK as an MCP server with tools like `generate_and_extract` (generates a screen and returns extracted theme + HTML body + screenshot URL in one call), `compare_themes` (generates variants and diffs their configs), and `scaffold_project` (generates multiple screens and returns them as a page manifest). These compound tools reduce agent round-trips compared to calling raw Stitch MCP tools individually.
 
 ### Tier 5: Custom AI Workflows (Least Preferred)
+
 Only use when the AI SDK adapter is the _point_ of the example, not when an agent skill or CLI would work equally well.
 
 14. **Tool Filtering** (`tool-filtering/`) — **Custom AI Workflow.** This is specifically demonstrating `stitchTools({ include: [...] })`, which is an AI SDK feature. The example's purpose is showing how to restrict which tools an LLM can call. This is the one case where AI SDK integration is the subject, not just a means.
@@ -274,16 +281,16 @@ Only use when the AI SDK adapter is the _point_ of the example, not when an agen
 
 When creating examples, leverage these specific characteristics of Stitch output:
 
-| Stitch Output | Integration Opportunity |
-|---|---|
-| `<script id="tailwind-config">` block | Extract as `tailwind.config.ts` for any Tailwind project |
-| Google Fonts `<link>` tags | Include in any HTML `<head>`, Next.js `_document`, or Astro layout |
-| Tailwind CDN (`cdn.tailwindcss.com`) | Replace with local Tailwind v4 via `@tailwindcss/vite` or `postcss` |
-| Material Symbols Outlined font | Import in component libraries |
-| Screenshot CDN URLs | Use as preview images, OG images, or visual regression baselines |
-| Full HTML documents | Embed in iframes, parse into JSX, or serve as static pages |
-| Color palette in config | Extract for CSS custom properties, Figma tokens, or style dictionaries |
-| Custom font families | Map to Google Fonts API downloads for self-hosting |
+| Stitch Output                         | Integration Opportunity                                                |
+| ------------------------------------- | ---------------------------------------------------------------------- |
+| `<script id="tailwind-config">` block | Extract as `tailwind.config.ts` for any Tailwind project               |
+| Google Fonts `<link>` tags            | Include in any HTML `<head>`, Next.js `_document`, or Astro layout     |
+| Tailwind CDN (`cdn.tailwindcss.com`)  | Replace with local Tailwind v4 via `@tailwindcss/vite` or `postcss`    |
+| Material Symbols Outlined font        | Import in component libraries                                          |
+| Screenshot CDN URLs                   | Use as preview images, OG images, or visual regression baselines       |
+| Full HTML documents                   | Embed in iframes, parse into JSX, or serve as static pages             |
+| Color palette in config               | Extract for CSS custom properties, Figma tokens, or style dictionaries |
+| Custom font families                  | Map to Google Fonts API downloads for self-hosting                     |
 
 ## Steps
 

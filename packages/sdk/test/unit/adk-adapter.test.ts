@@ -39,7 +39,9 @@ describe("stitchAdkTools()", () => {
 
   it("include filter restricts returned tools", async () => {
     const { stitchAdkTools } = await import("../../src/adk-adapter.js");
-    const tools = stitchAdkTools({ include: ["create_project", "list_projects"] });
+    const tools = stitchAdkTools({
+      include: ["create_project", "list_projects"],
+    });
 
     expect(tools).toHaveLength(2);
     // FunctionTool encapsulates name logic, typically exposed directly or via declarations.
@@ -52,17 +54,19 @@ describe("stitchAdkTools()", () => {
   it("runAsync() delegates to callTool via executing FunctionTool", async () => {
     const { stitchAdkTools } = await import("../../src/adk-adapter.js");
     const tools = stitchAdkTools();
-    
+
     // Find create_project
     const createProject = tools.find((t: any) => t.name === "create_project");
     expect(createProject).toBeDefined();
 
     // Call runAsync to trigger the internally wrapped execute function
-    await createProject!.runAsync({ 
-      name: "create_project", 
-      args: { title: "Test Project" } 
+    await createProject!.runAsync({
+      name: "create_project",
+      args: { title: "Test Project" },
     } as any);
 
-    expect(mockCallTool).toHaveBeenCalledWith("create_project", { title: "Test Project" });
+    expect(mockCallTool).toHaveBeenCalledWith("create_project", {
+      title: "Test Project",
+    });
   });
 });

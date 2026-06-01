@@ -4,29 +4,161 @@ DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:2f1a623ec115...)
         domain-map.json     (sha256:0ee09d686be6...)
-Generated: 2026-05-29T22:05:20.536Z
+Generated: 2026-06-01T03:47:10.743Z
  */
 
 /** The theme of the design. Next ID: 23 LINT.IfChange */
 export interface DesignTheme {
   backgroundDark?: string;
   backgroundLight?: string;
-  bodyFont?: "FONT_UNSPECIFIED" | "BE_VIETNAM_PRO" | "EPILOGUE" | "INTER" | "LEXEND" | "MANROPE" | "NEWSREADER" | "NOTO_SERIF" | "PLUS_JAKARTA_SANS" | "PUBLIC_SANS" | "SPACE_GROTESK" | "SPLINE_SANS" | "WORK_SANS" | "DOMINE" | "LIBRE_CASLON_TEXT" | "EB_GARAMOND" | "LITERATA" | "SOURCE_SERIF_FOUR" | "MONTSERRAT" | "METROPOLIS" | "SOURCE_SANS_THREE" | "NUNITO_SANS" | "ARIMO" | "HANKEN_GROTESK" | "RUBIK" | "GEIST" | "DM_SANS" | "IBM_PLEX_SANS" | "SORA";
+  bodyFont?:
+    | "FONT_UNSPECIFIED"
+    | "BE_VIETNAM_PRO"
+    | "EPILOGUE"
+    | "INTER"
+    | "LEXEND"
+    | "MANROPE"
+    | "NEWSREADER"
+    | "NOTO_SERIF"
+    | "PLUS_JAKARTA_SANS"
+    | "PUBLIC_SANS"
+    | "SPACE_GROTESK"
+    | "SPLINE_SANS"
+    | "WORK_SANS"
+    | "DOMINE"
+    | "LIBRE_CASLON_TEXT"
+    | "EB_GARAMOND"
+    | "LITERATA"
+    | "SOURCE_SERIF_FOUR"
+    | "MONTSERRAT"
+    | "METROPOLIS"
+    | "SOURCE_SANS_THREE"
+    | "NUNITO_SANS"
+    | "ARIMO"
+    | "HANKEN_GROTESK"
+    | "RUBIK"
+    | "GEIST"
+    | "DM_SANS"
+    | "IBM_PLEX_SANS"
+    | "SORA";
   colorMode?: "COLOR_MODE_UNSPECIFIED" | "LIGHT" | "DARK";
-  colorVariant?: "COLOR_VARIANT_UNSPECIFIED" | "MONOCHROME" | "NEUTRAL" | "TONAL_SPOT" | "VIBRANT" | "EXPRESSIVE" | "FIDELITY" | "CONTENT" | "RAINBOW" | "FRUIT_SALAD";
+  colorVariant?:
+    | "COLOR_VARIANT_UNSPECIFIED"
+    | "MONOCHROME"
+    | "NEUTRAL"
+    | "TONAL_SPOT"
+    | "VIBRANT"
+    | "EXPRESSIVE"
+    | "FIDELITY"
+    | "CONTENT"
+    | "RAINBOW"
+    | "FRUIT_SALAD";
   customColor?: string;
   description?: string;
   designMd?: string;
-  font?: "FONT_UNSPECIFIED" | "BE_VIETNAM_PRO" | "EPILOGUE" | "INTER" | "LEXEND" | "MANROPE" | "NEWSREADER" | "NOTO_SERIF" | "PLUS_JAKARTA_SANS" | "PUBLIC_SANS" | "SPACE_GROTESK" | "SPLINE_SANS" | "WORK_SANS" | "DOMINE" | "LIBRE_CASLON_TEXT" | "EB_GARAMOND" | "LITERATA" | "SOURCE_SERIF_FOUR" | "MONTSERRAT" | "METROPOLIS" | "SOURCE_SANS_THREE" | "NUNITO_SANS" | "ARIMO" | "HANKEN_GROTESK" | "RUBIK" | "GEIST" | "DM_SANS" | "IBM_PLEX_SANS" | "SORA";
-  headlineFont?: "FONT_UNSPECIFIED" | "BE_VIETNAM_PRO" | "EPILOGUE" | "INTER" | "LEXEND" | "MANROPE" | "NEWSREADER" | "NOTO_SERIF" | "PLUS_JAKARTA_SANS" | "PUBLIC_SANS" | "SPACE_GROTESK" | "SPLINE_SANS" | "WORK_SANS" | "DOMINE" | "LIBRE_CASLON_TEXT" | "EB_GARAMOND" | "LITERATA" | "SOURCE_SERIF_FOUR" | "MONTSERRAT" | "METROPOLIS" | "SOURCE_SANS_THREE" | "NUNITO_SANS" | "ARIMO" | "HANKEN_GROTESK" | "RUBIK" | "GEIST" | "DM_SANS" | "IBM_PLEX_SANS" | "SORA";
-  labelFont?: "FONT_UNSPECIFIED" | "BE_VIETNAM_PRO" | "EPILOGUE" | "INTER" | "LEXEND" | "MANROPE" | "NEWSREADER" | "NOTO_SERIF" | "PLUS_JAKARTA_SANS" | "PUBLIC_SANS" | "SPACE_GROTESK" | "SPLINE_SANS" | "WORK_SANS" | "DOMINE" | "LIBRE_CASLON_TEXT" | "EB_GARAMOND" | "LITERATA" | "SOURCE_SERIF_FOUR" | "MONTSERRAT" | "METROPOLIS" | "SOURCE_SANS_THREE" | "NUNITO_SANS" | "ARIMO" | "HANKEN_GROTESK" | "RUBIK" | "GEIST" | "DM_SANS" | "IBM_PLEX_SANS" | "SORA";
+  font?:
+    | "FONT_UNSPECIFIED"
+    | "BE_VIETNAM_PRO"
+    | "EPILOGUE"
+    | "INTER"
+    | "LEXEND"
+    | "MANROPE"
+    | "NEWSREADER"
+    | "NOTO_SERIF"
+    | "PLUS_JAKARTA_SANS"
+    | "PUBLIC_SANS"
+    | "SPACE_GROTESK"
+    | "SPLINE_SANS"
+    | "WORK_SANS"
+    | "DOMINE"
+    | "LIBRE_CASLON_TEXT"
+    | "EB_GARAMOND"
+    | "LITERATA"
+    | "SOURCE_SERIF_FOUR"
+    | "MONTSERRAT"
+    | "METROPOLIS"
+    | "SOURCE_SANS_THREE"
+    | "NUNITO_SANS"
+    | "ARIMO"
+    | "HANKEN_GROTESK"
+    | "RUBIK"
+    | "GEIST"
+    | "DM_SANS"
+    | "IBM_PLEX_SANS"
+    | "SORA";
+  headlineFont?:
+    | "FONT_UNSPECIFIED"
+    | "BE_VIETNAM_PRO"
+    | "EPILOGUE"
+    | "INTER"
+    | "LEXEND"
+    | "MANROPE"
+    | "NEWSREADER"
+    | "NOTO_SERIF"
+    | "PLUS_JAKARTA_SANS"
+    | "PUBLIC_SANS"
+    | "SPACE_GROTESK"
+    | "SPLINE_SANS"
+    | "WORK_SANS"
+    | "DOMINE"
+    | "LIBRE_CASLON_TEXT"
+    | "EB_GARAMOND"
+    | "LITERATA"
+    | "SOURCE_SERIF_FOUR"
+    | "MONTSERRAT"
+    | "METROPOLIS"
+    | "SOURCE_SANS_THREE"
+    | "NUNITO_SANS"
+    | "ARIMO"
+    | "HANKEN_GROTESK"
+    | "RUBIK"
+    | "GEIST"
+    | "DM_SANS"
+    | "IBM_PLEX_SANS"
+    | "SORA";
+  labelFont?:
+    | "FONT_UNSPECIFIED"
+    | "BE_VIETNAM_PRO"
+    | "EPILOGUE"
+    | "INTER"
+    | "LEXEND"
+    | "MANROPE"
+    | "NEWSREADER"
+    | "NOTO_SERIF"
+    | "PLUS_JAKARTA_SANS"
+    | "PUBLIC_SANS"
+    | "SPACE_GROTESK"
+    | "SPLINE_SANS"
+    | "WORK_SANS"
+    | "DOMINE"
+    | "LIBRE_CASLON_TEXT"
+    | "EB_GARAMOND"
+    | "LITERATA"
+    | "SOURCE_SERIF_FOUR"
+    | "MONTSERRAT"
+    | "METROPOLIS"
+    | "SOURCE_SANS_THREE"
+    | "NUNITO_SANS"
+    | "ARIMO"
+    | "HANKEN_GROTESK"
+    | "RUBIK"
+    | "GEIST"
+    | "DM_SANS"
+    | "IBM_PLEX_SANS"
+    | "SORA";
   namedColors?: Record<string, string>;
   overrideNeutralColor?: string;
   overridePrimaryColor?: string;
   overrideSecondaryColor?: string;
   overrideTertiaryColor?: string;
   preset?: string;
-  roundness?: "ROUNDNESS_UNSPECIFIED" | "ROUND_TWO" | "ROUND_FOUR" | "ROUND_EIGHT" | "ROUND_TWELVE" | "ROUND_FULL";
+  roundness?:
+    | "ROUNDNESS_UNSPECIFIED"
+    | "ROUND_TWO"
+    | "ROUND_FOUR"
+    | "ROUND_EIGHT"
+    | "ROUND_TWELVE"
+    | "ROUND_FULL";
   saturation?: number;
   spacing?: Record<string, string>;
   spacingScale?: number;
@@ -60,7 +192,11 @@ export interface ScreenInstance {
   label?: string;
   sourceAsset?: string;
   sourceScreen?: string;
-  type?: "SCREEN_INSTANCE_TYPE_UNSPECIFIED" | "SCREEN_INSTANCE" | "DESIGN_SYSTEM_INSTANCE" | "GROUP_INSTANCE";
+  type?:
+    | "SCREEN_INSTANCE_TYPE_UNSPECIFIED"
+    | "SCREEN_INSTANCE"
+    | "DESIGN_SYSTEM_INSTANCE"
+    | "GROUP_INSTANCE";
   variantScreenInstance?: ScreenInstance;
   width?: number;
   x?: number;
@@ -79,7 +215,15 @@ export interface Typography {
 /** User feedback for a given interaction. */
 export interface UserFeedback {
   comment?: string;
-  designFeedbackReason?: "DESIGN_FEEDBACK_REASON_UNSPECIFIED" | "DESIGN_DOESNT_MATCH_PROMPT" | "EDIT_DOESNT_MATCH_PROMPT" | "DESCRIPTION_DOESNT_MATCH" | "COMPONENT_ISSUE" | "INCORRECT_THEME" | "FIGMA_EXPORT_FAILED" | "OTHER";
+  designFeedbackReason?:
+    | "DESIGN_FEEDBACK_REASON_UNSPECIFIED"
+    | "DESIGN_DOESNT_MATCH_PROMPT"
+    | "EDIT_DOESNT_MATCH_PROMPT"
+    | "DESCRIPTION_DOESNT_MATCH"
+    | "COMPONENT_ISSUE"
+    | "INCORRECT_THEME"
+    | "FIGMA_EXPORT_FAILED"
+    | "OTHER";
   rating?: "RATING_UNSPECIFIED" | "POSITIVE" | "NEGATIVE";
 }
 
@@ -88,11 +232,23 @@ export interface ProjectInput {
   backgroundTheme?: string;
   createTime?: string;
   designTheme?: DesignTheme;
-  deviceType?: "DEVICE_TYPE_UNSPECIFIED" | "MOBILE" | "DESKTOP" | "TABLET" | "AGNOSTIC";
+  deviceType?:
+    | "DEVICE_TYPE_UNSPECIFIED"
+    | "MOBILE"
+    | "DESKTOP"
+    | "TABLET"
+    | "AGNOSTIC";
   metadata?: ProjectMetadata;
   name?: string;
   origin?: "ORIGIN_UNSPECIFIED" | "STITCH" | "IMPORTED_FROM_GALILEO";
-  projectType?: "PROJECT_TYPE_UNSPECIFIED" | "TEXT_TO_UI" | "TEXT_TO_UI_PRO" | "TEXT_TO_UI_PRO_IMAGE_SPACE" | "IMAGE_TO_UI" | "IMAGE_TO_UI_PRO" | "PROJECT_DESIGN";
+  projectType?:
+    | "PROJECT_TYPE_UNSPECIFIED"
+    | "TEXT_TO_UI"
+    | "TEXT_TO_UI_PRO"
+    | "TEXT_TO_UI_PRO_IMAGE_SPACE"
+    | "IMAGE_TO_UI"
+    | "IMAGE_TO_UI_PRO"
+    | "PROJECT_DESIGN";
   readTime?: string;
   screenInstances?: ScreenInstance[];
   thumbnailScreenshot?: File;
@@ -104,7 +260,12 @@ export interface ProjectInput {
 /** A generated screen. */
 export interface ScreenInput {
   designSystem?: Asset;
-  deviceType?: "DEVICE_TYPE_UNSPECIFIED" | "MOBILE" | "DESKTOP" | "TABLET" | "AGNOSTIC";
+  deviceType?:
+    | "DEVICE_TYPE_UNSPECIFIED"
+    | "MOBILE"
+    | "DESKTOP"
+    | "TABLET"
+    | "AGNOSTIC";
   figmaExport?: File;
   generatedBy?: string;
   groupId?: string;
@@ -116,7 +277,13 @@ export interface ScreenInput {
   name?: string;
   prompt?: string;
   screenMetadata?: ScreenMetadata;
-  screenType?: "SCREEN_TYPE_UNSPECIFIED" | "DESIGN" | "IMAGE" | "PROTOTYPE" | "DOCUMENT" | "PROTOTYPE_V2";
+  screenType?:
+    | "SCREEN_TYPE_UNSPECIFIED"
+    | "DESIGN"
+    | "IMAGE"
+    | "PROTOTYPE"
+    | "DOCUMENT"
+    | "PROTOTYPE_V2";
   screenshot?: File;
   theme?: DesignTheme;
   title?: string;
@@ -143,13 +310,24 @@ export interface BoundingBox {
 export interface ComponentRegion {
   boundingBox?: BoundingBox;
   description?: string;
-  type?: "COMPONENT_TYPE_UNSPECIFIED" | "COMPONENT_TYPE_IMAGE" | "COMPONENT_TYPE_TEXT" | "COMPONENT_TYPE_BUTTON" | "COMPONENT_TYPE_INPUT" | "COMPONENT_TYPE_CONTAINER";
+  type?:
+    | "COMPONENT_TYPE_UNSPECIFIED"
+    | "COMPONENT_TYPE_IMAGE"
+    | "COMPONENT_TYPE_TEXT"
+    | "COMPONENT_TYPE_BUTTON"
+    | "COMPONENT_TYPE_INPUT"
+    | "COMPONENT_TYPE_CONTAINER";
   xpath?: string;
 }
 
 /** A generated design, which is a collection of multiple screens. Note: do not add new fields to this message or rely on it for any logic. For any Screen property, add it to Screen message instead. Design is a deprecated hierarchical container for screens and is only used for backward compatibility. */
 export interface Design {
-  deviceType?: "DEVICE_TYPE_UNSPECIFIED" | "MOBILE" | "DESKTOP" | "TABLET" | "AGNOSTIC";
+  deviceType?:
+    | "DEVICE_TYPE_UNSPECIFIED"
+    | "MOBILE"
+    | "DESKTOP"
+    | "TABLET"
+    | "AGNOSTIC";
   screens?: ScreenInput[];
   theme?: DesignTheme;
   title?: string;
@@ -184,7 +362,12 @@ export interface ProgressUpdates {
 export interface PrototypeLink {
   state?: string;
   targetScreenId?: string;
-  transition?: "TRANSITION_TYPE_UNSPECIFIED" | "NONE" | "PUSH" | "PUSH_BACK" | "SLIDE_UP";
+  transition?:
+    | "TRANSITION_TYPE_UNSPECIFIED"
+    | "NONE"
+    | "PUSH"
+    | "PUSH_BACK"
+    | "SLIDE_UP";
   xpath?: string;
 }
 
@@ -208,9 +391,28 @@ export interface PrototypeV2Spec {
 
 /** The metadata of a screen. */
 export interface ScreenMetadata {
-  agentType?: "DESIGN_AGENT_TYPE_UNSPECIFIED" | "TURBO_AGENT" | "PRO_AGENT" | "IMAGE_AGENT" | "GENIE_AGENT" | "IMAGE_PRO_AGENT" | "HATTER_AGENT" | "GEMINI_3_AGENT";
+  agentType?:
+    | "DESIGN_AGENT_TYPE_UNSPECIFIED"
+    | "TURBO_AGENT"
+    | "PRO_AGENT"
+    | "IMAGE_AGENT"
+    | "GENIE_AGENT"
+    | "IMAGE_PRO_AGENT"
+    | "HATTER_AGENT"
+    | "GEMINI_3_AGENT";
   componentRegions?: ComponentRegion[];
-  displayMode?: "DISPLAY_MODE_UNSPECIFIED" | "SCREENSHOT" | "HTML" | "CODE" | "MARKDOWN" | "STICKY_NOTE" | "SVG" | "TABLE" | "MERMAID" | "CHECKLIST" | "CHART";
+  displayMode?:
+    | "DISPLAY_MODE_UNSPECIFIED"
+    | "SCREENSHOT"
+    | "HTML"
+    | "CODE"
+    | "MARKDOWN"
+    | "STICKY_NOTE"
+    | "SVG"
+    | "TABLE"
+    | "MERMAID"
+    | "CHECKLIST"
+    | "CHART";
   isRemixed?: boolean;
   prototypeSpec?: PrototypeV2Spec;
   status?: "SCREEN_STATUS_UNSPECIFIED" | "IN_PROGRESS" | "COMPLETE" | "FAILED";
@@ -230,8 +432,18 @@ export interface SessionOutputComponent {
 
 /** Configuration options for design variant generation. This message captures all parameters used to generate variants, allowing the configuration to be stored, replayed, or analyzed. */
 export interface VariantOptions {
-  aspects?: "VARIANT_ASPECT_UNSPECIFIED" | "LAYOUT" | "COLOR_SCHEME" | "IMAGES" | "TEXT_FONT" | "TEXT_CONTENT"[];
-  creativeRange?: "CREATIVE_RANGE_UNSPECIFIED" | "REFINE" | "EXPLORE" | "REIMAGINE";
+  aspects?:
+    | "VARIANT_ASPECT_UNSPECIFIED"
+    | "LAYOUT"
+    | "COLOR_SCHEME"
+    | "IMAGES"
+    | "TEXT_FONT"
+    | "TEXT_CONTENT"[];
+  creativeRange?:
+    | "CREATIVE_RANGE_UNSPECIFIED"
+    | "REFINE"
+    | "EXPLORE"
+    | "REIMAGINE";
   variantCount?: number;
 }
 

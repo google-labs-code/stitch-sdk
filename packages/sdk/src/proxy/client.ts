@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { StitchProxyConfig } from '../spec/proxy.js';
-import { buildAuthHeaders } from '../auth.js';
-import type { Tool } from '@modelcontextprotocol/sdk/types.js';
-import { repairToolSchemas } from '../schema-repair.js';
+import { StitchProxyConfig } from "../spec/proxy.js";
+import { buildAuthHeaders } from "../auth.js";
+import type { Tool } from "@modelcontextprotocol/sdk/types.js";
+import { repairToolSchemas } from "../schema-repair.js";
 
 /**
  * Shared state for proxy handlers.
@@ -31,10 +31,10 @@ export interface ProxyContext {
 export async function forwardToStitch(
   config: StitchProxyConfig,
   method: string,
-  params?: unknown
+  params?: unknown,
 ): Promise<unknown> {
   const request = {
-    jsonrpc: '2.0',
+    jsonrpc: "2.0",
     method,
     params: params ?? {},
     id: Date.now(),
@@ -43,10 +43,10 @@ export async function forwardToStitch(
   let response: Response;
   try {
     response = await fetch(config.url, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
+        "Content-Type": "application/json",
+        Accept: "application/json",
         ...buildAuthHeaders(config),
       },
       body: JSON.stringify(request),
@@ -76,11 +76,11 @@ export async function forwardToStitch(
  * Initialize connection to Stitch and fetch tools.
  */
 export async function initializeStitchConnection(
-  ctx: ProxyContext
+  ctx: ProxyContext,
 ): Promise<void> {
   // Send initialize request
-  await forwardToStitch(ctx.config, 'initialize', {
-    protocolVersion: ctx.config.protocolVersion || '2024-11-05',
+  await forwardToStitch(ctx.config, "initialize", {
+    protocolVersion: ctx.config.protocolVersion || "2024-11-05",
     capabilities: {},
     clientInfo: {
       name: ctx.config.name,
@@ -90,23 +90,26 @@ export async function initializeStitchConnection(
 
   // Send initialized notification (fire and forget)
   fetch(ctx.config.url, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
+      "Content-Type": "application/json",
+      Accept: "application/json",
       ...buildAuthHeaders(ctx.config),
     },
     body: JSON.stringify({
-      jsonrpc: '2.0',
-      method: 'notifications/initialized',
+      jsonrpc: "2.0",
+      method: "notifications/initialized",
     }),
   }).catch((err) => {
-    console.error('[stitch-proxy] Failed to send initialized notification:', err);
+    console.error(
+      "[stitch-proxy] Failed to send initialized notification:",
+      err,
+    );
   });
 
   await refreshTools(ctx);
   console.error(
-    `[stitch-proxy] Connected to Stitch, discovered ${ctx.remoteTools.length} tools`
+    `[stitch-proxy] Connected to Stitch, discovered ${ctx.remoteTools.length} tools`,
   );
 }
 
@@ -118,7 +121,7 @@ export async function initializeStitchConnection(
  * on unresolved $ref targets.
  */
 export async function refreshTools(ctx: ProxyContext): Promise<void> {
-  const toolsResult = (await forwardToStitch(ctx.config, 'tools/list', {})) as {
+  const toolsResult = (await forwardToStitch(ctx.config, "tools/list", {})) as {
     tools: Tool[];
   };
   const tools = toolsResult.tools || [];

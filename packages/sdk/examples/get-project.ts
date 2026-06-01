@@ -23,7 +23,7 @@ console.log(`Fetching details for project ID: ${projectId}...`);
 try {
   // Use callTool to invoke get_project, since getProject is deliberately omitted from domain classes
   const projectDetails = await stitch.callTool<any>("get_project", {
-    name: `projects/${projectId}`
+    name: `projects/${projectId}`,
   });
 
   console.log("Project Details retrieved successfully:");

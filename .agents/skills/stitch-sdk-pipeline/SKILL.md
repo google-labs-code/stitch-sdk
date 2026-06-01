@@ -48,6 +48,7 @@ Connects to the Stitch MCP server, calls `tools/list`, and writes the raw schema
 Read `tools-manifest.json` and edit `packages/sdk/generated/domain-map.json` to map tools → classes → methods.
 
 Key decisions at this stage:
+
 - Which class owns each tool?
 - What are the arg routing rules (self, param, computed, selfArray)?
 - What is the response projection path?
@@ -140,12 +141,14 @@ Verifies that `stitch-sdk.lock` hashes match the actual generated files. Catches
 After the pipeline passes, audit agent skills for freshness. Read the current source of truth and update any skills that reference stale methods, args, or examples.
 
 **Inputs**:
+
 - `packages/sdk/src/index.ts` (public surface)
 - Generated class files in `packages/sdk/generated/src/`
 - `packages/sdk/src/spec/errors.ts` (error codes)
 - `packages/sdk/src/spec/client.ts` (config schema)
 
 **Skills to audit** (in priority order):
+
 1. `stitch-sdk-usage` — highest churn, references specific methods and constructor signatures
 2. `stitch-sdk-readme` — must document `stitchTools()`, `toolDefinitions`, and AI SDK integration examples
 3. `stitch-sdk-development` — check cache examples match current domain-map patterns
@@ -154,6 +157,7 @@ After the pipeline passes, audit agent skills for freshness. Read the current so
 **Skills to skip**: `stitch-sdk-pipeline` (self-referential), `red-green-yellow` (generic methodology).
 
 **What to check**:
+
 - Every method name in a code example exists on its class
 - Every import in an example matches an export in `index.ts`
 - Constructor signatures match the actual constructors
@@ -176,27 +180,27 @@ Runs Stage 1 → 3 → 4 → 5 in sequence. Does **not** include Stage 2 (agent)
 
 ### Starting from a specific stage
 
-| Scenario | Start from |
-|---|---|
-| New tool added to MCP server | Stage 1 |
-| Need to change how a tool maps to a method | Stage 2 |
-| Changed `ir-schema.ts` or `generate-sdk.ts` | Stage 3 |
-| Changed code in `packages/sdk/src/` (client, errors) | Stage 4 |
-| Just want to verify everything works | Stage 5 |
-| Changed AI SDK tools adapter or tool definitions | Stage 5 |
-| Public API surface changed | Stage 9 |
+| Scenario                                             | Start from |
+| ---------------------------------------------------- | ---------- |
+| New tool added to MCP server                         | Stage 1    |
+| Need to change how a tool maps to a method           | Stage 2    |
+| Changed `ir-schema.ts` or `generate-sdk.ts`          | Stage 3    |
+| Changed code in `packages/sdk/src/` (client, errors) | Stage 4    |
+| Just want to verify everything works                 | Stage 5    |
+| Changed AI SDK tools adapter or tool definitions     | Stage 5    |
+| Public API surface changed                           | Stage 9    |
 
 ### Key files
 
-| File | Location | Role |
-|---|---|---|
-| `tools-manifest.json` | `packages/sdk/generated/` | Raw MCP tool schemas (Stage 1 output) |
-| `domain-map.json` | `packages/sdk/generated/` | IR: tool → class → method mappings (Stage 2 output) |
-| `tool-definitions.ts` | `packages/sdk/generated/src/` | Generated JSON Schema tool definitions for AI SDK |
-| `tools-adapter.ts` | `packages/sdk/src/` | `stitchTools()` — AI SDK v6 adapter (imported via `@google/stitch-sdk/ai`) |
-| `ir-schema.ts` | `scripts/` | Zod schema defining valid IR structure |
-| `tool-schema.ts` | `scripts/` | TypeScript types for JSON Schema |
-| `generate-sdk.ts` | `scripts/` | ts-morph codegen (Stage 3) |
-| `stitch-sdk.lock` | `packages/sdk/generated/` | Integrity hashes for drift detection |
-| `stitch-html.ts` | `packages/sdk/test/helpers/` | Stitch HTML parser (Tailwind config + font extraction) |
-| `component-validator.ts` | `packages/sdk/test/helpers/` | SWC AST validator for generated React components |
+| File                     | Location                      | Role                                                                       |
+| ------------------------ | ----------------------------- | -------------------------------------------------------------------------- |
+| `tools-manifest.json`    | `packages/sdk/generated/`     | Raw MCP tool schemas (Stage 1 output)                                      |
+| `domain-map.json`        | `packages/sdk/generated/`     | IR: tool → class → method mappings (Stage 2 output)                        |
+| `tool-definitions.ts`    | `packages/sdk/generated/src/` | Generated JSON Schema tool definitions for AI SDK                          |
+| `tools-adapter.ts`       | `packages/sdk/src/`           | `stitchTools()` — AI SDK v6 adapter (imported via `@google/stitch-sdk/ai`) |
+| `ir-schema.ts`           | `scripts/`                    | Zod schema defining valid IR structure                                     |
+| `tool-schema.ts`         | `scripts/`                    | TypeScript types for JSON Schema                                           |
+| `generate-sdk.ts`        | `scripts/`                    | ts-morph codegen (Stage 3)                                                 |
+| `stitch-sdk.lock`        | `packages/sdk/generated/`     | Integrity hashes for drift detection                                       |
+| `stitch-html.ts`         | `packages/sdk/test/helpers/`  | Stitch HTML parser (Tailwind config + font extraction)                     |
+| `component-validator.ts` | `packages/sdk/test/helpers/`  | SWC AST validator for generated React components                           |

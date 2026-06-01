@@ -30,11 +30,15 @@ for (const project of projects) {
 }
 
 if (!targetScreen || !targetProject) {
-  console.log("📭 No screens found in any project. Run getting-started.ts first.");
+  console.log(
+    "📭 No screens found in any project. Run getting-started.ts first.",
+  );
   process.exit(0);
 }
 
-console.log(`✅ Found screen ${targetScreen.id} in project ${targetProject.id}`);
+console.log(
+  `✅ Found screen ${targetScreen.id} in project ${targetProject.id}`,
+);
 
 const editPrompt = "Change the color scheme to dark mode";
 console.log(`\n🎨 Editing screen with prompt: "${editPrompt}"...`);

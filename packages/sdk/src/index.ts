@@ -14,10 +14,9 @@
 
 // Domain classes
 export { Stitch } from "../generated/src/stitch.js";
-export { Project } from "./project-ext.js";  // Extended: includes uploadImage(), downloadAssets()
+export { Project } from "./project-ext.js"; // Extended: includes uploadImage(), downloadAssets()
 export { Screen } from "../generated/src/screen.js";
 export { DesignSystem } from "../generated/src/designsystem.js";
-
 
 // Infrastructure (handwritten)
 export { StitchToolClient } from "./client.js";
@@ -25,9 +24,7 @@ export { StitchProxy } from "./proxy/core.js";
 export { repairToolSchemas, repairSchema } from "./schema-repair.js";
 
 // Virtual Tools
-export {
-  downloadAssetsTool,
-} from "./proxy/virtual-tools.js";
+export { downloadAssetsTool } from "./proxy/virtual-tools.js";
 export type { VirtualToolDefinition } from "./spec/client.js";
 
 // Singleton

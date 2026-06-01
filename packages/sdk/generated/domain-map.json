@@ -15,9 +15,7 @@
     "Project": {
       "description": "A Stitch project containing screens.",
       "extensionPath": "../../src/project-ext.js",
-      "constructorParams": [
-        "projectId"
-      ],
+      "constructorParams": ["projectId"],
       "factories": [
         {
           "method": "designSystem",
@@ -43,37 +41,23 @@
         }
       ],
       "reference": {
-        "keys": [
-          "projectId"
-        ]
+        "keys": ["projectId"]
       }
     },
     "Screen": {
       "description": "A generated UI screen. Provides access to HTML and screenshots.",
-      "constructorParams": [
-        "projectId",
-        "screenId"
-      ],
+      "constructorParams": ["projectId", "screenId"],
       "parentField": "projectId",
       "reference": {
-        "keys": [
-          "projectId",
-          "screenId"
-        ]
+        "keys": ["projectId", "screenId"]
       }
     },
     "DesignSystem": {
       "description": "Represents a visual theme or branding applied to projects and screens.",
-      "constructorParams": [
-        "projectId",
-        "assetId"
-      ],
+      "constructorParams": ["projectId", "assetId"],
       "parentField": "projectId",
       "reference": {
-        "keys": [
-          "projectId",
-          "assetId"
-        ]
+        "keys": ["projectId", "assetId"]
       }
     }
   },

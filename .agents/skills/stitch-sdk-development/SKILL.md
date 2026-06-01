@@ -51,13 +51,17 @@ When the Stitch MCP server adds a new tool:
 `domain-map.json` expresses two things:
 
 **Classes**: What domain objects exist and how they're constructed.
+
 ```json
 {
   "Screen": {
     "constructorParams": ["projectId", "screenId"],
     "fieldMapping": {
       "projectId": { "from": "projectId" },
-      "screenId": { "from": "id", "fallback": { "field": "name", "splitOn": "/screens/" } }
+      "screenId": {
+        "from": "id",
+        "fallback": { "field": "name", "splitOn": "/screens/" }
+      }
     },
     "parentField": "projectId",
     "idField": "screenId"
@@ -66,6 +70,7 @@ When the Stitch MCP server adds a new tool:
 ```
 
 **Bindings**: How MCP tools map to class methods.
+
 ```json
 {
   "tool": "generate_screen_from_text",
@@ -74,7 +79,10 @@ When the Stitch MCP server adds a new tool:
   "args": {
     "projectId": { "from": "self" },
     "prompt": { "from": "param" },
-    "name": { "from": "computed", "template": "projects/{projectId}/screens/{screenId}" }
+    "name": {
+      "from": "computed",
+      "template": "projects/{projectId}/screens/{screenId}"
+    }
   },
   "returns": {
     "class": "Screen",
@@ -92,9 +100,13 @@ When the Stitch MCP server adds a new tool:
 **Response projections**: Structured `ProjectionStep[]` arrays validated against `outputSchema`. Use `index` for single items, `each` for arrays. Empty `[]` = direct return.
 
 **Cache**: Methods can specify a `cache` with a structured `projection` to check `this.data` before calling the API:
+
 ```json
 {
-  "cache": { "projection": [{ "prop": "htmlCode" }, { "prop": "downloadUrl" }], "description": "Use cached download URL from generation response" }
+  "cache": {
+    "projection": [{ "prop": "htmlCode" }, { "prop": "downloadUrl" }],
+    "description": "Use cached download URL from generation response"
+  }
 }
 ```
 
@@ -113,7 +125,7 @@ For AI agents and orchestration scripts. Raw tool pipe. The agent receives tool 
 The `stitch` singleton exposes both domain methods and tool methods via a `Proxy`. No instantiation needed — it lazily creates a `StitchToolClient` from env vars on first access.
 
 ```typescript
-import { stitch } from '@google/stitch-sdk';
+import { stitch } from "@google/stitch-sdk";
 
 // Discover available tools
 const { tools } = await stitch.listTools();
@@ -135,9 +147,9 @@ The singleton reads `STITCH_API_KEY` (or `STITCH_ACCESS_TOKEN` + `GOOGLE_CLOUD_P
 For explicit control (multiple clients, custom config, testing), instantiate `StitchToolClient` directly:
 
 ```typescript
-import { StitchToolClient } from '@google/stitch-sdk';
+import { StitchToolClient } from "@google/stitch-sdk";
 
-const client = new StitchToolClient({ apiKey: 'my-key' });
+const client = new StitchToolClient({ apiKey: "my-key" });
 const tools = await client.listTools();
 const result = await client.callTool("create_project", { title: "My App" });
 await client.close();
@@ -152,13 +164,13 @@ await client.close();
 For agents built on the [Vercel AI SDK](https://sdk.vercel.ai/). Transforms MCP tool schemas into AI SDK-compatible tool definitions, enabling plug-and-play with `generateText()`.
 
 ```typescript
-import { stitchTools } from '@google/stitch-sdk/ai';
-import { generateText } from 'ai';
-import { google } from '@ai-sdk/google';
+import { stitchTools } from "@google/stitch-sdk/ai";
+import { generateText } from "ai";
+import { google } from "@ai-sdk/google";
 
 const result = await generateText({
   model: google("gemini-2.0-flash"),
-  tools: stitchTools(),                          // all tools
+  tools: stitchTools(), // all tools
   // or: stitchTools({ include: ["create_project"] })  // filtered
   prompt: "Create a project called My App",
 });
@@ -170,9 +182,9 @@ const result = await generateText({
 
 ```typescript
 const tool = stitch.toolMap.get("create_project");
-tool.params;                              // ToolParam[] — flat, pre-parsed
-tool.params.filter(p => p.required);      // required params only
-tool.inputSchema;                         // raw ToolInputSchema still available
+tool.params; // ToolParam[] — flat, pre-parsed
+tool.params.filter((p) => p.required); // required params only
+tool.inputSchema; // raw ToolInputSchema still available
 ```
 
 The raw `toolDefinitions` array and standalone `toolMap` are also exported from the main entry point.
@@ -228,8 +240,16 @@ The membrane is declared in `domain-map.json` via `sideEffects` on any class wit
   "Project": {
     "extensionPath": "../../src/project-ext.js",
     "sideEffects": [
-      { "method": "uploadImage", "reason": "private_rest", "specPath": "src/spec/upload.ts" },
-      { "method": "downloadAssets", "reason": "filesystem_io", "specPath": "src/spec/download.ts" }
+      {
+        "method": "uploadImage",
+        "reason": "private_rest",
+        "specPath": "src/spec/upload.ts"
+      },
+      {
+        "method": "downloadAssets",
+        "reason": "filesystem_io",
+        "specPath": "src/spec/download.ts"
+      }
     ]
   }
 }
@@ -238,6 +258,7 @@ The membrane is declared in `domain-map.json` via `sideEffects` on any class wit
 Valid `reason` values: `filesystem_io`, `binary_data`, `private_rest`, `complex_orchestration`.
 
 The generator validates at Stage 3:
+
 1. No `sideEffect.method` collides with a generated binding method name
 2. Each `specPath` points to an existing file
 
@@ -257,13 +278,13 @@ Follow the Spec → Handler → Extension pattern:
 
 #### Rules
 
-| Rule | Rationale |
-|---|---|
-| Extension methods must NOT override generated methods | Prevents silent shadowing |
-| Extension methods must delegate to a Handler | Prevents inline business logic |
-| Handlers must implement a Spec interface | Typed service contract |
-| Handlers must return Result, never throw | Consistent error surface |
-| Extensions must NOT import from `singleton.ts` | Prevents circular dependencies |
+| Rule                                                  | Rationale                      |
+| ----------------------------------------------------- | ------------------------------ |
+| Extension methods must NOT override generated methods | Prevents silent shadowing      |
+| Extension methods must delegate to a Handler          | Prevents inline business logic |
+| Handlers must implement a Spec interface              | Typed service contract         |
+| Handlers must return Result, never throw              | Consistent error surface       |
+| Extensions must NOT import from `singleton.ts`        | Prevents circular dependencies |
 
 ---
 
@@ -323,7 +344,8 @@ Do not rely on cached descriptions of files or directory trees. Read the source.
 ## Import Convention
 
 Use `.js` extensions for ESM compatibility:
+
 ```typescript
-import { StitchError } from '../../src/spec/errors.js';  // ✓
-import { StitchError } from '../../src/spec/errors';     // ✗
+import { StitchError } from "../../src/spec/errors.js"; // ✓
+import { StitchError } from "../../src/spec/errors"; // ✗
 ```

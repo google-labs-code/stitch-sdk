@@ -13,7 +13,10 @@
 // limitations under the License.
 
 import { describe, it, expect } from "vitest";
-import { toolDefinitions, type ToolDefinition } from "../../generated/src/tool-definitions.js";
+import {
+  toolDefinitions,
+  type ToolDefinition,
+} from "../../generated/src/tool-definitions.js";
 
 /**
  * TDD Cycle 4: Generated Tool Definitions Shape
@@ -29,7 +32,7 @@ describe("Generated toolDefinitions", () => {
   });
 
   it("contains all expected MCP tools", () => {
-    const names = toolDefinitions.map(t => t.name);
+    const names = toolDefinitions.map((t) => t.name);
     expect(names).toContain("create_project");
     expect(names).toContain("get_project");
     expect(names).toContain("list_projects");

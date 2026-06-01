@@ -36,7 +36,11 @@ Each class represents a domain entity. Ask: "What noun does the user interact wi
     "constructorParams": [],
     "isRoot": true,
     "factories": [
-      { "method": "project", "returns": "Project", "description": "Create a Project handle from an ID." }
+      {
+        "method": "project",
+        "returns": "Project",
+        "description": "Create a Project handle from an ID."
+      }
     ]
   }
 }
@@ -44,13 +48,13 @@ Each class represents a domain entity. Ask: "What noun does the user interact wi
 
 ### Key decisions:
 
-| Field | Purpose | Example |
-|---|---|---|
-| `constructorParams` | Fields stored on the instance | `["projectId", "screenId"]` |
-| `fieldMapping` | Per-field data source mapping with optional `stripPrefix` | See below |
-| `parentField` | Which param is injected from a parent class | `"projectId"` |
-| `idField` | Which param the `.id` getter aliases | `"screenId"` |
-| `factories` | Local factory methods (no API call) | `[{ "method": "project", "returns": "Project" }]` |
+| Field               | Purpose                                                   | Example                                           |
+| ------------------- | --------------------------------------------------------- | ------------------------------------------------- |
+| `constructorParams` | Fields stored on the instance                             | `["projectId", "screenId"]`                       |
+| `fieldMapping`      | Per-field data source mapping with optional `stripPrefix` | See below                                         |
+| `parentField`       | Which param is injected from a parent class               | `"projectId"`                                     |
+| `idField`           | Which param the `.id` getter aliases                      | `"screenId"`                                      |
+| `factories`         | Local factory methods (no API call)                       | `[{ "method": "project", "returns": "Project" }]` |
 
 ### Field Mapping
 
@@ -61,7 +65,10 @@ Use `fieldMapping` when a param needs a different source field, prefix stripping
   "constructorParams": ["projectId", "screenId"],
   "fieldMapping": {
     "projectId": { "from": "name", "stripPrefix": "projects/" },
-    "screenId": { "from": "id", "fallback": { "field": "name", "splitOn": "/screens/" } }
+    "screenId": {
+      "from": "id",
+      "fallback": { "field": "name", "splitOn": "/screens/" }
+    }
   }
 }
 ```
@@ -77,12 +84,12 @@ Each binding maps one MCP tool to one class method. Ask: "Who owns this action?"
 
 ### Arg routing
 
-| Type | Meaning | Code generated |
-|---|---|---|
-| `self` | From `this.field` | `projectId: this.projectId` |
-| `param` | From method parameter | `prompt: prompt` |
-| `computed` | Template interpolation | `name: \`projects/${this.projectId}/screens/${screenId}\`` |
-| `selfArray` | Wrap self field as array | `selectedScreenIds: [this.screenId]` |
+| Type        | Meaning                  | Code generated                                             |
+| ----------- | ------------------------ | ---------------------------------------------------------- |
+| `self`      | From `this.field`        | `projectId: this.projectId`                                |
+| `param`     | From method parameter    | `prompt: prompt`                                           |
+| `computed`  | Template interpolation   | `name: \`projects/${this.projectId}/screens/${screenId}\`` |
+| `selfArray` | Wrap self field as array | `selectedScreenIds: [this.screenId]`                       |
 
 Optional params use `"optional": true`. Renamed params use `"rename": "newName"`.
 
@@ -94,13 +101,13 @@ The `returns.projection` array tells codegen how to navigate the API response. E
 { prop: string; index?: number; each?: boolean; fallback?: string }
 ```
 
-| Projection | Generated code | Use when |
-|---|---|---|
-| `[]` (empty) | `raw` | Direct return (whole response) |
-| `[{ "prop": "projects" }]` | `raw.projects` | Array inside object |
-| `[{ "prop": "outputComponents", "index": 0 }, { "prop": "design" }, { "prop": "screens", "index": 0 }]` | `raw.outputComponents[0].design.screens[0]` | Deeply nested single item |
-| `[{ "prop": "outputComponents", "each": true }, { "prop": "design" }, { "prop": "screens", "each": true }]` | `flatMap` chain | Collect all items across arrays |
-| `[{ "prop": "screenshot" }, { "prop": "downloadUrl" }]` | `raw.screenshot.downloadUrl` | Navigate nested properties |
+| Projection                                                                                                  | Generated code                              | Use when                        |
+| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ------------------------------- |
+| `[]` (empty)                                                                                                | `raw`                                       | Direct return (whole response)  |
+| `[{ "prop": "projects" }]`                                                                                  | `raw.projects`                              | Array inside object             |
+| `[{ "prop": "outputComponents", "index": 0 }, { "prop": "design" }, { "prop": "screens", "index": 0 }]`     | `raw.outputComponents[0].design.screens[0]` | Deeply nested single item       |
+| `[{ "prop": "outputComponents", "each": true }, { "prop": "design" }, { "prop": "screens", "each": true }]` | `flatMap` chain                             | Collect all items across arrays |
+| `[{ "prop": "screenshot" }, { "prop": "downloadUrl" }]`                                                     | `raw.screenshot.downloadUrl`                | Navigate nested properties      |
 
 **Decision**: Use `"index": 0` when extracting a single item. Use `"each": true` when collecting all items (array result). You **cannot** use both on the same step.
 
@@ -110,8 +117,15 @@ The `returns.projection` array tells codegen how to navigate the API response. E
 ### Return class wrapping
 
 When `returns.class` is set, the extracted data is wrapped in a domain class constructor:
+
 ```json
-{ "returns": { "class": "Screen", "projection": [{ "prop": "screens" }], "array": true } }
+{
+  "returns": {
+    "class": "Screen",
+    "projection": [{ "prop": "screens" }],
+    "array": true
+  }
+}
 ```
 
 The codegen automatically spreads `parentField` into the data if the child class declares one.
@@ -119,6 +133,7 @@ The codegen automatically spreads `parentField` into the data if the child class
 ### Cache-aware methods
 
 Add a `cache` field with a structured `projection` to check `this.data` before calling the API:
+
 ```json
 {
   "cache": {
@@ -131,6 +146,7 @@ Add a `cache` field with a structured `projection` to check `this.data` before c
 When the cached property is a nested object (like `File` with a `downloadUrl`), use multiple projection steps to drill into it.
 
 Generated code:
+
 ```typescript
 if (this.data?.htmlCode?.downloadUrl) return this.data?.htmlCode?.downloadUrl;
 // ... else call API
@@ -167,6 +183,7 @@ bun scripts/validate-generated.ts  # Lock integrity
 ```
 
 If a projection is invalid, you'll see:
+
 ```
 ❌ Binding "Project.generate" projection step 2:
    property "screenz" not found in outputSchema.

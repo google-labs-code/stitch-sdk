@@ -14,7 +14,11 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { generateText, stepCountIs } from "ai";
-import { mockResponse, createTextMock, createToolCallMock } from "../helpers/model-helpers.js";
+import {
+  mockResponse,
+  createTextMock,
+  createToolCallMock,
+} from "../helpers/model-helpers.js";
 
 const mockCallTool = vi.fn();
 
@@ -55,10 +59,10 @@ describe("AI SDK compatibility", () => {
 
     for (const [, tool] of Object.entries(tools)) {
       const t = tool as Record<string, unknown>;
-      expect(t.type).toBe('dynamic');
-      expect(typeof t.description).toBe('string');
-      expect(t.inputSchema).toHaveProperty('jsonSchema');
-      expect(typeof t.execute).toBe('function');
+      expect(t.type).toBe("dynamic");
+      expect(typeof t.description).toBe("string");
+      expect(t.inputSchema).toHaveProperty("jsonSchema");
+      expect(typeof t.execute).toBe("function");
     }
   });
 
@@ -66,7 +70,10 @@ describe("AI SDK compatibility", () => {
     const { stitchTools } = await import("../../src/tools-adapter.js");
     const tools = stitchTools({ include: ["create_project"] });
 
-    mockCallTool.mockResolvedValue({ name: "projects/123", title: "Test Project" });
+    mockCallTool.mockResolvedValue({
+      name: "projects/123",
+      title: "Test Project",
+    });
 
     await generateText({
       model: createToolCallMock({
@@ -79,7 +86,9 @@ describe("AI SDK compatibility", () => {
       stopWhen: stepCountIs(3),
     });
 
-    expect(mockCallTool).toHaveBeenCalledWith("create_project", { title: "Test Project" });
+    expect(mockCallTool).toHaveBeenCalledWith("create_project", {
+      title: "Test Project",
+    });
   });
 
   it("tool result flows back through the AI SDK pipeline", async () => {
@@ -103,5 +112,3 @@ describe("AI SDK compatibility", () => {
     expect(result.text).toBe("Created project My App with ID 456.");
   });
 });
-
-

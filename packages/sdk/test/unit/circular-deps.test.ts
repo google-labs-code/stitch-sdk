@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { describe, it, expect } from "vitest";
+import { readFileSync, readdirSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const SDK_ROOT = resolve(__dirname, '../..');
+const SDK_ROOT = resolve(__dirname, "../..");
 
 /**
  * Circular Dependency Guard
@@ -17,24 +17,26 @@ const SDK_ROOT = resolve(__dirname, '../..');
  * Allowed: project-ext.ts → generated/src/project.ts (its own base class)
  * Forbidden: project-ext.ts → generated/src/stitch.ts (its consumer)
  */
-describe('Circular Dependency Guard', () => {
-  it('extension files must not import from generated files that consume them', () => {
+describe("Circular Dependency Guard", () => {
+  it("extension files must not import from generated files that consume them", () => {
     // Step 1: Identify which generated files import which extensions
-    const generatedDir = resolve(SDK_ROOT, 'generated/src');
-    const generatedFiles = readdirSync(generatedDir)
-      .filter(f => f.endsWith('.ts') && !f.endsWith('.d.ts'));
+    const generatedDir = resolve(SDK_ROOT, "generated/src");
+    const generatedFiles = readdirSync(generatedDir).filter(
+      (f) => f.endsWith(".ts") && !f.endsWith(".d.ts"),
+    );
 
     // Build a map: extension path → list of generated files that import it
     const consumers = new Map<string, string[]>();
 
     for (const file of generatedFiles) {
-      const content = readFileSync(resolve(generatedDir, file), 'utf-8');
+      const content = readFileSync(resolve(generatedDir, file), "utf-8");
       // Find imports from ../../src/*-ext.js
-      const extImports = content.match(/from\s+["']\.\.\/\.\.\/src\/([^"']+)["']/g) || [];
+      const extImports =
+        content.match(/from\s+["']\.\.\/\.\.\/src\/([^"']+)["']/g) || [];
       for (const imp of extImports) {
         const match = imp.match(/from\s+["']\.\.\/\.\.\/src\/([^"']+)["']/);
         if (match) {
-          const extPath = match[1].replace('.js', '.ts');
+          const extPath = match[1].replace(".js", ".ts");
           const list = consumers.get(extPath) || [];
           list.push(file);
           consumers.set(extPath, list);
@@ -46,17 +48,17 @@ describe('Circular Dependency Guard', () => {
     const violations: string[] = [];
 
     for (const [extFile, consumerFiles] of consumers) {
-      const extPath = resolve(SDK_ROOT, 'src', extFile);
+      const extPath = resolve(SDK_ROOT, "src", extFile);
       let extContent: string;
       try {
-        extContent = readFileSync(extPath, 'utf-8');
+        extContent = readFileSync(extPath, "utf-8");
       } catch {
         continue; // file doesn't exist, skip
       }
 
       for (const consumer of consumerFiles) {
         // Check if the extension imports the consuming generated file
-        const consumerBase = consumer.replace('.ts', '');
+        const consumerBase = consumer.replace(".ts", "");
         // Look for imports from generated/src/<consumer>
         const patterns = [
           `../generated/src/${consumerBase}`,
@@ -66,7 +68,7 @@ describe('Circular Dependency Guard', () => {
           if (extContent.includes(pattern)) {
             violations.push(
               `CIRCULAR: src/${extFile} imports generated/src/${consumer}, ` +
-              `but generated/src/${consumer} imports src/${extFile}`
+                `but generated/src/${consumer} imports src/${extFile}`,
             );
           }
         }
@@ -76,18 +78,22 @@ describe('Circular Dependency Guard', () => {
     expect(violations).toEqual([]);
   });
 
-  it('extension files must not import from singleton.ts', () => {
+  it("extension files must not import from singleton.ts", () => {
     // The singleton imports the Stitch class which imports extensions.
     // Any extension importing singleton creates a guaranteed deadlock.
-    const srcDir = resolve(SDK_ROOT, 'src');
-    const extFiles = readdirSync(srcDir)
-      .filter(f => f.endsWith('-ext.ts'));
+    const srcDir = resolve(SDK_ROOT, "src");
+    const extFiles = readdirSync(srcDir).filter((f) => f.endsWith("-ext.ts"));
 
     const violations: string[] = [];
     for (const file of extFiles) {
-      const content = readFileSync(resolve(srcDir, file), 'utf-8');
-      if (content.includes('./singleton') || content.includes('../src/singleton')) {
-        violations.push(`src/${file} imports singleton.ts — creates circular dependency`);
+      const content = readFileSync(resolve(srcDir, file), "utf-8");
+      if (
+        content.includes("./singleton") ||
+        content.includes("../src/singleton")
+      ) {
+        violations.push(
+          `src/${file} imports singleton.ts — creates circular dependency`,
+        );
       }
     }
 

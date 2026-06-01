@@ -18,7 +18,9 @@ import { Stitch } from "../../generated/src/stitch.js";
 import { StitchToolClient } from "../../src/client.js";
 import { Project } from "../../src/project-ext.js";
 
-const runIfConfigured = process.env.STITCH_ACCESS_TOKEN ? describe : describe.skip;
+const runIfConfigured = process.env.STITCH_ACCESS_TOKEN
+  ? describe
+  : describe.skip;
 
 runIfConfigured("Stitch Live Integration", () => {
   let sdk: Stitch;
@@ -40,7 +42,9 @@ runIfConfigured("Stitch Live Integration", () => {
   it("should create and retrieve a project via callTool + identity map", async () => {
     const client = new StitchToolClient();
     await client.connect();
-    const result = await client.callTool<any>("create_project", { title: `Test Project ${Date.now()}` });
+    const result = await client.callTool<any>("create_project", {
+      title: `Test Project ${Date.now()}`,
+    });
     const projectId = result.name?.replace("projects/", "") ?? result.projectId;
     expect(projectId).toBeDefined();
 

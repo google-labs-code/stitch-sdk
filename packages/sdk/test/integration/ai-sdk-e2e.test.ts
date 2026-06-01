@@ -18,7 +18,11 @@ import { generateText, stepCountIs, type Tool } from "ai";
 import { stitchTools } from "../../src/ai.js";
 import { createGeminiModel } from "../helpers/model-helpers.js";
 import { validateComponent } from "../helpers/component-validator.js";
-import { extractStitchAssets, parseGeneratedFiles, writePreviewApp } from "../helpers/stitch-html.js";
+import {
+  extractStitchAssets,
+  parseGeneratedFiles,
+  writePreviewApp,
+} from "../helpers/stitch-html.js";
 
 const hasEnv =
   !!(process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY) &&
@@ -36,7 +40,7 @@ runIfConfigured("AI SDK E2E with Gemini", () => {
       prompt: 'Create a new Stitch project titled "E2E Test Project".',
       stopWhen: stepCountIs(3),
     });
-    const toolCalls = result.steps.flatMap(s => s.toolCalls);
+    const toolCalls = result.steps.flatMap((s) => s.toolCalls);
     expect(toolCalls.length).toBeGreaterThan(0);
   }, 30000);
 
@@ -55,15 +59,19 @@ screen details including the HTML. Call the tools you need.`,
       stopWhen: stepCountIs(8),
     });
 
-    const allResults = designResult.steps.flatMap(s => s.toolResults);
+    const allResults = designResult.steps.flatMap((s) => s.toolResults);
     const screenOutput = allResults
       .map((tr: any) => tr.output)
       .find((o: any) => o?.htmlCode?.downloadUrl);
     expect(screenOutput).toBeDefined();
 
-    const htmlContent = await fetch(screenOutput.htmlCode.downloadUrl).then(r => r.text());
+    const htmlContent = await fetch(screenOutput.htmlCode.downloadUrl).then(
+      (r) => r.text(),
+    );
     const { tailwindConfig, fontLinks } = extractStitchAssets(htmlContent);
-    console.log(`   HTML: ${htmlContent.length} chars | config: ${tailwindConfig ? "✅" : "❌"} | fonts: ${fontLinks.length}`);
+    console.log(
+      `   HTML: ${htmlContent.length} chars | config: ${tailwindConfig ? "✅" : "❌"} | fonts: ${fontLinks.length}`,
+    );
 
     // ── Phase 2: LLM generates a complete React app ──────────────────
     console.log("⚛️  Phase 2: Generating React app...");
@@ -98,21 +106,27 @@ ${htmlContent}`,
     });
 
     const files = parseGeneratedFiles(codegenResult.text);
-    console.log(`   Generated ${Object.keys(files).length} files: ${Object.keys(files).join(", ")}`);
+    console.log(
+      `   Generated ${Object.keys(files).length} files: ${Object.keys(files).join(", ")}`,
+    );
     expect(Object.keys(files).length).toBeGreaterThanOrEqual(4);
 
     // ── Phase 3: Validate components via SWC ─────────────────────────
     console.log("🔍 Phase 3: Validating components...");
     const componentFiles = Object.entries(files).filter(
-      ([name]) => name.endsWith(".tsx") && !["App.tsx", "main.tsx"].includes(name),
+      ([name]) =>
+        name.endsWith(".tsx") && !["App.tsx", "main.tsx"].includes(name),
     );
     for (const [filename, content] of componentFiles) {
       const v = await validateComponent(content);
       const status = v.parseError ? "💥" : v.valid ? "✅" : "⚠️";
-      console.log(`   ${filename}: ${status}${v.hardcodedHexValues.length ? " hex:" + v.hardcodedHexValues : ""}`);
+      console.log(
+        `   ${filename}: ${status}${v.hardcodedHexValues.length ? " hex:" + v.hardcodedHexValues : ""}`,
+      );
       expect(v.parseError).toBeUndefined();
       expect(v.hasDefaultExport).toBe(true);
-      if (!v.hasPropsInterface) console.warn(`   ⚠️  ${filename} missing Props interface`);
+      if (!v.hasPropsInterface)
+        console.warn(`   ⚠️  ${filename} missing Props interface`);
     }
 
     // ── Phase 4: Write preview app ───────────────────────────────────
