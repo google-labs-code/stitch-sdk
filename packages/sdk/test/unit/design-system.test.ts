@@ -245,4 +245,101 @@ describe("DesignSystem Domain Class", () => {
       expect(screens[0].id).toBe("s-1");
     });
   });
+
+  // ── Project.uploadDesignMd() ──────────────────────────────────
+
+  describe("Project.uploadDesignMd()", () => {
+    it("should call upload_design_md with projectId from self and base64 content", async () => {
+      const project = mockClient.entities.resolve(
+        Project,
+        ["projectId"],
+        projectId,
+      );
+
+      const mockScreenInstance = {
+        id: "si-design-md",
+        sourceScreen: `projects/${projectId}/screens/screen-md`,
+        type: "DESIGN_SYSTEM_INSTANCE",
+      };
+
+      (mockClient.callTool as Mock).mockResolvedValue(mockScreenInstance);
+
+      const designMd = btoa("# My Design System\n\nprimary: #ff0000");
+      const result = await project.uploadDesignMd(designMd);
+
+      expect(mockClient.callTool).toHaveBeenCalledWith("upload_design_md", {
+        projectId,
+        designMdBase64: designMd,
+      });
+      expect(result).toEqual(mockScreenInstance);
+    });
+  });
+
+  // ── Project.createDesignSystemFromDesignMd() ──────────────────
+
+  describe("Project.createDesignSystemFromDesignMd()", () => {
+    it("should call create_design_system_from_design_md with screen instance and return DesignSystem", async () => {
+      const project = mockClient.entities.resolve(
+        Project,
+        ["projectId"],
+        projectId,
+      );
+
+      const selectedScreenInstance = {
+        id: "si-design-md",
+        sourceScreen: `projects/${projectId}/screens/screen-md`,
+      };
+
+      (mockClient.callTool as Mock).mockResolvedValue({
+        assetId,
+      });
+
+      const ds = await project.createDesignSystemFromDesignMd(
+        selectedScreenInstance,
+        "DESKTOP",
+      );
+
+      expect(mockClient.callTool).toHaveBeenCalledWith(
+        "create_design_system_from_design_md",
+        {
+          projectId,
+          selectedScreenInstance,
+          deviceType: "DESKTOP",
+        },
+      );
+      expect(ds).toBeInstanceOf(DesignSystem);
+      expect(ds.assetId).toBe(assetId);
+      expect(ds.projectId).toBe(projectId);
+    });
+
+    it("should work without optional deviceType", async () => {
+      const project = mockClient.entities.resolve(
+        Project,
+        ["projectId"],
+        projectId,
+      );
+
+      (mockClient.callTool as Mock).mockResolvedValue({
+        assetId,
+      });
+
+      const ds = await project.createDesignSystemFromDesignMd({
+        id: "si-1",
+        sourceScreen: `projects/${projectId}/screens/s-1`,
+      });
+
+      expect(mockClient.callTool).toHaveBeenCalledWith(
+        "create_design_system_from_design_md",
+        {
+          projectId,
+          selectedScreenInstance: {
+            id: "si-1",
+            sourceScreen: `projects/${projectId}/screens/s-1`,
+          },
+          deviceType: undefined,
+        },
+      );
+      expect(ds).toBeInstanceOf(DesignSystem);
+    });
+  });
 });

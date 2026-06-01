@@ -45,7 +45,7 @@ describe("Generated toolDefinitions", () => {
     expect(names).toContain("list_design_systems");
     expect(names).toContain("update_design_system");
     expect(names).toContain("apply_design_system");
-    expect(names).toHaveLength(12);
+    expect(names).toHaveLength(14);
   });
 
   it("each definition has name, description, and inputSchema", () => {

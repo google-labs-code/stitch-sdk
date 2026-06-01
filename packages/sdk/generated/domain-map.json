@@ -423,6 +423,43 @@
         ],
         "array": true
       }
+    },
+    {
+      "tool": "upload_design_md",
+      "class": "Project",
+      "method": "uploadDesignMd",
+      "args": {
+        "projectId": {
+          "from": "self"
+        },
+        "designMdBase64": {
+          "from": "param"
+        }
+      },
+      "returns": {
+        "projection": []
+      }
+    },
+    {
+      "tool": "create_design_system_from_design_md",
+      "class": "Project",
+      "method": "createDesignSystemFromDesignMd",
+      "args": {
+        "projectId": {
+          "from": "self"
+        },
+        "selectedScreenInstance": {
+          "from": "param"
+        },
+        "deviceType": {
+          "from": "param",
+          "optional": true
+        }
+      },
+      "returns": {
+        "class": "DesignSystem",
+        "projection": []
+      }
     }
   ]
 }
