@@ -56,6 +56,7 @@ describe("DownloadAssetsHandler", () => {
     const mockFetch = vi.fn().mockImplementation((url) => {
       if (url === "http://fake/s1.html") {
         return Promise.resolve({
+          ok: true,
           text: () =>
             Promise.resolve(
               '<html><img src="http://example.com/bad name.png"></html>',
@@ -63,6 +64,7 @@ describe("DownloadAssetsHandler", () => {
         });
       }
       return Promise.resolve({
+        ok: true,
         arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
       });
     });
@@ -104,6 +106,7 @@ describe("DownloadAssetsHandler", () => {
     const mockFetch = vi.fn().mockImplementation((url) => {
       if (url === "http://fake/s1.html") {
         return Promise.resolve({
+          ok: true,
           text: () =>
             Promise.resolve(
               '<html><img src="http://example.com/%2e%2e/etc/passwd"></html>',
@@ -111,6 +114,7 @@ describe("DownloadAssetsHandler", () => {
         });
       }
       return Promise.resolve({
+        ok: true,
         arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
       });
     });
@@ -167,10 +171,12 @@ describe("DownloadAssetsHandler", () => {
       vi.fn().mockImplementation((url) => {
         if (url === "http://fake/s1.html") {
           return Promise.resolve({
+            ok: true,
             text: () => Promise.resolve("<html></html>"),
           });
         }
         return Promise.resolve({
+          ok: true,
           arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
         });
       }),
@@ -207,6 +213,7 @@ describe("DownloadAssetsHandler", () => {
       vi.fn().mockImplementation((url) => {
         if (url === "http://fake/s1.html") {
           return Promise.resolve({
+            ok: true,
             text: () =>
               Promise.resolve(
                 '<html><img src="http://example.com/img.png"></html>',
@@ -214,6 +221,7 @@ describe("DownloadAssetsHandler", () => {
           });
         }
         return Promise.resolve({
+          ok: true,
           arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
         });
       }),
@@ -249,10 +257,12 @@ describe("DownloadAssetsHandler", () => {
       vi.fn().mockImplementation((url) => {
         if (url === "http://fake/s1.html") {
           return Promise.resolve({
+            ok: true,
             text: () => Promise.resolve("<html></html>"),
           });
         }
         return Promise.resolve({
+          ok: true,
           arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
         });
       }),
@@ -296,6 +306,7 @@ describe("DownloadAssetsHandler", () => {
       "fetch",
       vi.fn().mockImplementation((url) => {
         return Promise.resolve({
+          ok: true,
           text: () => Promise.resolve("<html></html>"),
         });
       }),
@@ -328,15 +339,18 @@ describe("DownloadAssetsHandler", () => {
       vi.fn().mockImplementation((url) => {
         if (url === "http://fake/s1.html") {
           return Promise.resolve({
+            ok: true,
             text: () => Promise.resolve("<html></html>"),
           });
         }
         if (url === "http://fake/s1.png") {
           return Promise.resolve({
+            ok: true,
             arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
           });
         }
         return Promise.resolve({
+          ok: true,
           arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
         });
       }),
@@ -371,6 +385,7 @@ describe("DownloadAssetsHandler", () => {
         }
         if (tool === "list_design_systems") {
           return Promise.resolve({
+            ok: true,
             designSystems: [
               {
                 name: "assets/ds1",
@@ -384,7 +399,7 @@ describe("DownloadAssetsHandler", () => {
             ],
           });
         }
-        return Promise.resolve({});
+        return Promise.resolve({ ok: true });
       },
     );
 
@@ -422,7 +437,10 @@ describe("DownloadAssetsHandler", () => {
     } as any;
 
     const mockFetch = vi.fn().mockImplementation((_url) => {
-      return Promise.resolve({ text: () => Promise.resolve("<html></html>") });
+      return Promise.resolve({
+        ok: true,
+        text: () => Promise.resolve("<html></html>"),
+      });
     });
     vi.stubGlobal("fetch", mockFetch);
 
@@ -479,6 +497,7 @@ describe("DownloadAssetsHandler warnings", () => {
     mockClient.callTool.mockImplementation((tool: string) => {
       if (tool === "list_screens") {
         return Promise.resolve({
+          ok: true,
           screens: [
             {
               id: "s1",
@@ -489,9 +508,9 @@ describe("DownloadAssetsHandler warnings", () => {
         });
       }
       if (tool === "list_design_systems") {
-        return Promise.resolve({ designSystems: [] });
+        return Promise.resolve({ ok: true, designSystems: [] });
       }
-      return Promise.resolve({});
+      return Promise.resolve({ ok: true });
     });
 
     vi.stubGlobal(
@@ -499,6 +518,7 @@ describe("DownloadAssetsHandler warnings", () => {
       vi.fn().mockImplementation((url: string) => {
         if (url === "http://fake/s1.html") {
           return Promise.resolve({
+            ok: true,
             text: () => Promise.resolve("<html><body>Hello</body></html>"),
           });
         }
@@ -506,6 +526,7 @@ describe("DownloadAssetsHandler warnings", () => {
           return Promise.reject(new Error("Network error"));
         }
         return Promise.resolve({
+          ok: true,
           arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
         });
       }),
@@ -539,7 +560,7 @@ describe("DownloadAssetsHandler warnings", () => {
       if (tool === "list_design_systems") {
         return Promise.reject(new Error("API unavailable"));
       }
-      return Promise.resolve({});
+      return Promise.resolve({ ok: true });
     });
 
     const handler = new DownloadAssetsHandler(mockClient);
@@ -576,15 +597,16 @@ describe("DownloadAssetsHandler concurrency", () => {
     mockClient.callTool.mockImplementation((tool: string) => {
       if (tool === "list_screens") {
         return Promise.resolve({
+          ok: true,
           screens: [
             { id: "s1", htmlCode: { downloadUrl: "http://fake/s1.html" } },
           ],
         });
       }
       if (tool === "list_design_systems") {
-        return Promise.resolve({ designSystems: [] });
+        return Promise.resolve({ ok: true, designSystems: [] });
       }
-      return Promise.resolve({});
+      return Promise.resolve({ ok: true });
     });
 
     let active = 0;
@@ -626,6 +648,7 @@ describe("Project.downloadAssets() facade", () => {
     mockClient.callTool.mockImplementation((tool: string) => {
       if (tool === "list_screens") {
         return Promise.resolve({
+          ok: true,
           screens: [
             {
               id: "s1",
@@ -636,9 +659,9 @@ describe("Project.downloadAssets() facade", () => {
         });
       }
       if (tool === "list_design_systems") {
-        return Promise.resolve({ designSystems: [] });
+        return Promise.resolve({ ok: true, designSystems: [] });
       }
-      return Promise.resolve({});
+      return Promise.resolve({ ok: true });
     });
 
     vi.stubGlobal(
@@ -646,6 +669,7 @@ describe("Project.downloadAssets() facade", () => {
       vi.fn().mockImplementation((url: string) => {
         if (url === "http://fake/s1.html") {
           return Promise.resolve({
+            ok: true,
             text: () => Promise.resolve("<html><body>Hello</body></html>"),
           });
         }
@@ -653,6 +677,7 @@ describe("Project.downloadAssets() facade", () => {
           return Promise.reject(new Error("Network error"));
         }
         return Promise.resolve({
+          ok: true,
           arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
         });
       }),
@@ -680,21 +705,23 @@ describe("Project.downloadAssets() facade", () => {
     mockClient.callTool.mockImplementation((tool: string) => {
       if (tool === "list_screens") {
         return Promise.resolve({
+          ok: true,
           screens: [
             { id: "s1", htmlCode: { downloadUrl: "http://fake/s1.html" } },
           ],
         });
       }
       if (tool === "list_design_systems") {
-        return Promise.resolve({ designSystems: [] });
+        return Promise.resolve({ ok: true, designSystems: [] });
       }
-      return Promise.resolve({});
+      return Promise.resolve({ ok: true });
     });
 
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation(() => {
         return Promise.resolve({
+          ok: true,
           text: () => Promise.resolve("<html><body>OK</body></html>"),
         });
       }),
