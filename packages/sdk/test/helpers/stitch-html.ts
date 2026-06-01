@@ -87,11 +87,13 @@ export function writePreviewApp(
 
   // Gemini doesn't know about the root/src split — fix the entry point path
   const indexPath = path.join(outputDir, "index.html");
-  if (fs.existsSync(indexPath)) {
+  try {
     const html = fs.readFileSync(indexPath, "utf-8");
     fs.writeFileSync(
       indexPath,
       html.replace(/src="\/main\.tsx"/, 'src="/src/main.tsx"'),
     );
+  } catch {
+    // index.html doesn't exist — nothing to rewrite
   }
 }

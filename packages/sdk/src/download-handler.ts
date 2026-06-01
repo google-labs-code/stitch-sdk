@@ -156,6 +156,10 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
         if (screenshotUrl) {
           try {
             const screenshotRes = await fetch(screenshotUrl);
+            if (!screenshotRes.ok)
+              throw new Error(
+                `Screenshot fetch failed: ${screenshotRes.status}`,
+              );
             const screenshotBuffer = await screenshotRes.arrayBuffer();
             const screenshotPath = path.join(screenDir, "screen.png");
             const tempScreenshotFilename = `.tmp-screen-${crypto.randomBytes(8).toString("hex")}`;
@@ -271,6 +275,8 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
     fileMode: number,
   ): Promise<void> {
     const res = await fetch(url);
+    if (!res.ok)
+      throw new Error(`Asset fetch failed: ${res.status} for ${url}`);
     const buffer = await res.arrayBuffer();
 
     const urlObj = new URL(url);
