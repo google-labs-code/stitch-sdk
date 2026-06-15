@@ -351,6 +351,7 @@ describe("SDK Unit Tests", () => {
           deviceType: undefined,
           modelId: undefined,
         },
+        expect.any(Object)
       );
 
       expect(result).toBeInstanceOf(Screen);

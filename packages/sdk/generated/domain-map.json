@@ -128,7 +128,38 @@
             "index": 0
           }
         ]
-      }
+      },
+      "errors": [
+        {
+          "name": "ValidationError",
+          "match": "VALIDATION_ERROR",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "field": { "type": "string" },
+                    "errorCode": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "RateLimitError",
+          "match": "RATE_LIMITED",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "retry_after_ms": { "type": "number" }
+            }
+          }
+        }
+      ]
     },
     {
       "tool": "edit_screens",
