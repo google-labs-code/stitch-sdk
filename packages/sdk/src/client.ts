@@ -86,13 +86,33 @@ export class StitchToolClient implements StitchToolClientSpec {
     };
   }
 
-  private parseToolResponse<T>(result: any, name: string): T {
+  private parseToolResponse<T>(result: any, name: string, errorMap?: Record<string, { schema: any; match: string; create: (data: any, raw: any) => Error }>): T {
     if (result.isError) {
       const errorText = (result.content as any[])
         .map((c: any) => (c.type === "text" ? c.text : ""))
         .join("");
 
+
+      let errorJson: any = null;
+      try {
+         errorJson = JSON.parse(errorText);
+      } catch (e) {}
+
+      if (errorMap) {
+         for (const [errName, errDef] of Object.entries(errorMap)) {
+           if (errorText.includes(errDef.match) || (errorJson && JSON.stringify(errorJson).includes(errDef.match))) {
+              if (errorJson) {
+                const parsed = errDef.schema.safeParse(errorJson);
+                if (parsed.success) {
+                  throw errDef.create(parsed.data, result);
+                }
+              }
+           }
+         }
+      }
+
       let code: StitchErrorCode = "UNKNOWN_ERROR";
+
       const lowerErrorText = errorText.toLowerCase();
 
       if (
@@ -123,6 +143,7 @@ export class StitchToolClient implements StitchToolClientSpec {
         code,
         message: `Tool Call Failed [${name}]: ${errorText}`,
         recoverable: code === "RATE_LIMITED",
+        raw: result,
       });
     }
 
@@ -179,7 +200,7 @@ export class StitchToolClient implements StitchToolClientSpec {
   /**
    * Generic tool caller with type support and error parsing.
    */
-  async callTool<T>(name: string, args: Record<string, any>): Promise<T> {
+  async callTool<T>(name: string, args: Record<string, any>, errorMap?: Record<string, { schema: any; match: string; create: (data: any, raw: any) => Error }>): Promise<T> {
     if (!this.isConnected) await this.connect();
 
     const localTool = this.localVirtualTools.find((t) => t.name === name);
@@ -193,7 +214,7 @@ export class StitchToolClient implements StitchToolClientSpec {
       { timeout: this.config.timeout },
     );
 
-    return this.parseToolResponse<T>(result, name);
+    return this.parseToolResponse<T>(result, name, errorMap);
   }
 
   /**
@@ -241,6 +262,8 @@ export class StitchToolClient implements StitchToolClientSpec {
         code,
         message: `HTTP ${response.status}: ${text || response.statusText}`,
         recoverable: code === "RATE_LIMITED",
+        status: response.status,
+        raw: text,
       });
     }
 

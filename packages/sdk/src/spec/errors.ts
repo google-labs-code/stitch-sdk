@@ -1,17 +1,3 @@
-// Copyright 2026 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     https://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 import { z } from "zod";
 
 /**
@@ -38,6 +24,8 @@ export interface StitchErrorData {
   message: string;
   suggestion?: string;
   recoverable: boolean;
+  status?: number;
+  raw?: unknown;
 }
 
 /**
@@ -48,6 +36,8 @@ export class StitchError extends Error {
   public readonly code: StitchErrorCode;
   public readonly suggestion?: string;
   public readonly recoverable: boolean;
+  public readonly status?: number;
+  public readonly raw?: unknown;
 
   constructor(data: StitchErrorData) {
     super(data.message);
@@ -55,6 +45,8 @@ export class StitchError extends Error {
     this.code = data.code;
     this.suggestion = data.suggestion;
     this.recoverable = data.recoverable;
+    this.status = data.status;
+    this.raw = data.raw;
   }
 
   /**
