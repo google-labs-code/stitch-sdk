@@ -127,9 +127,17 @@ export interface StitchToolClientSpec {
    * Call a tool on the MCP server.
    * @param name - Tool name
    * @param args - Tool arguments
+   * @param errorMap - Optional mapping for typed error handling
    * @returns Parsed tool result
    */
-  callTool: <T>(name: string, args: Record<string, unknown>) => Promise<T>;
+  callTool: <T>(
+    name: string,
+    args: Record<string, unknown>,
+    errorMap?: Record<
+      string,
+      { schema: any; match: string; create: (data: any, raw: any) => Error }
+    >,
+  ) => Promise<T>;
 
   /**
    * Get available tools from the server.

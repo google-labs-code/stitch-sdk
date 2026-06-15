@@ -255,6 +255,15 @@ export const DomainClassConfig = z
   .strict();
 export type DomainClassConfig = z.infer<typeof DomainClassConfig>;
 
+// ── Error Spec ────────────────────────────────────────────────
+
+export const ErrorSpec = z.object({
+  name: z.string(),
+  match: z.string(),
+  schema: z.any(), // JSON Schema object for the error payload
+});
+export type ErrorSpec = z.infer<typeof ErrorSpec>;
+
 // ── Binding ───────────────────────────────────────────────────
 
 export const Binding = z
@@ -277,6 +286,8 @@ export const Binding = z
     returns: ReturnSpec,
     /** Optional cache spec for methods that check this.data first */
     cache: CacheSpec.optional(),
+    /** Custom typed errors to throw when a specific match condition is met */
+    errors: z.array(ErrorSpec).optional(),
   })
   .strict();
 export type Binding = z.infer<typeof Binding>;

@@ -312,8 +312,67 @@ export class StitchToolClient implements StitchToolClientSpec {
     };
   }
 
-  private parseToolResponse<T>(result: any, name: string): T {
-    return parseToolResult<T>(result, name);
+  private parseToolResponse<T>(
+    result: any,
+    name: string,
+    errorMap?: Record<
+      string,
+      { schema: any; match: string; create: (data: any, raw: any) => Error }
+    >,
+  ): T {
+    if (result.isError) {
+      const errorText = (result.content as any[])
+        .map((c: any) => (c.type === "text" ? c.text : ""))
+        .join("");
+
+      let errorJson: any = null;
+      try {
+        errorJson = JSON.parse(errorText);
+      } catch (e) {}
+
+      if (errorMap) {
+        for (const [errName, errDef] of Object.entries(errorMap)) {
+          if (
+            errorText.includes(errDef.match) ||
+            (errorJson && JSON.stringify(errorJson).includes(errDef.match))
+          ) {
+            if (errorJson) {
+              const parsed = errDef.schema.safeParse(errorJson);
+              if (parsed.success) {
+                throw errDef.create(parsed.data, result);
+              }
+            }
+          }
+        }
+      }
+
+      const code = classifyError({ text: errorText });
+
+      throw new StitchError({
+        code,
+        message: `Tool Call Failed [${name}]: ${errorText}`,
+        recoverable: isRecoverable(code),
+        toolName: name,
+        raw: result,
+      });
+    }
+
+    // Stitch specific parsing: Check structuredContent first, then JSON in text
+    const anyResult = result as any;
+    if (anyResult.structuredContent) return anyResult.structuredContent as T;
+
+    const textContent = (result.content as any[]).find(
+      (c: any) => c.type === "text",
+    );
+    if (textContent && textContent.type === "text") {
+      try {
+        return JSON.parse(textContent.text) as T;
+      } catch {
+        return textContent.text as unknown as T;
+      }
+    }
+
+    return anyResult as T;
   }
 
   async connect() {
@@ -390,7 +449,14 @@ export class StitchToolClient implements StitchToolClientSpec {
    * with exponential backoff + full jitter, per `config.retry`. MCP text
    * errors carry no Retry-After header, so nothing else is honored.
    */
-  async callTool<T>(name: string, args: Record<string, any>): Promise<T> {
+  async callTool<T>(
+    name: string,
+    args: Record<string, any>,
+    errorMap?: Record<
+      string,
+      { schema: any; match: string; create: (data: any, raw: any) => Error }
+    >,
+  ): Promise<T> {
     this.assertNotClosed();
     if (!this.isConnected) await this.connect();
 
@@ -416,7 +482,7 @@ export class StitchToolClient implements StitchToolClientSpec {
           undefined,
           { timeout: this.config.timeout },
         );
-        return this.parseToolResponse<T>(result, name);
+        return this.parseToolResponse<T>(result, name, errorMap);
       } catch (rawErr) {
         // Normalize transport HTTP / network errors first, so a real 429 or
         // transient socket reset is classified and retry-eligible.
@@ -500,6 +566,8 @@ export class StitchToolClient implements StitchToolClientSpec {
         code,
         message: `HTTP ${response.status}: ${text || response.statusText}`,
         recoverable: isRecoverable(code),
+        status: response.status,
+        raw: text,
       });
     }
 

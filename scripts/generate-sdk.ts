@@ -817,8 +817,17 @@ function buildMethodBody(
 
   statements.push(`try {`);
   const responseName = toResponseName(binding.tool);
+
+  let errorMapStr = "";
+  if (binding.errors && binding.errors.length > 0) {
+    const mapEntries = binding.errors.map((err) => {
+      return `"${err.name}": { schema: ${err.name}Schema, match: "${err.match}", create: (data: any, raw: any) => new ${err.name}("Tool Call Failed [${binding.tool}]: " + (${err.name}Schema.description || "${err.match}"), data, raw) }`;
+    });
+    errorMapStr = `, { ${mapEntries.join(", ")} }`;
+  }
+
   statements.push(
-    `  const raw = await this.client.callTool<${responseName}>("${binding.tool}", ${generateArgsObject(binding.args)});`,
+    `  const raw = await this.client.callTool<${responseName}>("${binding.tool}", ${generateArgsObject(binding.args)}${errorMapStr});`,
   );
   if (binding.cache?.writeBack) {
     statements.push(
@@ -840,6 +849,66 @@ function buildMethodBody(
   statements.push(`}`);
 
   return statements;
+}
+
+// ── Error Code Emission ───────────────────────────────────────
+
+export function jsonSchemaToZod(schema: ToolSchema | undefined | any): string {
+  if (!schema) return "z.any()";
+  switch (schema.type) {
+    case "string":
+      return "z.string()";
+    case "number":
+      return "z.number()";
+    case "integer":
+      return "z.number().int()";
+    case "boolean":
+      return "z.boolean()";
+    case "array":
+      return `z.array(${jsonSchemaToZod(schema.items || {})})`;
+    case "object":
+      if (schema.properties) {
+        const props = Object.entries(schema.properties).map(([k, v]) => {
+          return `${k}: ${jsonSchemaToZod(v)}`;
+        });
+        return `z.object({ ${props.join(", ")} })`;
+      }
+      return "z.record(z.string(), z.any())";
+    default:
+      return "z.any()";
+  }
+}
+
+export function emitExceptions(domainMap: any): string[] {
+  const exceptions = new Map<string, string>();
+  for (const binding of domainMap.bindings) {
+    if (binding.errors) {
+      for (const err of binding.errors) {
+        if (!exceptions.has(err.name)) {
+          const zodSchemaStr = jsonSchemaToZod(err.schema);
+          const code = `
+export const ${err.name}Schema = ${zodSchemaStr};
+export type ${err.name}Payload = z.infer<typeof ${err.name}Schema>;
+
+export interface ${err.name} extends ${err.name}Payload {}
+export class ${err.name} extends StitchError {
+  constructor(message: string, payload: ${err.name}Payload, raw?: unknown) {
+    super({
+      code: "${err.match}" as any,
+      message,
+      recoverable: ${err.name === "RateLimitError" ? "true" : "false"},
+      raw
+    });
+    this.name = "${err.name}";
+    Object.assign(this, payload);
+  }
+}`;
+          exceptions.set(err.name, code);
+        }
+      }
+    }
+  }
+  return Array.from(exceptions.values());
 }
 
 // ── Main ──────────────────────────────────────────────────────
@@ -1067,6 +1136,20 @@ async function main() {
   for (const tool of manifest) {
     responseTypes.push(emitResponseType(tool, namedTypes));
   }
+
+  const exceptionDefs = emitExceptions(domainMap);
+  if (exceptionDefs.length > 0) {
+    responsesFile.addImportDeclaration({
+      moduleSpecifier: "zod",
+      namedImports: ["z"],
+    });
+    responsesFile.addImportDeclaration({
+      moduleSpecifier: "../../src/spec/errors.js",
+      namedImports: ["StitchError"],
+    });
+    responsesFile.addStatements(exceptionDefs.join("\n\n"));
+  }
+
   responsesFile.addStatements(
     `/**\n * ${headerComment}\n */\n\n${responseTypes.join("\n\n")}`,
   );
@@ -1141,6 +1224,12 @@ async function main() {
     const requiredResponses = new Set<string>();
     for (const b of classBindings) {
       requiredResponses.add(toResponseName(b.tool));
+      if (b.errors) {
+        for (const err of b.errors) {
+          requiredResponses.add(err.name);
+          requiredResponses.add(err.name + "Schema");
+        }
+      }
     }
     if (requiredResponses.size > 0) {
       sourceFile.addImportDeclaration({
@@ -1511,7 +1600,7 @@ async function main() {
   }
   indexFile.addExportDeclaration({
     moduleSpecifier: "./responses.generated.js",
-    isTypeOnly: true,
+    isTypeOnly: exceptionDefs.length === 0,
   });
   await Bun.write(resolve(GENERATED_DIR, "index.ts"), indexFile.getFullText());
   fileCount++;

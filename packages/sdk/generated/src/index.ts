@@ -3,7 +3,7 @@
 DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:88ec3dfa066c...)
-        domain-map.json     (sha256:a6177cc7e2f4...)
+        domain-map.json     (sha256:46e20fc68c7b...)
  */
 export { Stitch } from "./stitch.js";
 export { Project } from "./project.js";
@@ -16,4 +16,4 @@ export {
   type ToolPropertySchema,
 } from "./tool-definitions.js";
 export type * from "./types.generated.js";
-export type * from "./responses.generated.js";
+export * from "./responses.generated.js";

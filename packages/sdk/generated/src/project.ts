@@ -3,7 +3,7 @@
 DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:88ec3dfa066c...)
-        domain-map.json     (sha256:a6177cc7e2f4...)
+        domain-map.json     (sha256:46e20fc68c7b...)
  */
 import { type StitchToolClientSpec } from "../../src/spec/client.js";
 import { StitchError } from "../../src/spec/errors.js";
@@ -41,6 +41,10 @@ import {
 } from "./types.generated.js";
 import {
   GenerateScreenFromTextResponse,
+  ValidationError,
+  ValidationErrorSchema,
+  RateLimitError,
+  RateLimitErrorSchema,
   ListScreensResponse,
   GetScreenResponse,
   CreateDesignSystemResponse,
@@ -161,6 +165,30 @@ export class Project {
           prompt,
           deviceType: options?.deviceType ?? "DESKTOP",
           modelId: options?.modelId,
+        },
+        {
+          ValidationError: {
+            schema: ValidationErrorSchema,
+            match: "VALIDATION_ERROR",
+            create: (data: any, raw: any) =>
+              new ValidationError(
+                "Tool Call Failed [generate_screen_from_text]: " +
+                  (ValidationErrorSchema.description || "VALIDATION_ERROR"),
+                data,
+                raw,
+              ),
+          },
+          RateLimitError: {
+            schema: RateLimitErrorSchema,
+            match: "RATE_LIMITED",
+            create: (data: any, raw: any) =>
+              new RateLimitError(
+                "Tool Call Failed [generate_screen_from_text]: " +
+                  (RateLimitErrorSchema.description || "RATE_LIMITED"),
+                data,
+                raw,
+              ),
+          },
         },
       );
       const _screens = (

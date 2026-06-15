@@ -354,6 +354,7 @@ describe("SDK Unit Tests", () => {
           deviceType: "DESKTOP",
           modelId: undefined,
         },
+        expect.any(Object),
       );
 
       expect(result.first).toBeInstanceOf(Screen);
