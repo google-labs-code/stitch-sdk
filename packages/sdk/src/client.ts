@@ -27,6 +27,26 @@ import { SDK_VERSION } from "./version.js";
 import { repairToolSchemas } from "./schema-repair.js";
 import { EntityManager } from "./entity-manager.js";
 
+function isTransientNetworkError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const msg = err.message.toLowerCase();
+  const cause = (err as Error & { cause?: unknown }).cause;
+  const causeMsg =
+    cause instanceof Error
+      ? cause.message.toLowerCase()
+      : typeof cause === "string"
+        ? cause.toLowerCase()
+        : "";
+  const combined = `${msg} ${causeMsg}`;
+  return (
+    combined.includes("fetch failed") ||
+    combined.includes("econnreset") ||
+    combined.includes("socket") ||
+    combined.includes("other side closed") ||
+    combined.includes("network")
+  );
+}
+
 /**
  * Authenticated tool pipe for the Stitch MCP Server.
  *
@@ -178,8 +198,22 @@ export class StitchToolClient implements StitchToolClientSpec {
 
   /**
    * Generic tool caller with type support and error parsing.
+   * Retries once on transient network errors after reconnecting.
    */
   async callTool<T>(name: string, args: Record<string, any>): Promise<T> {
+    try {
+      return await this.callToolOnce<T>(name, args);
+    } catch (err) {
+      if (!isTransientNetworkError(err)) throw err;
+      await this.resetConnection();
+      return await this.callToolOnce<T>(name, args);
+    }
+  }
+
+  private async callToolOnce<T>(
+    name: string,
+    args: Record<string, any>,
+  ): Promise<T> {
     if (!this.isConnected) await this.connect();
 
     const localTool = this.localVirtualTools.find((t) => t.name === name);
@@ -194,6 +228,19 @@ export class StitchToolClient implements StitchToolClientSpec {
     );
 
     return this.parseToolResponse<T>(result, name);
+  }
+
+  private async resetConnection(): Promise<void> {
+    this.isConnected = false;
+    this.connectPromise = null;
+    if (this.transport) {
+      try {
+        await this.transport.close();
+      } catch {
+        /* ignore close errors during reset */
+      }
+      this.transport = null;
+    }
   }
 
   /**

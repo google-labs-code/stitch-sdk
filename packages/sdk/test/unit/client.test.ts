@@ -263,6 +263,50 @@ describe("StitchToolClient", () => {
     });
   });
 
+  describe("callTool transient network retry", () => {
+    it("reconnects and retries once on fetch failed", async () => {
+      const client = new StitchToolClient({ apiKey: "k" });
+      let attempts = 0;
+
+      client["client"].connect = vi.fn(async () => {
+        client["isConnected"] = true;
+      });
+
+      client["client"].callTool = vi.fn(async () => {
+        attempts++;
+        if (attempts === 1) {
+          const err = new TypeError("fetch failed");
+          (err as any).cause = new Error("other side closed");
+          throw err;
+        }
+        return {
+          isError: false,
+          content: [{ type: "text", text: '{"ok":true}' }],
+        };
+      });
+
+      const result = await client.callTool("list_projects", {});
+      expect(result).toEqual({ ok: true });
+      expect(attempts).toBe(2);
+    });
+
+    it("does not retry on auth errors", async () => {
+      const client = new StitchToolClient({ apiKey: "bad" });
+      client["isConnected"] = true;
+
+      client["client"].callTool = vi.fn(async () => ({
+        isError: true,
+        content: [{ type: "text", text: "401 Unauthorized" }],
+      }));
+
+      const { StitchError } = await import("../../src/spec/errors.js");
+      await expect(client.callTool("list_projects", {})).rejects.toThrow(
+        StitchError,
+      );
+      expect(client["client"].callTool).toHaveBeenCalledTimes(1);
+    });
+  });
+
   // ─── Slice 3: httpPost transport ────────────────────────────────
   describe("httpPost", () => {
     // Test 10: sends X-Goog-Api-Key header
