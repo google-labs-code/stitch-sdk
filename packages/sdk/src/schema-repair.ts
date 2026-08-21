@@ -16,17 +16,19 @@ import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 
 /**
  * Well-known $defs definitions that the Stitch backend may reference via
- * $ref but omit from the schema's $defs block. When the MCP SDK's
- * AJV validator tries to compile these schemas, the missing references
- * cause a hard crash (`MissingRefError`).
+ * $ref but omit from a schema's $defs block. When the MCP SDK's AJV
+ * validator tries to compile these schemas, the missing references cause a
+ * hard crash (`MissingRefError`).
  *
- * This registry lets us inject stub definitions *before* AJV ever sees
- * the schema, making the repair order-independent of the MCP SDK version.
+ * These are FALLBACK stubs, used only when a referenced definition cannot
+ * be harvested from another schema in the same tools/list response (see
+ * collectDefPool). They were captured from the live Stitch tools/list on
+ * 2026-08-21 so the fallback shape stays faithful to the backend.
  */
 const WELL_KNOWN_DEFS: Record<string, object> = {
   ScreenInstance: {
     type: "object",
-    description: "An instance of a screen on the project.",
+    description: "An instance of a screen on the project. Next ID: 18",
     properties: {
       groupId: { type: "string" },
       groupName: { type: "string" },
@@ -34,9 +36,12 @@ const WELL_KNOWN_DEFS: Record<string, object> = {
       hidden: { type: "boolean" },
       id: { type: "string" },
       isFavourite: { type: "boolean" },
+      isResized: { type: "boolean" },
       label: { type: "string" },
+      needsLayout: { type: "boolean" },
       sourceAsset: { type: "string" },
       sourceScreen: { type: "string" },
+      textContent: { type: "string" },
       type: {
         type: "string",
         enum: [
@@ -44,7 +49,12 @@ const WELL_KNOWN_DEFS: Record<string, object> = {
           "SCREEN_INSTANCE",
           "DESIGN_SYSTEM_INSTANCE",
           "GROUP_INSTANCE",
+          "TEXT_INSTANCE",
         ],
+      },
+      variantScreenInstance: {
+        $ref: "#/$defs/ScreenInstance",
+        description: "Optional. The variant Screen Instance.",
       },
       width: { type: "integer", format: "int32" },
       x: { type: "integer", format: "int32" },
@@ -54,11 +64,13 @@ const WELL_KNOWN_DEFS: Record<string, object> = {
 
   SelectedScreenInstance: {
     type: "object",
-    description: "A selected screen instance reference.",
+    description:
+      "A screen instance to be edited by the agent, selected by the user.",
     properties: {
-      screenId: { type: "string" },
-      instanceId: { type: "string" },
+      id: { type: "string" },
+      sourceScreen: { type: "string" },
     },
+    required: ["id", "sourceScreen"],
   },
 
   File: {
@@ -66,10 +78,40 @@ const WELL_KNOWN_DEFS: Record<string, object> = {
     description: "A File resource.",
     properties: {
       downloadUrl: { type: "string" },
-      fileContentBase64: { type: "string" },
+      fileContentBase64: { type: "string", writeOnly: true },
       mimeType: { type: "string" },
       name: { type: "string" },
       uploadBlobId: { type: "string" },
+      userFeedback: {
+        $ref: "#/$defs/UserFeedback",
+        description: "Output only. The latest feedback submitted for the file.",
+        readOnly: true,
+      },
+    },
+  },
+
+  UserFeedback: {
+    type: "object",
+    description: "User feedback for a given interaction.",
+    properties: {
+      comment: { type: "string" },
+      designFeedbackReason: {
+        type: "string",
+        enum: [
+          "DESIGN_FEEDBACK_REASON_UNSPECIFIED",
+          "DESIGN_DOESNT_MATCH_PROMPT",
+          "EDIT_DOESNT_MATCH_PROMPT",
+          "DESCRIPTION_DOESNT_MATCH",
+          "COMPONENT_ISSUE",
+          "INCORRECT_THEME",
+          "FIGMA_EXPORT_FAILED",
+          "OTHER",
+        ],
+      },
+      rating: {
+        type: "string",
+        enum: ["RATING_UNSPECIFIED", "POSITIVE", "NEGATIVE"],
+      },
     },
   },
 };
@@ -102,26 +144,92 @@ function collectRefTargets(
   return refs;
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
 /**
- * Repair a single JSON Schema by injecting any missing well-known $defs
- * that are referenced via $ref but not present.
+ * Harvest every `$defs` entry found across the tools/list response into a
+ * name → definition pool.
+ *
+ * The Stitch backend usually defines each entity (ScreenInstance, File, …)
+ * under `$defs` in at least one tool's schema, even when it omits them from
+ * other schemas that reference them. Pooling those real definitions lets
+ * repairSchema inject the backend's actual shapes instead of the fallback
+ * stubs in WELL_KNOWN_DEFS.
+ */
+export function collectDefPool(tools: Tool[]): Record<string, object> {
+  const pool: Record<string, object> = {};
+
+  const harvest = (schema: unknown) => {
+    if (!isPlainObject(schema)) return;
+    const defs = schema.$defs;
+    if (!isPlainObject(defs)) return;
+    for (const [name, def] of Object.entries(defs)) {
+      if (!(name in pool) && isPlainObject(def)) {
+        pool[name] = def;
+      }
+    }
+  };
+
+  for (const tool of tools) {
+    harvest(tool.inputSchema);
+    harvest((tool as any).outputSchema);
+  }
+
+  return pool;
+}
+
+/**
+ * Bound on repair passes. Injected definitions can introduce new $refs
+ * (e.g. the backend's File def references UserFeedback), so repair iterates
+ * to a fixpoint; real def chains are 1–2 deep, so 8 passes is generous.
+ */
+const MAX_REPAIR_PASSES = 8;
+
+/**
+ * Repair a single JSON Schema by injecting any missing $defs that are
+ * referenced via $ref but not present.
+ *
+ * Definitions are resolved from `defPool` first (the backend's real shapes,
+ * harvested from sibling tool schemas), falling back to WELL_KNOWN_DEFS
+ * stubs. Injected definitions are deep-cloned so schemas never share
+ * mutable state, and injection iterates until every transitive reference
+ * resolves.
  *
  * Mutates the schema in place and returns it for convenience.
  */
-export function repairSchema(schema: Record<string, any>): Record<string, any> {
+export function repairSchema(
+  schema: Record<string, any>,
+  defPool: Record<string, object> = {},
+): Record<string, any> {
   if (!schema || typeof schema !== "object") return schema;
 
-  const referencedDefs = collectRefTargets(schema);
-  if (referencedDefs.size === 0) return schema;
+  const unresolved = new Set<string>();
 
-  // Ensure $defs block exists
-  schema.$defs = schema.$defs || {};
+  for (let pass = 0; pass < MAX_REPAIR_PASSES; pass++) {
+    const referencedDefs = collectRefTargets(schema);
+    if (referencedDefs.size === 0) return schema;
 
-  for (const defName of referencedDefs) {
-    // Only inject if: (a) the def is missing, and (b) we have a well-known stub
-    if (!schema.$defs[defName] && WELL_KNOWN_DEFS[defName]) {
-      schema.$defs[defName] = { ...WELL_KNOWN_DEFS[defName] };
+    // Ensure $defs block exists
+    schema.$defs = schema.$defs || {};
+
+    let injected = false;
+    for (const defName of referencedDefs) {
+      // Only inject if the def is missing and has not proven unresolvable
+      if (schema.$defs[defName] || unresolved.has(defName)) continue;
+
+      const source = defPool[defName] ?? WELL_KNOWN_DEFS[defName];
+      if (!source) {
+        unresolved.add(defName);
+        continue;
+      }
+
+      schema.$defs[defName] = JSON.parse(JSON.stringify(source));
+      injected = true;
     }
+
+    if (!injected) return schema;
   }
 
   return schema;
@@ -134,15 +242,17 @@ export function repairSchema(schema: Record<string, any>): Record<string, any> {
  * Mutates tools in place.
  */
 export function repairToolSchemas(tools: Tool[]): void {
+  const defPool = collectDefPool(tools);
+
   for (const tool of tools) {
     if (tool.inputSchema && typeof tool.inputSchema === "object") {
-      repairSchema(tool.inputSchema as Record<string, any>);
+      repairSchema(tool.inputSchema as Record<string, any>, defPool);
     }
     // outputSchema was added in MCP SDK ≥1.27 and is the primary crash vector:
     // Client.cacheToolMetadata() eagerly compiles outputSchema with AJV.
     const anyTool = tool as any;
     if (anyTool.outputSchema && typeof anyTool.outputSchema === "object") {
-      repairSchema(anyTool.outputSchema);
+      repairSchema(anyTool.outputSchema, defPool);
     }
   }
 }

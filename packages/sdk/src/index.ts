@@ -21,7 +21,11 @@ export { DesignSystem } from "../generated/src/designsystem.js";
 // Infrastructure (handwritten)
 export { StitchToolClient } from "./client.js";
 export { StitchProxy } from "./proxy/core.js";
-export { repairToolSchemas, repairSchema } from "./schema-repair.js";
+export {
+  repairToolSchemas,
+  repairSchema,
+  collectDefPool,
+} from "./schema-repair.js";
 
 // Virtual Tools
 export { downloadAssetsTool } from "./proxy/virtual-tools.js";
