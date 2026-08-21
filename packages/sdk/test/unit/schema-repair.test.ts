@@ -13,7 +13,11 @@
 // limitations under the License.
 
 import { describe, it, expect } from "vitest";
-import { repairSchema, repairToolSchemas } from "../../src/schema-repair.js";
+import {
+  repairSchema,
+  repairToolSchemas,
+  collectDefPool,
+} from "../../src/schema-repair.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 
 describe("repairSchema", () => {
@@ -66,9 +70,13 @@ describe("repairSchema", () => {
     repairSchema(schema);
 
     expect(schema.$defs.SelectedScreenInstance).toBeDefined();
-    expect(schema.$defs.SelectedScreenInstance.properties.screenId).toEqual({
+    expect(schema.$defs.SelectedScreenInstance.properties.id).toEqual({
       type: "string",
     });
+    expect(schema.$defs.SelectedScreenInstance.required).toEqual([
+      "id",
+      "sourceScreen",
+    ]);
   });
 
   it("should NOT overwrite existing $defs", () => {
@@ -234,5 +242,262 @@ describe("repairToolSchemas", () => {
 
   it("should handle empty tools array", () => {
     expect(() => repairToolSchemas([])).not.toThrow();
+  });
+});
+
+/** Collect every local `#/$defs/<Name>` ref in a schema. */
+function collectLocalRefs(node: any, out: string[] = []): string[] {
+  if (!node || typeof node !== "object") return out;
+  if (Array.isArray(node)) {
+    for (const v of node) collectLocalRefs(v, out);
+    return out;
+  }
+  if (typeof node.$ref === "string" && node.$ref.startsWith("#/$defs/")) {
+    out.push(node.$ref.slice("#/$defs/".length));
+  }
+  for (const v of Object.values(node)) collectLocalRefs(v, out);
+  return out;
+}
+
+/** Assert every local $ref in the schema resolves against its own $defs. */
+function expectAllRefsResolve(schema: any) {
+  const defs = schema.$defs || {};
+  const refs = collectLocalRefs(schema);
+  expect(refs.length).toBeGreaterThan(0);
+  for (const ref of refs) {
+    expect(defs, `expected $defs.${ref} to be present`).toHaveProperty(ref);
+  }
+}
+
+describe("collectDefPool", () => {
+  it("should harvest $defs from both inputSchema and outputSchema", () => {
+    const tools: any[] = [
+      {
+        name: "a",
+        inputSchema: {
+          type: "object",
+          $defs: { FromInput: { type: "object" } },
+        },
+        outputSchema: {
+          type: "object",
+          $defs: { FromOutput: { type: "object" } },
+        },
+      },
+    ];
+
+    const pool = collectDefPool(tools);
+
+    expect(pool.FromInput).toBeDefined();
+    expect(pool.FromOutput).toBeDefined();
+  });
+
+  it("should keep the first definition seen for a name", () => {
+    const first = {
+      type: "object",
+      properties: { first: { type: "boolean" } },
+    };
+    const second = {
+      type: "object",
+      properties: { second: { type: "boolean" } },
+    };
+    const tools: any[] = [
+      { name: "a", inputSchema: { type: "object", $defs: { Dup: first } } },
+      { name: "b", inputSchema: { type: "object", $defs: { Dup: second } } },
+    ];
+
+    const pool = collectDefPool(tools);
+
+    expect(pool.Dup).toBe(first);
+  });
+
+  it("should ignore tools and schemas without $defs", () => {
+    const tools: any[] = [
+      { name: "a", inputSchema: { type: "object" } },
+      { name: "b", inputSchema: { type: "object", $defs: null } },
+    ];
+
+    expect(collectDefPool(tools)).toEqual({});
+  });
+});
+
+describe("pool-based repair", () => {
+  it("should prefer the backend's real definition over the fallback stub", () => {
+    const backendScreenInstance = {
+      type: "object",
+      properties: { backendOnlyMarker: { type: "boolean" } },
+    };
+    const tools: any[] = [
+      {
+        name: "list_projects",
+        inputSchema: { type: "object" },
+        outputSchema: {
+          type: "object",
+          $defs: { ScreenInstance: backendScreenInstance },
+        },
+      },
+      {
+        name: "upload_design_md",
+        inputSchema: { type: "object" },
+        outputSchema: {
+          type: "object",
+          properties: {
+            variantScreenInstance: { $ref: "#/$defs/ScreenInstance" },
+          },
+        },
+      },
+    ];
+
+    repairToolSchemas(tools);
+
+    const repaired = tools[1].outputSchema.$defs.ScreenInstance;
+    expect(repaired.properties.backendOnlyMarker).toBeDefined();
+    // Injected defs must be deep copies, not shared references
+    expect(repaired).not.toBe(backendScreenInstance);
+  });
+
+  it("should resolve transitive refs introduced by injected defs (File -> UserFeedback)", () => {
+    const backendFile = {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        userFeedback: { $ref: "#/$defs/UserFeedback" },
+      },
+    };
+    const backendUserFeedback = {
+      type: "object",
+      properties: { rating: { type: "string" } },
+    };
+    const tools: any[] = [
+      {
+        name: "get_file",
+        inputSchema: { type: "object" },
+        outputSchema: {
+          type: "object",
+          $defs: { File: backendFile, UserFeedback: backendUserFeedback },
+        },
+      },
+      {
+        name: "upload_thing",
+        inputSchema: { type: "object" },
+        outputSchema: {
+          type: "object",
+          properties: { file: { $ref: "#/$defs/File" } },
+        },
+      },
+    ];
+
+    repairToolSchemas(tools);
+
+    expectAllRefsResolve(tools[1].outputSchema);
+    expect(tools[1].outputSchema.$defs.UserFeedback).toBeDefined();
+  });
+
+  it("should fall back to well-known stubs when the pool lacks a definition", () => {
+    const tools: any[] = [
+      {
+        name: "lonely_tool",
+        inputSchema: { type: "object" },
+        outputSchema: {
+          type: "object",
+          properties: {
+            screens: {
+              type: "array",
+              items: { $ref: "#/$defs/ScreenInstance" },
+            },
+          },
+        },
+      },
+    ];
+
+    repairToolSchemas(tools);
+
+    expectAllRefsResolve(tools[0].outputSchema);
+    expect(
+      tools[0].outputSchema.$defs.ScreenInstance.properties.id,
+    ).toBeDefined();
+  });
+
+  it("should not overwrite a def already present in the target schema", () => {
+    const own = { type: "object", properties: { own: { type: "boolean" } } };
+    const fromPool = {
+      type: "object",
+      properties: { pooled: { type: "boolean" } },
+    };
+    const tools: any[] = [
+      {
+        name: "definer",
+        inputSchema: { type: "object", $defs: { ScreenInstance: fromPool } },
+      },
+      {
+        name: "consumer",
+        inputSchema: { type: "object" },
+        outputSchema: {
+          type: "object",
+          $defs: { ScreenInstance: own },
+          properties: {
+            variantScreenInstance: { $ref: "#/$defs/ScreenInstance" },
+          },
+        },
+      },
+    ];
+
+    repairToolSchemas(tools);
+
+    expect(tools[1].outputSchema.$defs.ScreenInstance).toBe(own);
+  });
+
+  it("should repair the real upload_design_md shape so every $ref resolves", () => {
+    // Regression test for https://github.com/google-labs-code/stitch-sdk/issues/367
+    // The live backend emits upload_design_md's outputSchema as an inlined
+    // ScreenInstance object that retains a $ref to "#/$defs/ScreenInstance"
+    // but ships no $defs block of its own.
+    const recursiveScreenInstance = {
+      type: "object",
+      description: "An instance of a screen on the project.",
+      properties: {
+        id: { type: "string" },
+        type: { type: "string", enum: ["SCREEN_INSTANCE", "TEXT_INSTANCE"] },
+        variantScreenInstance: { $ref: "#/$defs/ScreenInstance" },
+      },
+    };
+    const tools: any[] = [
+      {
+        name: "create_project",
+        inputSchema: { type: "object" },
+        outputSchema: {
+          type: "object",
+          $defs: { ScreenInstance: recursiveScreenInstance },
+          properties: {
+            screenInstances: {
+              type: "array",
+              items: { $ref: "#/$defs/ScreenInstance" },
+            },
+          },
+        },
+      },
+      {
+        name: "upload_design_md",
+        inputSchema: { type: "object" },
+        outputSchema: {
+          type: "object",
+          description: "An instance of a screen on the project.",
+          properties: {
+            id: { type: "string" },
+            variantScreenInstance: { $ref: "#/$defs/ScreenInstance" },
+          },
+          // NOTE: no $defs — the dangling reference that crashed clients
+        },
+      },
+    ];
+
+    repairToolSchemas(tools);
+
+    expectAllRefsResolve(tools[0].outputSchema);
+    expectAllRefsResolve(tools[1].outputSchema);
+    // The recursive def must survive injection intact
+    expect(
+      tools[1].outputSchema.$defs.ScreenInstance.properties
+        .variantScreenInstance.$ref,
+    ).toBe("#/$defs/ScreenInstance");
   });
 });
