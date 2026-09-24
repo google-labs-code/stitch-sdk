@@ -240,9 +240,9 @@ describe("DesignSystem Domain Class", () => {
         projectId,
         selectedScreenInstances: screenInstances,
       });
-      expect(screens).toHaveLength(1);
-      expect(screens[0]).toBeInstanceOf(Screen);
-      expect(screens[0].id).toBe("s-1");
+      expect(screens.screens).toHaveLength(1);
+      expect(screens.screens[0]).toBeInstanceOf(Screen);
+      expect(screens.screens[0].id).toBe("s-1");
     });
   });
 
@@ -296,7 +296,7 @@ describe("DesignSystem Domain Class", () => {
 
       const ds = await project.createDesignSystemFromDesignMd(
         selectedScreenInstance,
-        "DESKTOP",
+        { deviceType: "DESKTOP" },
       );
 
       expect(mockClient.callTool).toHaveBeenCalledWith(

@@ -44,21 +44,20 @@ describe("SDK Unit Tests", () => {
     };
     const projectId = "proj-123";
 
-    it("getHtml should return cached HTML from data if available", async () => {
+    it("getHtmlUrl should return cached HTML URL from data if available", async () => {
       const screen = mockClient.entities.resolve(
         Screen,
         ["projectId", "screenId"],
         screenData,
       );
-      console.log("SCREEN:", screen);
-      const result = await screen.getHtml();
+      const result = await screen.getHtmlUrl();
 
       // Should not call API — uses cached data.htmlCode.downloadUrl
       expect(mockClient.callTool).not.toHaveBeenCalled();
       expect(result).toBe("https://cached.example.com/html");
     });
 
-    it("getHtml should call get_screen if no cached htmlCode", async () => {
+    it("getHtmlUrl should call get_screen if no cached htmlCode", async () => {
       const screen = mockClient.entities.resolve(
         Screen,
         ["projectId", "screenId"],
@@ -69,7 +68,7 @@ describe("SDK Unit Tests", () => {
         htmlCode: { downloadUrl: "https://api.example.com/html" },
       });
 
-      const result = await screen.getHtml();
+      const result = await screen.getHtmlUrl();
 
       expect(mockClient.callTool).toHaveBeenCalledWith("get_screen", {
         projectId: projectId,
@@ -79,20 +78,20 @@ describe("SDK Unit Tests", () => {
       expect(result).toBe("https://api.example.com/html");
     });
 
-    it("getImage should return cached screenshot URL from data if available", async () => {
+    it("getImageUrl should return cached screenshot URL from data if available", async () => {
       const screen = mockClient.entities.resolve(
         Screen,
         ["projectId", "screenId"],
         screenData,
       );
-      const result = await screen.getImage();
+      const result = await screen.getImageUrl();
 
       // Should not call API — uses cached data.screenshot.downloadUrl
       expect(mockClient.callTool).not.toHaveBeenCalled();
       expect(result).toBe("https://cached.example.com/img.png");
     });
 
-    it("getImage should call get_screen if no cached screenshot", async () => {
+    it("getImageUrl should call get_screen if no cached screenshot", async () => {
       const screen = mockClient.entities.resolve(
         Screen,
         ["projectId", "screenId"],
@@ -103,7 +102,7 @@ describe("SDK Unit Tests", () => {
         screenshot: { downloadUrl: "https://api.example.com/image.png" },
       });
 
-      const result = await screen.getImage();
+      const result = await screen.getImageUrl();
 
       expect(mockClient.callTool).toHaveBeenCalledWith("get_screen", {
         projectId: projectId,
@@ -113,7 +112,7 @@ describe("SDK Unit Tests", () => {
       expect(result).toBe("https://api.example.com/image.png");
     });
 
-    it("getHtml should fallback to empty string when raw.htmlCode.downloadUrl is missing", async () => {
+    it("getHtmlUrl should throw NOT_FOUND when raw.htmlCode.downloadUrl is missing", async () => {
       const screen = mockClient.entities.resolve(
         Screen,
         ["projectId", "screenId"],
@@ -125,12 +124,19 @@ describe("SDK Unit Tests", () => {
         htmlCode: {},
       });
 
-      await expect(screen.getHtml()).rejects.toMatchObject({
-        code: "NOT_FOUND",
+      const err = await screen.getHtmlUrl().catch((e: unknown) => e);
+
+      expect(mockClient.callTool).toHaveBeenCalledWith("get_screen", {
+        projectId: projectId,
+        screenId: "screen-123",
+        name: "projects/proj-123/screens/screen-123",
       });
+      // Missing artifact is NOT_FOUND, never a silent empty string
+      expect(err).toBeInstanceOf(StitchError);
+      expect((err as StitchError).code).toBe("NOT_FOUND");
     });
 
-    it("getHtml should throw StitchError on failure", async () => {
+    it("getHtmlUrl should throw StitchError on failure", async () => {
       const screen = mockClient.entities.resolve(
         Screen,
         ["projectId", "screenId"],
@@ -140,7 +146,7 @@ describe("SDK Unit Tests", () => {
         new Error("Network failure"),
       );
 
-      await expect(screen.getHtml()).rejects.toThrow("Network failure");
+      await expect(screen.getHtmlUrl()).rejects.toThrow("Network failure");
     });
 
     it("edit should call edit_screens and return new Screen", async () => {
@@ -175,8 +181,8 @@ describe("SDK Unit Tests", () => {
         selectedScreenIds: ["screen-123"],
         prompt: "Make it dark",
       });
-      expect(edited).toBeInstanceOf(Screen);
-      expect(edited.id).toBe("edited-screen");
+      expect(edited.first).toBeInstanceOf(Screen);
+      expect(edited.first.id).toBe("edited-screen");
     });
 
     it("edit should find screen when a prefix block is present", async () => {
@@ -202,8 +208,8 @@ describe("SDK Unit Tests", () => {
       });
 
       const edited = await screen.edit("Make it dark");
-      expect(edited).toBeInstanceOf(Screen);
-      expect(edited.id).toBe("edited-2");
+      expect(edited.first).toBeInstanceOf(Screen);
+      expect(edited.first.id).toBe("edited-2");
     });
 
     it("edit should throw StitchError (not TypeError) when response has no screens", async () => {
@@ -268,10 +274,10 @@ describe("SDK Unit Tests", () => {
         prompt: "Try colors",
         variantOptions: { variantCount: 2 },
       });
-      expect(results).toHaveLength(2);
-      expect(results[0]).toBeInstanceOf(Screen);
-      expect(results[0].id).toBe("var-1");
-      expect(results[1].id).toBe("var-2");
+      expect(results.screens).toHaveLength(2);
+      expect(results.first).toBeInstanceOf(Screen);
+      expect(results.screens[0].id).toBe("var-1");
+      expect(results.screens[1].id).toBe("var-2");
     });
   });
 
@@ -288,7 +294,7 @@ describe("SDK Unit Tests", () => {
         title: "My Dashboard",
       });
 
-      const project = await sdk.createProject("My Dashboard");
+      const project = await sdk.createProject({ title: "My Dashboard" });
 
       expect(mockClient.callTool).toHaveBeenCalledWith("create_project", {
         title: "My Dashboard",
@@ -343,14 +349,16 @@ describe("SDK Unit Tests", () => {
         {
           projectId: projectId,
           prompt: prompt,
+          // IR declares optional deviceType with default "DESKTOP" — the
+          // default is applied when the caller omits options [V1_PLAN §1.3]
           deviceType: "DESKTOP",
           modelId: undefined,
         },
       );
 
-      expect(result).toBeInstanceOf(Screen);
-      expect(result.id).toBe("new-screen-1");
-      expect(result.projectId).toBe(projectId);
+      expect(result.first).toBeInstanceOf(Screen);
+      expect(result.first.id).toBe("new-screen-1");
+      expect(result.first.projectId).toBe(projectId);
     });
 
     it("generate should find screen when designSystem block is absent (issue #315)", async () => {
@@ -383,8 +391,8 @@ describe("SDK Unit Tests", () => {
 
       const result = await project.generate("Second page");
 
-      expect(result).toBeInstanceOf(Screen);
-      expect(result.id).toBe("screen-2");
+      expect(result.first).toBeInstanceOf(Screen);
+      expect(result.first.id).toBe("screen-2");
     });
 
     it("generate should throw StitchError (not TypeError) when response has no screens", async () => {

@@ -46,8 +46,35 @@
     },
     "Screen": {
       "description": "A generated UI screen. Provides access to HTML and screenshots.",
+      "extensionPath": "../../src/screen-ext.js",
       "constructorParams": ["projectId", "screenId"],
       "parentField": "projectId",
+      "sideEffects": [
+        {
+          "method": "getHtml",
+          "reason": "binary_data",
+          "specPath": "src/spec/content.ts"
+        },
+        {
+          "method": "getImage",
+          "reason": "binary_data",
+          "specPath": "src/spec/content.ts"
+        },
+        {
+          "method": "readHtml",
+          "reason": "binary_data",
+          "specPath": "src/spec/content.ts"
+        },
+        {
+          "method": "readImage",
+          "reason": "binary_data",
+          "specPath": "src/spec/content.ts"
+        }
+      ],
+      "publicInterface": {
+        "name": "ScreenContentSpec",
+        "importPath": "../../src/spec/content.js"
+      },
       "reference": {
         "keys": ["projectId", "screenId"]
       }
@@ -115,19 +142,18 @@
       },
       "returns": {
         "class": "Screen",
+        "kind": "generation",
         "projection": [
           {
             "prop": "outputComponents",
-            "find": "design.screens",
-            "acknowledgeSingle": true
+            "each": true
           },
           {
             "prop": "design"
           },
           {
             "prop": "screens",
-            "index": 0,
-            "acknowledgeSingle": true
+            "each": true
           }
         ]
       }
@@ -158,19 +184,18 @@
       },
       "returns": {
         "class": "Screen",
+        "kind": "generation",
         "projection": [
           {
             "prop": "outputComponents",
-            "find": "design.screens",
-            "acknowledgeSingle": true
+            "each": true
           },
           {
             "prop": "design"
           },
           {
             "prop": "screens",
-            "index": 0,
-            "acknowledgeSingle": true
+            "each": true
           }
         ]
       }
@@ -204,6 +229,7 @@
       },
       "returns": {
         "class": "Screen",
+        "kind": "generation",
         "projection": [
           {
             "prop": "outputComponents",
@@ -216,8 +242,7 @@
             "prop": "screens",
             "each": true
           }
-        ],
-        "array": true
+        ]
       }
     },
     {
@@ -258,12 +283,13 @@
       "returns": {
         "class": "Screen",
         "projection": []
-      }
+      },
+      "description": "Fetch a screen by ID and return its identity-mapped handle."
     },
     {
       "tool": "get_screen",
       "class": "Screen",
-      "method": "getHtml",
+      "method": "getHtmlUrl",
       "args": {
         "projectId": {
           "from": "self"
@@ -296,13 +322,15 @@
             "prop": "downloadUrl"
           }
         ],
-        "description": "Use cached HTML download URL from generation response if available"
-      }
+        "description": "Use cached HTML download URL from generation response if available",
+        "writeBack": true
+      },
+      "description": "Get the signed download URL for this screen's HTML. Cache-aware: served from generation data when present; responses are written back to the cache."
     },
     {
       "tool": "get_screen",
       "class": "Screen",
-      "method": "getImage",
+      "method": "getImageUrl",
       "args": {
         "projectId": {
           "from": "self"
@@ -335,8 +363,10 @@
             "prop": "downloadUrl"
           }
         ],
-        "description": "Use cached screenshot URL from generation response"
-      }
+        "description": "Use cached screenshot URL from generation response",
+        "writeBack": true
+      },
+      "description": "Get the signed download URL for this screen's screenshot. Cache-aware: served from generation data when present; responses are written back to the cache."
     },
     {
       "tool": "create_design_system",
@@ -412,6 +442,7 @@
       },
       "returns": {
         "class": "Screen",
+        "kind": "generation",
         "projection": [
           {
             "prop": "outputComponents",
@@ -424,8 +455,7 @@
             "prop": "screens",
             "each": true
           }
-        ],
-        "array": true
+        ]
       }
     },
     {
@@ -441,6 +471,7 @@
         }
       },
       "returns": {
+        "type": "UploadDesignMdResponse",
         "projection": []
       }
     },

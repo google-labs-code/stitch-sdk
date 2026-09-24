@@ -35,6 +35,7 @@ describe("Generated toolDefinitions", () => {
     const names = toolDefinitions.map((t) => t.name);
     expect(names).toContain("create_project");
     expect(names).toContain("get_project");
+    expect(names).toContain("delete_project");
     expect(names).toContain("list_projects");
     expect(names).toContain("list_screens");
     expect(names).toContain("get_screen");
@@ -45,7 +46,7 @@ describe("Generated toolDefinitions", () => {
     expect(names).toContain("list_design_systems");
     expect(names).toContain("update_design_system");
     expect(names).toContain("apply_design_system");
-    expect(names).toHaveLength(14);
+    expect(names).toHaveLength(15);
   });
 
   it("each definition has name, description, and inputSchema", () => {

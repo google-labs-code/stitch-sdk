@@ -1,0 +1,50 @@
+{
+  "_comment": "Synthesized from outputSchema. CRITICAL: multiple components AND multiple screens — the server returns many screens per generation since mid-2026.",
+  "outputComponents": [
+    { "designSystem": { "name": "assets/ds-pre" } },
+    {
+      "design": {
+        "screens": [
+          {
+            "name": "projects/p-fix/screens/applied-1",
+            "title": "Home",
+            "htmlCode": {
+              "downloadUrl": "https://files.example/applied-1.html"
+            },
+            "screenshot": {
+              "downloadUrl": "https://files.example/applied-1.png"
+            }
+          },
+          {
+            "name": "projects/p-fix/screens/applied-2",
+            "title": "Settings",
+            "htmlCode": {
+              "downloadUrl": "https://files.example/applied-2.html"
+            },
+            "screenshot": {
+              "downloadUrl": "https://files.example/applied-2.png"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "design": {
+        "screens": [
+          {
+            "name": "projects/p-fix/screens/applied-3",
+            "title": "Profile",
+            "htmlCode": {
+              "downloadUrl": "https://files.example/applied-3.html"
+            },
+            "screenshot": {
+              "downloadUrl": "https://files.example/applied-3.png"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "projectId": "p-fix",
+  "sessionId": "sess-4"
+}
