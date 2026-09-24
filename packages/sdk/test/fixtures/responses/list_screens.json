@@ -1,0 +1,16 @@
+{
+  "screens": [
+    {
+      "name": "projects/p-fix/screens/s-1",
+      "title": "Home",
+      "htmlCode": { "downloadUrl": "https://files.example/s-1.html" },
+      "screenshot": { "downloadUrl": "https://files.example/s-1.png" }
+    },
+    {
+      "name": "projects/p-fix/screens/s-2",
+      "title": "About",
+      "htmlCode": { "downloadUrl": "https://files.example/s-2.html" },
+      "screenshot": { "downloadUrl": "https://files.example/s-2.png" }
+    }
+  ]
+}

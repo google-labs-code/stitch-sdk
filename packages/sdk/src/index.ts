@@ -14,50 +14,42 @@
 
 // Domain classes
 export { Stitch } from "../generated/src/stitch.js";
-export { Project } from "./project-ext.js"; // Extended: includes uploadImage(), downloadAssets()
-export { Screen } from "../generated/src/screen.js";
+export { Project } from "./project-ext.js"; // Extended: includes upload(), downloadAssets()
+export { Screen } from "./screen-ext.js"; // Extended: getHtml()/getImage() fetch content; URL accessors are generated
 export { DesignSystem } from "../generated/src/designsystem.js";
+export { Generation } from "./generation.js";
 
 // Infrastructure (handwritten)
 export { StitchToolClient } from "./client.js";
 export { StitchProxy } from "./proxy/core.js";
-export { repairToolSchemas, repairSchema } from "./schema-repair.js";
 
 // Virtual Tools
 export { downloadAssetsTool } from "./proxy/virtual-tools.js";
 export type { VirtualToolDefinition } from "./spec/client.js";
 
 // Singleton
-export { stitch } from "./singleton.js";
+export { stitch, resetStitchSingleton } from "./singleton.js";
 
 // Error handling
 export { StitchError, StitchErrorCode } from "./spec/errors.js";
 
-// FIFE URL utilities
-export { buildFifeSuffix, type FifeImageOptions } from "./fife.js";
-
 // Resource name utilities
 export { parseResourceName } from "./utils.js";
 
-// Tool catalog (generated)
-export {
-  toolDefinitions,
-  type ToolDefinition,
-  type ToolInputSchema,
-  type ToolPropertySchema,
-} from "../generated/src/tool-definitions.js";
-export { toolMap, type ToolParam, type ToolInfo } from "./tool-map.js";
+// Tool catalog (re-exported with deprecation for 0.4.0 bridge; preferred subpath is @google/stitch-sdk/tools)
+/** @deprecated Import from "@google/stitch-sdk/tools" to optimize bundle size. */
+export { toolDefinitions, toolMap } from "./tools.js";
 
 // Types (config + data interfaces)
 export type { StitchConfig, StitchConfigInput } from "./spec/client.js";
-export { StitchProxyConfigSchema } from "./spec/proxy.js";
-export type {
-  ProjectData,
-  GenerateScreenParams,
-  DesignTheme,
-  ScreenInstance,
-  ThumbnailScreenshot,
-} from "./types.js";
+export type { StitchProxyConfig } from "./spec/proxy.js";
+export type { ProjectData, ThumbnailScreenshot } from "./types.js";
+
+// Generated tool I/O types — the types public method signatures use
+// (VariantOptions, DesignSystemInput, SelectedScreenInstance, every
+// *Response, ...). Consumers must be able to NAME argument types.
+export type * from "../generated/src/types.generated.js";
+export type * from "../generated/src/responses.generated.js";
 
 // Upload types
 export type {

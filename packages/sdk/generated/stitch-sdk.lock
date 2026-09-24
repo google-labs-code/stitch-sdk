@@ -1,23 +1,23 @@
 {
   "schemaVersion": 1,
   "generated": {
-    "generatedAt": "2026-09-24T13:46:28.756Z",
-    "sourceHash": "sha256:f9d4b61b48d822316126fd419c4206c2af305bb2351415b2592723cf592ff8cb",
-    "manifestHash": "sha256:f20f91d571a1fcddd97c2cacefee7bf38d5dd39f1e8f2075436bfcff0562cc4b",
-    "domainMapHash": "sha256:a90931b3b2070295d7f84646e3b6c0fe3bb27dfecb190b1210c95eac7eecc6aa",
+    "generatedAt": "2026-09-23T18:39:30.614Z",
+    "sourceHash": "sha256:a126fbb6fcc1161fd4de0d05e23cbaceacccddeb61f60fa54433d47aba54ff15",
+    "manifestHash": "sha256:88ec3dfa066ce5060be236b0a5c0b5fb51671a7dd60d05556c028e6c4c8f0e1c",
+    "domainMapHash": "sha256:a6177cc7e2f44d2d536928d4e0ae7bd51ed2dd3393235787216b976498c3b1b2",
     "fileCount": 8,
     "repairedTools": []
   },
   "domainMap": {
-    "generatedAt": "2026-09-24T13:46:28.756Z",
-    "sourceHash": "sha256:a90931b3b2070295d7f84646e3b6c0fe3bb27dfecb190b1210c95eac7eecc6aa",
-    "manifestHash": "sha256:f20f91d571a1fcddd97c2cacefee7bf38d5dd39f1e8f2075436bfcff0562cc4b",
+    "generatedAt": "2026-09-23T18:36:09.460Z",
+    "sourceHash": "sha256:a6177cc7e2f44d2d536928d4e0ae7bd51ed2dd3393235787216b976498c3b1b2",
+    "manifestHash": "sha256:88ec3dfa066ce5060be236b0a5c0b5fb51671a7dd60d05556c028e6c4c8f0e1c",
     "classCount": 4,
     "bindingCount": 15
   },
   "manifest": {
-    "capturedAt": "2026-06-01T04:06:40.767Z",
-    "sourceHash": "sha256:f20f91d571a1fcddd97c2cacefee7bf38d5dd39f1e8f2075436bfcff0562cc4b",
+    "capturedAt": "2026-09-23T18:42:56.588Z",
+    "sourceHash": "sha256:88ec3dfa066ce5060be236b0a5c0b5fb51671a7dd60d05556c028e6c4c8f0e1c",
     "toolCount": 15,
     "serverUrl": "https://stitch.googleapis.com/mcp"
   }

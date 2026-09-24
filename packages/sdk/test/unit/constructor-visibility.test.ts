@@ -18,13 +18,21 @@ describe("Generator: constructor visibility", () => {
   });
 
   it("should still emit private client on classes WITHOUT extensions", () => {
+    const dsSrc = readFileSync(
+      resolve(SDK_ROOT, "generated/src/designsystem.ts"),
+      "utf-8",
+    );
+    // DesignSystem has no extensionPath — client should remain private
+    expect(dsSrc).toContain("private client");
+    expect(dsSrc).not.toContain("protected client");
+  });
+
+  it("should emit protected client on Screen (extension added in v1/14)", () => {
     const screenSrc = readFileSync(
       resolve(SDK_ROOT, "generated/src/screen.ts"),
       "utf-8",
     );
-    // Screen has no extensionPath — client should remain private
-    expect(screenSrc).toContain("private client");
-    expect(screenSrc).not.toContain("protected client");
+    expect(screenSrc).toContain("protected client");
   });
 });
 
