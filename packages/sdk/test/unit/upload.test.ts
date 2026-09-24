@@ -19,13 +19,14 @@ import { StitchToolClient } from "../../src/client.js";
 import { UploadInputSchema } from "../../src/spec/upload.js";
 import { UploadHandler } from "../../src/upload-handler.js";
 import type { StitchToolClientSpec } from "../../src/spec/client.js";
+import { EntityManager } from "../../src/entity-manager.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function createMockClient(
   overrides: Partial<Pick<StitchToolClientSpec, "httpPost">> = {},
 ): StitchToolClientSpec {
-  return {
+  const client: any = {
     name: "stitch-tool-client",
     description: "Authenticated tool pipe for Stitch MCP Server",
     connect: vi.fn().mockResolvedValue(undefined),
@@ -35,6 +36,8 @@ function createMockClient(
     httpPost: vi.fn().mockResolvedValue({ screens: [] }),
     ...overrides,
   };
+  client.entities = new EntityManager(client);
+  return client;
 }
 
 describe("UploadInputSchema", () => {
@@ -110,12 +113,12 @@ describe("UploadHandler", () => {
     }
   });
 
-  it("returns UPLOAD_FAILED when httpPost throws a generic server error", async () => {
-    const handler = new UploadHandler(
-      createMockClient({
-        httpPost: vi.fn().mockRejectedValue(new Error("Internal Server Error")),
-      }),
-    );
+  // NOTE: an unsupported extension is rejected BEFORE httpPost is called, so
+  // these assert the extension pre-check, not httpPost error mapping (which
+  // is covered below with supported extensions).
+  it("rejects an unsupported extension (.gif) with UNSUPPORTED_FORMAT, before any httpPost", async () => {
+    const httpPost = vi.fn();
+    const handler = new UploadHandler(createMockClient({ httpPost }));
     const result = await handler.execute("proj-1", {
       filePath: "/tmp/missing.gif",
       createScreenInstances: true,
@@ -124,22 +127,7 @@ describe("UploadHandler", () => {
     if (!result.success) {
       expect(result.error.code).toBe("UNSUPPORTED_FORMAT");
     }
-  });
-
-  it("returns AUTH_FAILED when httpPost throws with 401 in message", async () => {
-    const handler = new UploadHandler(
-      createMockClient({
-        httpPost: vi.fn().mockRejectedValue(new Error("HTTP 401")),
-      }),
-    );
-    const result = await handler.execute("proj-1", {
-      filePath: "/tmp/none.gif",
-      createScreenInstances: true,
-    });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.code).toBe("UNSUPPORTED_FORMAT");
-    }
+    expect(httpPost).not.toHaveBeenCalled(); // short-circuited before the POST
   });
 });
 
@@ -240,10 +228,11 @@ describe("Project.upload (generic integration)", () => {
     const mockClient = createMockClient({
       httpPost: httpPostMock as unknown as StitchToolClientSpec["httpPost"],
     });
-    return new Project(
-      mockClient as unknown as StitchToolClient,
-      "test-project-id",
-    );
+    // Resolve through the identity map — direct string construction
+    // is rejected and would not hydrate projectId.
+    return mockClient.entities.resolve(Project, ["projectId"], {
+      projectId: "test-project-id",
+    }) as Project;
   }
 
   it("throws StitchError when the asset format is unsupported", async () => {
@@ -268,5 +257,10 @@ describe("Project.upload (generic integration)", () => {
     expect(proj.upload).toBeDefined();
     const screens = await proj.upload("/fake/document.html");
     expect(screens).toHaveLength(1);
+    // REGRESSION: returned screens must have hydrated identity — the
+    // pre-fix path constructed Screens whose ids were all undefined.
+    expect(screens[0].screenId).toBe("s-abc");
+    expect(screens[0].projectId).toBe("test-project-id");
+    expect(screens[0].id).toBe("s-abc");
   });
 });

@@ -13,19 +13,204 @@
 // limitations under the License.
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import {
+  StreamableHTTPClientTransport,
+  StreamableHTTPError,
+} from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { ListToolsResultSchema } from "@modelcontextprotocol/sdk/types.js";
+import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import {
   StitchConfigSchema,
   StitchConfig,
   StitchToolClientSpec,
   VirtualToolDefinition,
 } from "./spec/client.js";
-import { StitchError, StitchErrorCode } from "./spec/errors.js";
+import { StitchError } from "./spec/errors.js";
+import { classifyError, isRecoverable } from "./spec/error-mapping.js";
 import { buildAuthHeaders as buildBaseAuthHeaders } from "./auth.js";
 import { SDK_VERSION } from "./version.js";
 import { repairToolSchemas } from "./schema-repair.js";
 import { EntityManager } from "./entity-manager.js";
+import { debugLog } from "./debug.js";
+
+/** Read an env var, treating empty strings as unset. */
+function env(name: string): string | undefined {
+  return process.env[name] || undefined;
+}
+
+/** Fires the STITCH_HOST deprecation warning at most once per process. */
+let warnedStitchHostAlias = false;
+
+/** Test-only: re-arm the once-per-process STITCH_HOST deprecation warning. */
+export function __resetStitchHostWarning(): void {
+  warnedStitchHostAlias = false;
+}
+
+/**
+ * Resolve a config input against the environment (D5 REVISED).
+ *
+ * Precedence: explicit config > STITCH_* vars > legacy aliases.
+ *   - apiKey:      input ?? STITCH_API_KEY
+ *   - accessToken: input ?? STITCH_ACCESS_TOKEN
+ *   - projectId:   input ?? STITCH_PROJECT_ID ?? GOOGLE_CLOUD_PROJECT
+ *                  (GOOGLE_CLOUD_PROJECT is the GCP-wide convention and
+ *                  stays first-class — no warning)
+ *   - baseUrl:     input ?? STITCH_BASE_URL ?? STITCH_HOST
+ *                  (STITCH_HOST is a deprecated alias — warns once per
+ *                  process, removed in 2.0)
+ *
+ * Shared by StitchToolClient and the singleton so both resolve the exact
+ * same env set (the singleton derives its cache key from this output).
+ */
+export function resolveConfigWithEnv(
+  input?: Partial<StitchConfig>,
+): Partial<StitchConfig> {
+  let baseUrl = input?.baseUrl ?? env("STITCH_BASE_URL");
+  if (baseUrl === undefined) {
+    const legacyHost = env("STITCH_HOST");
+    if (legacyHost !== undefined) {
+      baseUrl = legacyHost;
+      if (!warnedStitchHostAlias) {
+        warnedStitchHostAlias = true;
+        console.warn(
+          "[stitch-sdk] STITCH_HOST is a deprecated alias for STITCH_BASE_URL and will be removed in 2.0. Set STITCH_BASE_URL instead.",
+        );
+      }
+    }
+  }
+  return {
+    apiKey: input?.apiKey ?? env("STITCH_API_KEY"),
+    accessToken: input?.accessToken ?? env("STITCH_ACCESS_TOKEN"),
+    projectId:
+      input?.projectId ??
+      env("STITCH_PROJECT_ID") ??
+      env("GOOGLE_CLOUD_PROJECT"),
+    baseUrl,
+    timeout: input?.timeout,
+    retry: input?.retry,
+    entityCache: input?.entityCache,
+  };
+}
+
+/**
+ * Parse a raw MCP CallToolResult envelope into the tool's payload.
+ *
+ * Shared by StitchToolClient and the proxy's virtual-tool path so both
+ * see identical payloads (structuredContent first, then JSON-in-text)
+ * and identical error behavior (isError → StitchError).
+ */
+export function parseToolResult<T>(result: any, name: string): T {
+  if (result.isError) {
+    const errorText = (result.content as any[])
+      .map((c: any) => (c.type === "text" ? c.text : ""))
+      .join("");
+
+    const code = classifyError({ text: errorText });
+
+    throw new StitchError({
+      code,
+      message: `Tool Call Failed [${name}]: ${errorText}`,
+      recoverable: isRecoverable(code),
+      toolName: name,
+    });
+  }
+
+  // Stitch specific parsing: Check structuredContent first, then JSON in text
+  const anyResult = result as any;
+  if (anyResult.structuredContent) return anyResult.structuredContent as T;
+
+  const textContent = (result.content as any[]).find(
+    (c: any) => c.type === "text",
+  );
+  if (textContent && textContent.type === "text") {
+    try {
+      return JSON.parse(textContent.text) as T;
+    } catch {
+      return textContent.text as unknown as T;
+    }
+  }
+
+  return anyResult as T;
+}
+
+/**
+ * Tools matching this pattern are idempotent reads and therefore safe to
+ * auto-retry. Generative/mutating tools (generate_*, edit_*, create_*, ...)
+ * are NEVER auto-retried: a retried generation duplicates minutes of work,
+ * burns quota, and can orphan screens server-side (V1_PLAN D6 revision).
+ */
+const RETRY_ELIGIBLE_TOOL = /^(get_|list_)/;
+
+/**
+ * Exponential backoff with full jitter:
+ *   delay = min(maxMs, baseMs * 2^attempt) * random(0..1)
+ *
+ * `rand` is injectable for deterministic tests.
+ */
+export function computeBackoffMs(
+  attempt: number,
+  baseMs: number,
+  maxMs: number,
+  rand: () => number = Math.random,
+): number {
+  return Math.min(maxMs, baseMs * 2 ** attempt) * rand();
+}
+
+/**
+ * Parse a Retry-After header (seconds or HTTP date) to milliseconds.
+ */
+export function parseRetryAfter(
+  header: string | number | null | undefined,
+): number | undefined {
+  if (header == null) return undefined;
+  if (typeof header === "number") {
+    return Number.isFinite(header) && header >= 0 ? header * 1000 : undefined;
+  }
+  const trimmed = header.trim();
+  if (!trimmed) return undefined;
+  if (/^\d+$/.test(trimmed)) {
+    const sec = parseInt(trimmed, 10);
+    return Number.isFinite(sec) ? sec * 1000 : undefined;
+  }
+  const timestamp = Date.parse(trimmed);
+  if (!Number.isNaN(timestamp)) {
+    return Math.max(0, timestamp - Date.now());
+  }
+  return undefined;
+}
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/**
+ * Normalize an error thrown from the MCP transport into a StitchError.
+ *
+ * A non-OK HTTP response (gateway 429/401/403, etc.) is thrown by the MCP
+ * SDK as StreamableHTTPError BEFORE any JSON-RPC body parsing, so it never
+ * passes through parseToolResult and is neither classified nor retryable.
+ * This maps it by status so RATE_LIMITED retry fires for real 429s and
+ * callers always see a StitchError with `.status`/`.toolName`. Non-HTTP
+ * errors (network/abort/already-StitchError) pass through unchanged.
+ */
+function normalizeTransportError(err: unknown, toolName: string): unknown {
+  if (err instanceof StitchError) return err;
+  if (err instanceof StreamableHTTPError && typeof err.code === "number") {
+    const code = classifyError({ status: err.code });
+    const headers = (err as any).headers || (err as any).response?.headers;
+    const retryAfterVal =
+      headers?.get?.("retry-after") ??
+      headers?.["retry-after"] ??
+      (err as any).retryAfter;
+    return new StitchError({
+      code,
+      message: `Tool Call Failed [${toolName}]: HTTP ${err.code} — ${err.message}`,
+      recoverable: isRecoverable(code),
+      status: err.code,
+      toolName,
+      retryAfter: parseRetryAfter(retryAfterVal),
+    });
+  }
+  return err;
+}
 
 /**
  * Authenticated tool pipe for the Stitch MCP Server.
@@ -46,6 +231,7 @@ export class StitchToolClient implements StitchToolClientSpec {
   private transport: StreamableHTTPClientTransport | null = null;
   private config: StitchConfig;
   private isConnected: boolean = false;
+  private isClosed: boolean = false;
   private connectPromise: Promise<void> | null = null;
   private localVirtualTools: VirtualToolDefinition[] = [];
   public entities: EntityManager;
@@ -55,21 +241,39 @@ export class StitchToolClient implements StitchToolClientSpec {
       localVirtualTools?: VirtualToolDefinition[];
     },
   ) {
-    const rawConfig = {
-      accessToken: inputConfig?.accessToken || process.env.STITCH_ACCESS_TOKEN,
-      apiKey: inputConfig?.apiKey || process.env.STITCH_API_KEY,
-      projectId: inputConfig?.projectId || process.env.GOOGLE_CLOUD_PROJECT,
-      baseUrl: inputConfig?.baseUrl,
-      timeout: inputConfig?.timeout,
-    };
-    this.config = StitchConfigSchema.parse(rawConfig);
+    this.config = StitchConfigSchema.parse(resolveConfigWithEnv(inputConfig));
     this.localVirtualTools = inputConfig?.localVirtualTools || [];
-    this.entities = new EntityManager(this);
+    this.entities = new EntityManager(this, {
+      enabled: this.config.entityCache,
+    });
 
-    this.client = new Client(
+    this.client = this.createMcpClient();
+  }
+
+  /**
+   * A fresh MCP Client is required per transport: calling connect() twice
+   * on a single Client instance is undefined behavior in the MCP SDK.
+   */
+  private createMcpClient(): Client {
+    return new Client(
       { name: "stitch-core-client", version: SDK_VERSION },
       { capabilities: {} },
     );
+  }
+
+  /**
+   * Guard for the terminal close() state. Once close() has been called,
+   * this client is permanently unusable — create a new StitchToolClient.
+   */
+  private assertNotClosed(): void {
+    if (this.isClosed) {
+      throw new StitchError({
+        code: "CLIENT_CLOSED",
+        message:
+          "This client is closed: client.close() was called; create a new StitchToolClient to make further calls.",
+        recoverable: false,
+      });
+    }
   }
 
   /**
@@ -87,64 +291,11 @@ export class StitchToolClient implements StitchToolClientSpec {
   }
 
   private parseToolResponse<T>(result: any, name: string): T {
-    if (result.isError) {
-      const errorText = (result.content as any[])
-        .map((c: any) => (c.type === "text" ? c.text : ""))
-        .join("");
-
-      let code: StitchErrorCode = "UNKNOWN_ERROR";
-      const lowerErrorText = errorText.toLowerCase();
-
-      if (
-        lowerErrorText.includes("rate limit") ||
-        lowerErrorText.includes("429")
-      ) {
-        code = "RATE_LIMITED";
-      } else if (
-        lowerErrorText.includes("not found") ||
-        lowerErrorText.includes("404")
-      ) {
-        code = "NOT_FOUND";
-      } else if (
-        lowerErrorText.includes("permission") ||
-        lowerErrorText.includes("403")
-      ) {
-        code = "PERMISSION_DENIED";
-      } else if (
-        lowerErrorText.includes("unauthorized") ||
-        lowerErrorText.includes("unauthenticated") ||
-        lowerErrorText.includes("invalid authentication") ||
-        lowerErrorText.includes("401")
-      ) {
-        code = "AUTH_FAILED";
-      }
-
-      throw new StitchError({
-        code,
-        message: `Tool Call Failed [${name}]: ${errorText}`,
-        recoverable: code === "RATE_LIMITED",
-      });
-    }
-
-    // Stitch specific parsing: Check structuredContent first, then JSON in text
-    const anyResult = result as any;
-    if (anyResult.structuredContent) return anyResult.structuredContent as T;
-
-    const textContent = (result.content as any[]).find(
-      (c: any) => c.type === "text",
-    );
-    if (textContent && textContent.type === "text") {
-      try {
-        return JSON.parse(textContent.text) as T;
-      } catch {
-        return textContent.text as unknown as T;
-      }
-    }
-
-    return anyResult as T;
+    return parseToolResult<T>(result, name);
   }
 
   async connect() {
+    this.assertNotClosed();
     if (this.isConnected) return;
     if (this.connectPromise) return this.connectPromise;
 
@@ -157,43 +308,132 @@ export class StitchToolClient implements StitchToolClientSpec {
   }
 
   private async doConnect() {
+    // Reconnect path: tear down any previous transport BEFORE creating a
+    // new one, so failed/stale connections never leave dangling sockets.
+    if (this.transport) {
+      await this.transport.close().catch(() => {});
+      this.transport = null;
+      // The old Client is bound to the closed transport — recreate it.
+      this.client = this.createMcpClient();
+    }
+
+    debugLog("lifecycle", "connecting", { baseUrl: this.config.baseUrl });
+
+    // Validate baseUrl here so a bad value surfaces as a StitchError, not a
+    // raw TypeError from `new URL()` (e.g. an explicit baseUrl:"" or garbage).
+    let url: URL;
+    try {
+      url = new URL(this.config.baseUrl);
+    } catch {
+      throw new StitchError({
+        code: "VALIDATION_ERROR",
+        message: `Invalid baseUrl: "${this.config.baseUrl}" is not a valid URL.`,
+        recoverable: false,
+      });
+    }
+
     // Create transport with auth headers injected per-instance (no global fetch mutation)
-    this.transport = new StreamableHTTPClientTransport(
-      new URL(this.config.baseUrl),
-      {
-        requestInit: {
-          headers: this.buildAuthHeaders(),
-        },
+    this.transport = new StreamableHTTPClientTransport(url, {
+      requestInit: {
+        headers: this.buildAuthHeaders(),
       },
-    );
+    });
 
     this.transport.onerror = (err) => {
-      console.error("Stitch Transport Error:", err);
+      // debugLog only — the transport error object may embed request info
+      // (headers); log err.message exclusively so credentials can't leak.
+      debugLog("transport", "transport error", {
+        message: err instanceof Error ? err.message : String(err),
+      });
       this.isConnected = false;
     };
 
     await this.client.connect(this.transport);
+    // If close() ran while we were awaiting connect, it already tore down
+    // (and nulled) the transport — just bail. Do NOT resurrect isConnected,
+    // and do NOT touch this.transport (dereferencing the now-null transport
+    // here threw a TypeError that close()'s teardown was meant to avoid).
+    if (this.isClosed) {
+      this.isConnected = false;
+      return;
+    }
     this.isConnected = true;
+    debugLog("lifecycle", "connected");
   }
 
   /**
    * Generic tool caller with type support and error parsing.
+   *
+   * RATE_LIMITED failures on idempotent reads (get_* / list_*) are retried
+   * with exponential backoff + full jitter, per `config.retry`. MCP text
+   * errors carry no Retry-After header, so nothing else is honored.
    */
   async callTool<T>(name: string, args: Record<string, any>): Promise<T> {
+    this.assertNotClosed();
     if (!this.isConnected) await this.connect();
+
+    // Log arg KEYS only — prompt/content values may be sensitive.
+    debugLog("tool", `callTool ${name}`, { argKeys: Object.keys(args) });
 
     const localTool = this.localVirtualTools.find((t) => t.name === name);
     if (localTool) {
       return localTool.execute(this, args);
     }
 
-    const result = await this.client.callTool(
-      { name, arguments: args },
-      undefined,
-      { timeout: this.config.timeout },
-    );
+    const retry =
+      this.config.retry !== false && RETRY_ELIGIBLE_TOOL.test(name)
+        ? this.config.retry
+        : null;
+    const maxAttempts = retry ? retry.attempts : 1;
 
-    return this.parseToolResponse<T>(result, name);
+    for (let attempt = 0; ; attempt++) {
+      try {
+        const result = await this.client.callTool(
+          { name, arguments: args },
+          undefined,
+          { timeout: this.config.timeout },
+        );
+        return this.parseToolResponse<T>(result, name);
+      } catch (rawErr) {
+        // Normalize transport HTTP errors first, so a real 429 is both
+        // classified and retry-eligible (it never reaches parseToolResult).
+        const err = normalizeTransportError(rawErr, name);
+        const isRetryable =
+          retry !== null &&
+          err instanceof StitchError &&
+          (err.code === "RATE_LIMITED" || err.code === "SERVICE_UNAVAILABLE");
+        if (!isRetryable || attempt >= maxAttempts - 1) throw err;
+        debugLog("retry", `${err.code} on ${name}; backing off`, {
+          attempt: attempt + 1,
+          maxAttempts,
+        });
+        const backoffMs = computeBackoffMs(attempt, retry.baseMs, retry.maxMs);
+        const delayMs = Math.max(backoffMs, err.retryAfter ?? 0);
+        await sleep(delayMs);
+      }
+    }
+  }
+
+  /**
+   * Call a tool and return the RAW MCP CallToolResult envelope
+   * (content / structuredContent / isError) WITHOUT parsing and WITHOUT
+   * retry.
+   *
+   * This is the proxy's forwarding path: the proxy relays envelopes
+   * verbatim to its downstream MCP client, which owns error semantics —
+   * parsing or retrying here would change downstream-visible behavior.
+   * SDK users want callTool() instead.
+   */
+  async callToolRaw(name: string, args: Record<string, any>): Promise<any> {
+    this.assertNotClosed();
+    if (!this.isConnected) await this.connect();
+
+    // Log arg KEYS only — prompt/content values may be sensitive.
+    debugLog("tool", `callToolRaw ${name}`, { argKeys: Object.keys(args) });
+
+    return this.client.callTool({ name, arguments: args }, undefined, {
+      timeout: this.config.timeout,
+    });
   }
 
   /**
@@ -209,6 +449,7 @@ export class StitchToolClient implements StitchToolClientSpec {
    *   Neither means "API keys are unsupported." See upload-handler.ts for full context.
    */
   async httpPost<T>(path: string, body: unknown): Promise<T> {
+    this.assertNotClosed();
     const url = `${this.config.baseUrl.replace(/\/mcp$/, "").replace(/\/$/, "")}/v1/${path}`;
     const response = await fetch(url, {
       method: "POST",
@@ -219,51 +460,52 @@ export class StitchToolClient implements StitchToolClientSpec {
       body: JSON.stringify(body),
     });
 
+    // NO retry here: httpPost is used exclusively for mutating REST
+    // endpoints (BatchCreateScreens uploads). Auto-retrying a mutation
+    // risks duplicate server-side writes — the D6 idempotent-reads-only
+    // rule means retry lives in callTool, gated on get_*/list_* names.
     if (!response.ok) {
       const text = await response.text().catch(() => "");
-      const lowerText = text.toLowerCase();
-      let code: StitchErrorCode = "UNKNOWN_ERROR";
-      if (response.status === 429 || lowerText.includes("rate limit")) {
-        code = "RATE_LIMITED";
-      } else if (response.status === 404 || lowerText.includes("not found")) {
-        code = "NOT_FOUND";
-      } else if (response.status === 403 || lowerText.includes("permission")) {
-        code = "PERMISSION_DENIED";
-      } else if (
-        response.status === 401 ||
-        lowerText.includes("401") ||
-        lowerText.includes("unauthorized") ||
-        lowerText.includes("unauthenticated")
-      ) {
-        code = "AUTH_FAILED";
-      }
+      const code = classifyError({ status: response.status, text });
       throw new StitchError({
         code,
         message: `HTTP ${response.status}: ${text || response.statusText}`,
-        recoverable: code === "RATE_LIMITED",
+        recoverable: isRecoverable(code),
       });
     }
 
     return response.json() as Promise<T>;
   }
 
-  async listTools() {
+  /**
+   * List remote tools and return the RAW result — schemas exactly as the
+   * server served them, with NO repair and NO local virtual tools appended.
+   *
+   * Used where the raw schemas are the source of truth: the capture
+   * pipeline (tools-manifest must not be coupled to repair heuristics)
+   * and the proxy (repair happens at serving time in its listTools
+   * handler). SDK users want listTools() instead.
+   *
+   * CRITICAL: We use a raw request() instead of this.client.listTools()
+   * because Client.listTools() eagerly compiles outputSchema with AJV
+   * via cacheToolMetadata(). If the Stitch backend returns schemas with
+   * $ref to missing $defs (e.g. #/$defs/ScreenInstance), AJV throws a
+   * MissingRefError BEFORE any schema repair code can run.
+   */
+  async listToolsRaw(): Promise<{ tools: Tool[] }> {
+    this.assertNotClosed();
     if (!this.isConnected) await this.connect();
 
-    // CRITICAL: We use a raw request() instead of this.client.listTools()
-    // because Client.listTools() eagerly compiles outputSchema with AJV
-    // via cacheToolMetadata(). If the Stitch backend returns schemas with
-    // $ref to missing $defs (e.g. #/$defs/ScreenInstance), AJV throws a
-    // MissingRefError BEFORE our schema repair code can run.
-    //
-    // By using request() directly, we get the raw tool list, apply schema
-    // repair to inject missing $defs, and avoid the AJV crash entirely.
     const remoteTools = await (this.client as any).request(
       { method: "tools/list", params: {} },
       ListToolsResultSchema,
     );
 
-    const tools = remoteTools.tools || [];
+    return { tools: remoteTools.tools || [] };
+  }
+
+  async listTools() {
+    const { tools } = await this.listToolsRaw();
 
     // Resilient Schema Repair: Inject missing $defs BEFORE any AJV
     // compilation can occur. Repairs both inputSchema and outputSchema.
@@ -280,10 +522,20 @@ export class StitchToolClient implements StitchToolClientSpec {
     };
   }
 
+  /**
+   * Close the connection. TERMINAL: after close(), every subsequent
+   * connect/callTool/httpPost/listTools throws CLIENT_CLOSED — create a
+   * new StitchToolClient instead. Calling close() again is a no-op.
+   */
   async close() {
+    if (this.isClosed) return;
+    this.isClosed = true;
+    this.isConnected = false;
+    this.connectPromise = null;
+    debugLog("lifecycle", "close() called — client is now terminal");
     if (this.transport) {
-      await this.transport.close();
-      this.isConnected = false;
+      await this.transport.close().catch(() => {});
+      this.transport = null;
     }
   }
 }

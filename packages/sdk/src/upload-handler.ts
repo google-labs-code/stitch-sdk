@@ -46,7 +46,9 @@ import {
   type UploadErrorCode,
   type UploadSpec,
 } from "./spec/upload.js";
-import { Screen } from "../generated/src/screen.js";
+import { Screen } from "./screen-ext.js";
+import { StitchError } from "./spec/errors.js";
+import { classifyError, isRecoverable } from "./spec/error-mapping.js";
 
 /** Build the BatchCreateScreens JSON body. */
 function buildBatchCreateScreensBody(
@@ -133,7 +135,13 @@ export class UploadHandler implements UploadSpec {
             screenData.id = parts[1];
           }
         }
-        return new Screen(this.client as any, screenData);
+        // Resolve through the identity map — direct construction would
+        // leave projectId/screenId unhydrated (regression in #358).
+        return this.client.entities.resolve(
+          Screen,
+          ["projectId", "screenId"],
+          screenData,
+        );
       });
 
       return { success: true, screens };
@@ -154,16 +162,21 @@ export class UploadHandler implements UploadSpec {
         };
       }
       const msg = err instanceof Error ? err.message : String(err);
+      // httpPost already classifies HTTP failures into a StitchError code;
+      // trust it. Otherwise classify from the message text alone.
+      const stitchCode =
+        err instanceof StitchError ? err.code : classifyError({ text: msg });
+      // Map into the local UploadErrorCode space. The enum has no
+      // PERMISSION_DENIED (or NOT_FOUND/RATE_LIMITED) — those collapse to
+      // UPLOAD_FAILED with the original message preserved. Notably 403 is
+      // no longer mislabeled AUTH_FAILED, and arbitrary "auth" substrings
+      // ("author...") no longer classify at all.
       const code: UploadErrorCode =
-        msg.includes("401") ||
-        msg.includes("403") ||
-        msg.toLowerCase().includes("auth")
-          ? "AUTH_FAILED"
-          : "UPLOAD_FAILED";
+        stitchCode === "AUTH_FAILED" ? "AUTH_FAILED" : "UPLOAD_FAILED";
 
       return {
         success: false,
-        error: { code, message: msg, recoverable: false },
+        error: { code, message: msg, recoverable: isRecoverable(stitchCode) },
       };
     }
   }

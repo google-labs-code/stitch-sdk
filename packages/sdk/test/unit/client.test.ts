@@ -13,7 +13,11 @@
 // limitations under the License.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { StitchToolClient } from "../../src/client.js";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import {
+  StitchToolClient,
+  __resetStitchHostWarning,
+} from "../../src/client.js";
 import { ZodError } from "zod";
 
 // Mock child_process for gcloud calls
@@ -23,19 +27,17 @@ vi.mock("child_process", () => ({
 
 describe("StitchToolClient", () => {
   const originalFetch = globalThis.fetch;
-  const originalEnv = { ...process.env };
 
   beforeEach(() => {
-    // Reset mocks and environment variables before each test
     vi.clearAllMocks();
-    process.env = { ...originalEnv };
   });
 
   afterEach(() => {
-    // Restore original state
+    // Restore original state. Env mutations go through vi.stubEnv, never
+    // whole-object process.env swaps (order-sensitive under parallel suites).
     globalThis.fetch = originalFetch;
     delete (globalThis.fetch as any).__stitchPatched;
-    process.env = originalEnv;
+    vi.unstubAllEnvs();
   });
 
   // --- NEW DUAL-AUTH TESTS ---
@@ -46,18 +48,20 @@ describe("StitchToolClient", () => {
 
   it("should throw ZodError if no credentials provided", () => {
     // Ensure no env vars are set that could satisfy the validation
-    delete process.env.STITCH_API_KEY;
-    delete process.env.STITCH_ACCESS_TOKEN;
-    delete process.env.GOOGLE_CLOUD_PROJECT;
+    vi.stubEnv("STITCH_API_KEY", "");
+    vi.stubEnv("STITCH_ACCESS_TOKEN", "");
+    vi.stubEnv("STITCH_PROJECT_ID", "");
+    vi.stubEnv("GOOGLE_CLOUD_PROJECT", "");
 
     expect(() => new StitchToolClient({})).toThrow(ZodError);
     expect(() => new StitchToolClient()).toThrow(ZodError);
   });
 
   it("should throw if accessToken is provided without projectId", () => {
-    delete process.env.STITCH_API_KEY;
-    delete process.env.STITCH_ACCESS_TOKEN;
-    delete process.env.GOOGLE_CLOUD_PROJECT;
+    vi.stubEnv("STITCH_API_KEY", "");
+    vi.stubEnv("STITCH_ACCESS_TOKEN", "");
+    vi.stubEnv("STITCH_PROJECT_ID", "");
+    vi.stubEnv("GOOGLE_CLOUD_PROJECT", "");
 
     expect(() => new StitchToolClient({ accessToken: "test-token" })).toThrow(
       ZodError,
@@ -65,14 +69,14 @@ describe("StitchToolClient", () => {
   });
 
   it("should use STITCH_API_KEY env var as a fallback", () => {
-    process.env.STITCH_API_KEY = "env-key";
+    vi.stubEnv("STITCH_API_KEY", "env-key");
     const client = new StitchToolClient();
     expect(client).toBeDefined();
   });
 
   it("should use STITCH_ACCESS_TOKEN and GOOGLE_CLOUD_PROJECT env vars", () => {
-    process.env.STITCH_ACCESS_TOKEN = "env-token";
-    process.env.GOOGLE_CLOUD_PROJECT = "env-project";
+    vi.stubEnv("STITCH_ACCESS_TOKEN", "env-token");
+    vi.stubEnv("GOOGLE_CLOUD_PROJECT", "env-project");
     const client = new StitchToolClient();
     expect(client).toBeDefined();
   });
@@ -86,7 +90,7 @@ describe("StitchToolClient", () => {
 
   // --- EXISTING OAUTH TESTS (ADAPTED) ---
   it("should validate token on connect with OAuth", async () => {
-    delete process.env.STITCH_API_KEY;
+    vi.stubEnv("STITCH_API_KEY", "");
 
     const client = new StitchToolClient({
       accessToken: "initial_token",
@@ -108,7 +112,7 @@ describe("StitchToolClient", () => {
     });
 
     it("should set Bearer token and project for OAuth auth", () => {
-      delete process.env.STITCH_API_KEY;
+      vi.stubEnv("STITCH_API_KEY", "");
       const client = new StitchToolClient({
         accessToken: "ya29.token",
         projectId: "proj-1",
@@ -229,6 +233,221 @@ describe("StitchToolClient", () => {
       });
       const result = await client.callTool("some_tool", {});
       expect(result).toBe("plain string");
+    });
+  });
+
+  // ─── Branch 11: terminal close() ─────────────────────────────────
+  describe("terminal close()", () => {
+    it("REGRESSION: close() during an in-flight connect() resolves cleanly (no null-deref TypeError)", async () => {
+      const client = new StitchToolClient({ apiKey: "k" });
+      // Gate the inner MCP connect so doConnect parks on the await.
+      let release!: () => void;
+      const gate = new Promise<void>((r) => (release = r));
+      client["client"].connect = vi.fn().mockImplementation(() => gate);
+
+      const connecting = client.connect();
+      await Promise.resolve(); // let doConnect reach the await
+      await client.close(); // nulls + closes the transport mid-connect
+      release(); // inner connect now resolves; doConnect resumes the recheck
+
+      // Must NOT reject with a TypeError from dereferencing the nulled
+      // transport — it should resolve and leave the client cleanly closed.
+      await expect(connecting).resolves.toBeUndefined();
+      expect(client["isConnected"]).toBe(false);
+      expect(client["isClosed"]).toBe(true);
+    });
+
+    it("callTool throws CLIENT_CLOSED after close()", async () => {
+      const client = new StitchToolClient({ apiKey: "k" });
+      await client.close();
+      await expect(client.callTool("list_projects", {})).rejects.toMatchObject({
+        code: "CLIENT_CLOSED",
+        recoverable: false,
+        message: expect.stringContaining("create a new StitchToolClient"),
+      });
+    });
+
+    it("listTools, httpPost, and connect all throw CLIENT_CLOSED after close()", async () => {
+      const client = new StitchToolClient({ apiKey: "k" });
+      await client.close();
+      await expect(client.listTools()).rejects.toMatchObject({
+        code: "CLIENT_CLOSED",
+      });
+      await expect(client.httpPost("projects/p", {})).rejects.toMatchObject({
+        code: "CLIENT_CLOSED",
+      });
+      await expect(client.connect()).rejects.toMatchObject({
+        code: "CLIENT_CLOSED",
+      });
+    });
+
+    it("close() is idempotent and resets connection state", async () => {
+      const client = new StitchToolClient({ apiKey: "k" });
+      const transportClose = vi.fn().mockResolvedValue(undefined);
+      client["transport"] = { close: transportClose } as any;
+      client["isConnected"] = true;
+
+      await client.close();
+      expect(transportClose).toHaveBeenCalledTimes(1);
+      expect(client["isConnected"]).toBe(false);
+      expect(client["connectPromise"]).toBeNull();
+      expect(client["transport"]).toBeNull();
+
+      // Second close is a no-op, not an error
+      await expect(client.close()).resolves.toBeUndefined();
+      expect(transportClose).toHaveBeenCalledTimes(1);
+    });
+
+    it("close() succeeds even if the transport close fails", async () => {
+      const client = new StitchToolClient({ apiKey: "k" });
+      client["transport"] = {
+        close: vi.fn().mockRejectedValue(new Error("socket gone")),
+      } as any;
+      await expect(client.close()).resolves.toBeUndefined();
+      expect(client["isClosed"]).toBe(true);
+    });
+  });
+
+  // ─── Branch 11: reconnect path ───────────────────────────────────
+  describe("reconnect path", () => {
+    it("closes the previous transport and recreates the MCP Client before reconnecting", async () => {
+      const connectSpy = vi
+        .spyOn(Client.prototype, "connect")
+        .mockResolvedValue(undefined);
+      try {
+        const client = new StitchToolClient({ apiKey: "k" });
+        const firstMcpClient = client["client"];
+        const oldTransport = { close: vi.fn().mockResolvedValue(undefined) };
+        client["transport"] = oldTransport as any;
+
+        await client.connect();
+
+        // Old transport torn down BEFORE the new connection was made
+        expect(oldTransport.close).toHaveBeenCalledTimes(1);
+        expect(oldTransport.close.mock.invocationCallOrder[0]).toBeLessThan(
+          connectSpy.mock.invocationCallOrder[0],
+        );
+        // Fresh MCP Client per transport (connect() twice on one Client
+        // is undefined behavior)
+        expect(client["client"]).not.toBe(firstMcpClient);
+        expect(client["isConnected"]).toBe(true);
+      } finally {
+        connectSpy.mockRestore();
+      }
+    });
+
+    it("ignores errors from closing the stale transport", async () => {
+      const connectSpy = vi
+        .spyOn(Client.prototype, "connect")
+        .mockResolvedValue(undefined);
+      try {
+        const client = new StitchToolClient({ apiKey: "k" });
+        client["transport"] = {
+          close: vi.fn().mockRejectedValue(new Error("already dead")),
+        } as any;
+        await expect(client.connect()).resolves.toBeUndefined();
+        expect(client["isConnected"]).toBe(true);
+      } finally {
+        connectSpy.mockRestore();
+      }
+    });
+
+    it("connect failure resets state so a retry can succeed", async () => {
+      const connectSpy = vi
+        .spyOn(Client.prototype, "connect")
+        .mockRejectedValueOnce(new Error("network down"))
+        .mockResolvedValueOnce(undefined);
+      try {
+        const client = new StitchToolClient({ apiKey: "k" });
+        await expect(client.connect()).rejects.toThrow("network down");
+        expect(client["isConnected"]).toBe(false);
+        expect(client["connectPromise"]).toBeNull();
+
+        await expect(client.connect()).resolves.toBeUndefined();
+        expect(client["isConnected"]).toBe(true);
+      } finally {
+        connectSpy.mockRestore();
+      }
+    });
+  });
+
+  // ─── Branch 11: unified config/env (D5 REVISED) ──────────────────
+  describe("config env fallbacks", () => {
+    beforeEach(() => {
+      vi.stubEnv("STITCH_API_KEY", "");
+      vi.stubEnv("STITCH_ACCESS_TOKEN", "");
+      vi.stubEnv("STITCH_PROJECT_ID", "");
+      vi.stubEnv("GOOGLE_CLOUD_PROJECT", "");
+      vi.stubEnv("STITCH_BASE_URL", "");
+      vi.stubEnv("STITCH_HOST", "");
+    });
+
+    it("prefers STITCH_PROJECT_ID over GOOGLE_CLOUD_PROJECT", () => {
+      vi.stubEnv("STITCH_ACCESS_TOKEN", "tok");
+      vi.stubEnv("STITCH_PROJECT_ID", "stitch-proj");
+      vi.stubEnv("GOOGLE_CLOUD_PROJECT", "gcp-proj");
+      const client = new StitchToolClient();
+      expect(client["config"].projectId).toBe("stitch-proj");
+    });
+
+    it("GOOGLE_CLOUD_PROJECT stays first-class (no warning)", () => {
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      vi.stubEnv("STITCH_ACCESS_TOKEN", "tok");
+      vi.stubEnv("GOOGLE_CLOUD_PROJECT", "gcp-proj");
+      const client = new StitchToolClient();
+      expect(client["config"].projectId).toBe("gcp-proj");
+      expect(warnSpy).not.toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+
+    it("reads baseUrl from STITCH_BASE_URL", () => {
+      vi.stubEnv("STITCH_API_KEY", "k");
+      vi.stubEnv("STITCH_BASE_URL", "https://staging.example.com/mcp");
+      const client = new StitchToolClient();
+      expect(client["config"].baseUrl).toBe("https://staging.example.com/mcp");
+    });
+
+    it("explicit baseUrl wins over STITCH_BASE_URL", () => {
+      vi.stubEnv("STITCH_BASE_URL", "https://env.example.com/mcp");
+      const client = new StitchToolClient({
+        apiKey: "k",
+        baseUrl: "https://explicit.example.com/mcp",
+      });
+      expect(client["config"].baseUrl).toBe("https://explicit.example.com/mcp");
+    });
+
+    it("STITCH_HOST is honored as a deprecated alias and warns once per process", () => {
+      __resetStitchHostWarning();
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      vi.stubEnv("STITCH_API_KEY", "k");
+      vi.stubEnv("STITCH_HOST", "https://legacy.example.com/mcp");
+
+      const client1 = new StitchToolClient();
+      expect(client1["config"].baseUrl).toBe("https://legacy.example.com/mcp");
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(warnSpy.mock.calls[0][0]).toContain("STITCH_HOST");
+      expect(warnSpy.mock.calls[0][0]).toContain("deprecated");
+
+      // Warn fires only once per process
+      new StitchToolClient();
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      warnSpy.mockRestore();
+    });
+
+    it("STITCH_BASE_URL beats STITCH_HOST and suppresses the warning", () => {
+      __resetStitchHostWarning();
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      vi.stubEnv("STITCH_API_KEY", "k");
+      vi.stubEnv("STITCH_BASE_URL", "https://new.example.com/mcp");
+      vi.stubEnv("STITCH_HOST", "https://legacy.example.com/mcp");
+      const client = new StitchToolClient();
+      expect(client["config"].baseUrl).toBe("https://new.example.com/mcp");
+      expect(warnSpy).not.toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+
+    it("config validation error says 'Invalid configuration'", () => {
+      expect(() => new StitchToolClient({})).toThrow(/Invalid configuration/);
     });
   });
 

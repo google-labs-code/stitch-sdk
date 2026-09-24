@@ -49,17 +49,17 @@ describe("DownloadAssetsHandler", () => {
     // If I mock callTool('list_screens') it returns raw objects!
     const mockScreen = {
       id: "s1",
-      htmlCode: { downloadUrl: "http://fake/s1.html" },
+      htmlCode: { downloadUrl: "https://fake/s1.html" },
     };
     mockClient.callTool.mockResolvedValue({ screens: [mockScreen] });
 
     const mockFetch = vi.fn().mockImplementation((url) => {
-      if (url === "http://fake/s1.html") {
+      if (url === "https://fake/s1.html") {
         return Promise.resolve({
           ok: true,
           text: () =>
             Promise.resolve(
-              '<html><img src="http://example.com/bad name.png"></html>',
+              '<html><img src="https://example.com/bad name.png"></html>',
             ),
         });
       }
@@ -99,17 +99,17 @@ describe("DownloadAssetsHandler", () => {
 
     const mockScreen = {
       id: "s1",
-      getHtml: vi.fn().mockResolvedValue("http://fake/s1.html"),
+      getHtml: vi.fn().mockResolvedValue("https://fake/s1.html"),
     };
     mockClient.callTool.mockResolvedValue({ screens: [mockScreen] });
 
     const mockFetch = vi.fn().mockImplementation((url) => {
-      if (url === "http://fake/s1.html") {
+      if (url === "https://fake/s1.html") {
         return Promise.resolve({
           ok: true,
           text: () =>
             Promise.resolve(
-              '<html><img src="http://example.com/%2e%2e/etc/passwd"></html>',
+              '<html><img src="https://example.com/%2e%2e/etc/passwd"></html>',
             ),
         });
       }
@@ -162,14 +162,14 @@ describe("DownloadAssetsHandler", () => {
     const mockClient = { callTool: vi.fn() } as any;
     const mockScreen = {
       id: "s1",
-      htmlCode: { downloadUrl: "http://fake/s1.html" },
+      htmlCode: { downloadUrl: "https://fake/s1.html" },
     };
     mockClient.callTool.mockResolvedValue({ screens: [mockScreen] });
 
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation((url) => {
-        if (url === "http://fake/s1.html") {
+        if (url === "https://fake/s1.html") {
           return Promise.resolve({
             ok: true,
             text: () => Promise.resolve("<html></html>"),
@@ -204,19 +204,19 @@ describe("DownloadAssetsHandler", () => {
     const mockClient = { callTool: vi.fn() } as any;
     const mockScreen = {
       id: "s1",
-      htmlCode: { downloadUrl: "http://fake/s1.html" },
+      htmlCode: { downloadUrl: "https://fake/s1.html" },
     };
     mockClient.callTool.mockResolvedValue({ screens: [mockScreen] });
 
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation((url) => {
-        if (url === "http://fake/s1.html") {
+        if (url === "https://fake/s1.html") {
           return Promise.resolve({
             ok: true,
             text: () =>
               Promise.resolve(
-                '<html><img src="http://example.com/img.png"></html>',
+                '<html><img src="https://example.com/img.png"></html>',
               ),
           });
         }
@@ -248,14 +248,14 @@ describe("DownloadAssetsHandler", () => {
     const mockClient = { callTool: vi.fn() } as any;
     const mockScreen = {
       id: "s1",
-      htmlCode: { downloadUrl: "http://fake/s1.html" },
+      htmlCode: { downloadUrl: "https://fake/s1.html" },
     };
     mockClient.callTool.mockResolvedValue({ screens: [mockScreen] });
 
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation((url) => {
-        if (url === "http://fake/s1.html") {
+        if (url === "https://fake/s1.html") {
           return Promise.resolve({
             ok: true,
             text: () => Promise.resolve("<html></html>"),
@@ -296,7 +296,7 @@ describe("DownloadAssetsHandler", () => {
         screens: [
           {
             name: "projects/p1/screens/s123",
-            htmlCode: { downloadUrl: "http://fake/s123.html" },
+            htmlCode: { downloadUrl: "https://fake/s123.html" },
           },
         ],
       }),
@@ -329,21 +329,21 @@ describe("DownloadAssetsHandler", () => {
     const mockClient = { callTool: vi.fn() } as any;
     const mockScreen = {
       id: "s1",
-      htmlCode: { downloadUrl: "http://fake/s1.html" },
-      screenshot: { downloadUrl: "http://fake/s1.png" },
+      htmlCode: { downloadUrl: "https://fake/s1.html" },
+      screenshot: { downloadUrl: "https://fake/s1.png" },
     };
     mockClient.callTool.mockResolvedValue({ screens: [mockScreen] });
 
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation((url) => {
-        if (url === "http://fake/s1.html") {
+        if (url === "https://fake/s1.html") {
           return Promise.resolve({
             ok: true,
             text: () => Promise.resolve("<html></html>"),
           });
         }
-        if (url === "http://fake/s1.png") {
+        if (url === "https://fake/s1.png") {
           return Promise.resolve({
             ok: true,
             arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
@@ -430,7 +430,7 @@ describe("DownloadAssetsHandler", () => {
           {
             id: "s1",
             title: "Home Screen",
-            htmlCode: { downloadUrl: "http://fake/s1.html" },
+            htmlCode: { downloadUrl: "https://fake/s1.html" },
           },
         ],
       }),
@@ -501,8 +501,8 @@ describe("DownloadAssetsHandler warnings", () => {
           screens: [
             {
               id: "s1",
-              htmlCode: { downloadUrl: "http://fake/s1.html" },
-              screenshot: { downloadUrl: "http://fake/screenshot.png" },
+              htmlCode: { downloadUrl: "https://fake/s1.html" },
+              screenshot: { downloadUrl: "https://fake/screenshot.png" },
             },
           ],
         });
@@ -516,13 +516,13 @@ describe("DownloadAssetsHandler warnings", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation((url: string) => {
-        if (url === "http://fake/s1.html") {
+        if (url === "https://fake/s1.html") {
           return Promise.resolve({
             ok: true,
             text: () => Promise.resolve("<html><body>Hello</body></html>"),
           });
         }
-        if (url === "http://fake/screenshot.png") {
+        if (url === "https://fake/screenshot.png") {
           return Promise.reject(new Error("Network error"));
         }
         return Promise.resolve({
@@ -589,7 +589,7 @@ describe("DownloadAssetsHandler concurrency", () => {
     // Build HTML with 10 images
     const imgTags = Array.from(
       { length: 10 },
-      (_, i) => `<img src="http://cdn.example.com/asset-${i}.png">`,
+      (_, i) => `<img src="https://cdn.example.com/asset-${i}.png">`,
     ).join("");
     const html = `<html><body>${imgTags}</body></html>`;
 
@@ -599,7 +599,7 @@ describe("DownloadAssetsHandler concurrency", () => {
         return Promise.resolve({
           ok: true,
           screens: [
-            { id: "s1", htmlCode: { downloadUrl: "http://fake/s1.html" } },
+            { id: "s1", htmlCode: { downloadUrl: "https://fake/s1.html" } },
           ],
         });
       }
@@ -615,7 +615,7 @@ describe("DownloadAssetsHandler concurrency", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation(async (url: string) => {
-        if (url === "http://fake/s1.html") {
+        if (url === "https://fake/s1.html") {
           return { text: () => Promise.resolve(html) };
         }
         // Asset fetch — track concurrency
@@ -652,8 +652,8 @@ describe("Project.downloadAssets() facade", () => {
           screens: [
             {
               id: "s1",
-              htmlCode: { downloadUrl: "http://fake/s1.html" },
-              screenshot: { downloadUrl: "http://fake/screenshot.png" },
+              htmlCode: { downloadUrl: "https://fake/s1.html" },
+              screenshot: { downloadUrl: "https://fake/screenshot.png" },
             },
           ],
         });
@@ -667,13 +667,13 @@ describe("Project.downloadAssets() facade", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation((url: string) => {
-        if (url === "http://fake/s1.html") {
+        if (url === "https://fake/s1.html") {
           return Promise.resolve({
             ok: true,
             text: () => Promise.resolve("<html><body>Hello</body></html>"),
           });
         }
-        if (url === "http://fake/screenshot.png") {
+        if (url === "https://fake/screenshot.png") {
           return Promise.reject(new Error("Network error"));
         }
         return Promise.resolve({
@@ -707,7 +707,7 @@ describe("Project.downloadAssets() facade", () => {
         return Promise.resolve({
           ok: true,
           screens: [
-            { id: "s1", htmlCode: { downloadUrl: "http://fake/s1.html" } },
+            { id: "s1", htmlCode: { downloadUrl: "https://fake/s1.html" } },
           ],
         });
       }
