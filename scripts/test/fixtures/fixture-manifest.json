@@ -1,0 +1,127 @@
+[
+  {
+    "name": "create_gizmo",
+    "description": "Creates a gizmo.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Optional display title" },
+        "labels": {
+          "type": "object",
+          "description": "Arbitrary string labels (Record param — regression for param parsing)",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "gizmoId": { "type": "string" }
+      }
+    }
+  },
+  {
+    "name": "list_gizmos",
+    "description": "Lists all gizmos.",
+    "inputSchema": { "type": "object", "properties": {} },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "gizmos": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Gizmo" }
+        }
+      },
+      "$defs": {
+        "Gizmo": {
+          "type": "object",
+          "description": "A gizmo resource.",
+          "properties": {
+            "name": { "type": "string" },
+            "title": { "type": "string" }
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "get_gizmo_asset",
+    "description": "Gets a gizmo's asset URLs.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "gizmoId": { "type": "string" },
+        "name": { "type": "string" }
+      },
+      "required": ["gizmoId", "name"]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "htmlCode": { "$ref": "#/$defs/File" },
+        "title": { "type": "string" }
+      },
+      "$defs": {
+        "File": {
+          "type": "object",
+          "properties": {
+            "downloadUrl": { "type": "string" }
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "spawn_widgets",
+    "description": "Spawns widgets from a prompt.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "gizmoId": { "type": "string" },
+        "selectedWidgetIds": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "prompt": { "type": "string" },
+        "mode": {
+          "type": "string",
+          "enum": ["FAST", "SLOW"],
+          "description": "Spawn mode"
+        }
+      },
+      "required": ["gizmoId", "prompt"]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "outputComponents": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Component" }
+        }
+      },
+      "$defs": {
+        "Component": {
+          "type": "object",
+          "properties": {
+            "design": {
+              "type": "object",
+              "properties": {
+                "widgets": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "string" },
+                      "label": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+]

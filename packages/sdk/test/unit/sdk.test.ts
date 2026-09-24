@@ -125,14 +125,9 @@ describe("SDK Unit Tests", () => {
         htmlCode: {},
       });
 
-      const result = await screen.getHtml();
-
-      expect(mockClient.callTool).toHaveBeenCalledWith("get_screen", {
-        projectId: projectId,
-        screenId: "screen-123",
-        name: "projects/proj-123/screens/screen-123",
+      await expect(screen.getHtml()).rejects.toMatchObject({
+        code: "NOT_FOUND",
       });
-      expect(result).toBe("");
     });
 
     it("getHtml should throw StitchError on failure", async () => {
@@ -348,7 +343,7 @@ describe("SDK Unit Tests", () => {
         {
           projectId: projectId,
           prompt: prompt,
-          deviceType: undefined,
+          deviceType: "DESKTOP",
           modelId: undefined,
         },
       );

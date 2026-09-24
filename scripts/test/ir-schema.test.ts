@@ -22,7 +22,6 @@
 import { describe, test, expect } from "bun:test";
 import {
   ProjectionStep,
-  FieldMappingSpec,
   ArgSpec,
   ReturnSpec,
   CacheSpec,
@@ -53,9 +52,26 @@ describe("ProjectionStep", () => {
     expect(result.success).toBe(true);
   });
 
-  test("accepts step with prop + fallback", () => {
+  test("rejects removed 'fallback' field (strict IR)", () => {
     const result = ProjectionStep.safeParse({ prop: "uri", fallback: "url" });
+    expect(result.success).toBe(false);
+  });
+
+  test("accepts acknowledgeSingle escape hatch", () => {
+    const result = ProjectionStep.safeParse({
+      prop: "screens",
+      index: 0,
+      acknowledgeSingle: true,
+    });
     expect(result.success).toBe(true);
+  });
+
+  test("rejects unknown keys (strict IR)", () => {
+    const result = ProjectionStep.safeParse({
+      prop: "screens",
+      fieldMapping: { from: "name" },
+    });
+    expect(result.success).toBe(false);
   });
 
   test("rejects step without prop", () => {
@@ -175,28 +191,67 @@ describe("FactorySpec", () => {
   });
 });
 
-// ── FieldMappingSpec ─────────────────────────────────────────
+// ── Strict IR guarantees ─────────────────────────────────────
+// FieldMappingSpec was deleted: it was defined but never referenced by
+// DomainClassConfig, and the skill docs describing it caused Stage 2
+// agents to author maps with silently-discarded keys.
 
-describe("FieldMappingSpec", () => {
-  test("accepts simple from mapping", () => {
-    const result = FieldMappingSpec.safeParse({ from: "name" });
-    expect(result.success).toBe(true);
+describe("strict IR (agent-authored maps fail loudly)", () => {
+  test("DomainClassConfig rejects the never-implemented fieldMapping key", () => {
+    const result = DomainClassConfig.safeParse({
+      description: "x",
+      constructorParams: ["projectId"],
+      fieldMapping: { projectId: { from: "name", stripPrefix: "projects/" } },
+    });
+    expect(result.success).toBe(false);
   });
 
-  test("accepts mapping with stripPrefix", () => {
-    const result = FieldMappingSpec.safeParse({
-      from: "name",
-      stripPrefix: "projects/",
+  test("DomainClassConfig rejects the never-implemented idField key", () => {
+    const result = DomainClassConfig.safeParse({
+      description: "x",
+      constructorParams: ["screenId"],
+      idField: "screenId",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test("ArgSpec param rejects 'default' without 'optional: true'", () => {
+    const result = ArgSpec.safeParse({ from: "param", default: "DESKTOP" });
+    expect(result.success).toBe(false);
+  });
+
+  test("ArgSpec param accepts 'default' with 'optional: true'", () => {
+    const result = ArgSpec.safeParse({
+      from: "param",
+      optional: true,
+      default: "DESKTOP",
     });
     expect(result.success).toBe(true);
   });
 
-  test("accepts mapping with fallback", () => {
-    const result = FieldMappingSpec.safeParse({
-      from: "id",
-      fallback: { field: "name", splitOn: "/screens/" },
+  test("CacheSpec rejects 'each' steps (no cache semantics)", () => {
+    const result = CacheSpec.safeParse({
+      projection: [{ prop: "screens", each: true }],
+      description: "bad",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test("CacheSpec accepts 'index' steps", () => {
+    const result = CacheSpec.safeParse({
+      projection: [{ prop: "screens", index: 0 }, { prop: "url" }],
+      description: "first screen url",
     });
     expect(result.success).toBe(true);
+  });
+
+  test("DomainMap rejects unknown top-level keys", () => {
+    const result = DomainMap.safeParse({
+      classes: {},
+      bindings: [],
+      extras: true,
+    });
+    expect(result.success).toBe(false);
   });
 });
 

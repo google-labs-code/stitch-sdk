@@ -26,14 +26,43 @@ export const StitchConfigSchema = z
     /** OAuth access token for user-authenticated requests. Falls back to STITCH_ACCESS_TOKEN. */
     accessToken: z.string().optional(),
 
-    /** Google Cloud project ID. Required for OAuth, optional for API Key. Falls back to GOOGLE_CLOUD_PROJECT. */
+    /** Google Cloud project ID. Required for OAuth, optional for API Key. Falls back to STITCH_PROJECT_ID, then GOOGLE_CLOUD_PROJECT (both first-class). */
     projectId: z.string().optional(),
 
-    /** Base URL for the Stitch MCP server. */
+    /** Base URL for the Stitch MCP server. Falls back to STITCH_BASE_URL (legacy alias STITCH_HOST, deprecated — removed in 2.0). */
     baseUrl: z.string().default(DEFAULT_STITCH_API_URL),
 
     /** Request timeout in milliseconds. Default: 300000 (5 min). */
     timeout: z.number().default(300_000),
+
+    /**
+     * Identity-map toggle. Default true: resolving the same entity
+     * yields the same instance (with data merged on refresh). Set false
+     * for value-object behavior — every resolve returns a fresh,
+     * never-cached instance.
+     */
+    entityCache: z.boolean().default(true),
+
+    /**
+     * Retry policy for RATE_LIMITED failures on idempotent reads
+     * (`get_*` / `list_*` tools only — generative/mutating tools are
+     * never auto-retried). Set to `false` to disable retries entirely.
+     */
+    retry: z
+      .union([
+        z.literal(false),
+        z
+          .object({
+            /** Total attempts including the first call. */
+            attempts: z.number().int().min(1).max(10).default(3),
+            /** Base delay in ms for exponential backoff. */
+            baseMs: z.number().default(250),
+            /** Upper bound on a single backoff delay in ms. */
+            maxMs: z.number().default(4000),
+          })
+          .strict(),
+      ])
+      .default({ attempts: 3, baseMs: 250, maxMs: 4000 }),
   })
   .refine(
     (data) => {
@@ -43,7 +72,7 @@ export const StitchConfigSchema = z
     },
     {
       message:
-        "Authentication failed. Provide either 'apiKey' OR ('accessToken' + 'projectId').",
+        "Invalid configuration: provide either 'apiKey' OR ('accessToken' + 'projectId').",
     },
   );
 
@@ -78,6 +107,13 @@ export type Tools = z.infer<typeof ToolsSchema>;
 export interface StitchToolClientSpec {
   name: "stitch-tool-client";
   description: "Authenticated tool pipe for Stitch MCP Server";
+
+  /**
+   * Identity-map manager. ALL entity instances (Project, Screen, ...)
+   * must be obtained through entities.resolve — never constructed
+   * directly — so reference keys are hydrated and instances deduplicated.
+   */
+  entities: import("../entity-manager.js").EntityManager;
 
   /**
    * Validate configuration and establish connection.

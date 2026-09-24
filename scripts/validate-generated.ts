@@ -23,7 +23,7 @@
  * Usage: bun scripts/validate-generated.ts
  */
 
-import { resolve } from "node:path";
+import { resolve, relative, sep } from "node:path";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 
@@ -41,9 +41,11 @@ function sha256(content: string): string {
 function hashDirectory(dir: string): string {
   if (!existsSync(dir)) return sha256("");
   const hash = createHash("sha256");
+  // Must mirror generate-sdk.ts: paths hashed RELATIVE to dir,
+  // posix-normalized, for machine portability.
   const files = getAllFiles(dir).sort();
   for (const file of files) {
-    hash.update(file);
+    hash.update(relative(dir, file).split(sep).join("/"));
     hash.update(readFileSync(file));
   }
   return hash.digest("hex");
