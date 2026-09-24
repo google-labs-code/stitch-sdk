@@ -20,13 +20,16 @@ import {
   StitchProxyConfig,
   StitchProxySpec,
 } from "../spec/proxy.js";
+import { StitchToolClient } from "../client.js";
 import { ProxyContext, initializeStitchConnection } from "./client.js";
 import { registerListToolsHandler } from "./handlers/listTools.js";
 import { registerCallToolHandler } from "./handlers/callTool.js";
 
 /**
  * A proxy server that forwards MCP requests to Stitch.
- * Bypasses SDK transport layer to handle specific auth and JSON-RPC forwarding.
+ * Runs on the SAME StitchToolClient / MCP SDK transport as the rest of the
+ * SDK (D9 — one MCP stack); it does not bypass the transport or speak
+ * hand-rolled JSON-RPC. It adds Stitch auth + virtual-tool routing on top.
  */
 export class StitchProxy implements StitchProxySpec {
   private config: StitchProxyConfig;
@@ -41,7 +44,12 @@ export class StitchProxy implements StitchProxySpec {
         inputConfig?.quotaProjectId ||
         process.env.STITCH_PROJECT_ID ||
         process.env.GOOGLE_CLOUD_PROJECT,
-      url: inputConfig?.url || process.env.STITCH_MCP_URL,
+      // Precedence: explicit config > STITCH_BASE_URL > STITCH_MCP_URL
+      // (STITCH_MCP_URL stays accepted for the proxy binary).
+      url:
+        inputConfig?.url ||
+        process.env.STITCH_BASE_URL ||
+        process.env.STITCH_MCP_URL,
       name: inputConfig?.name,
       version: inputConfig?.version,
     };
@@ -67,9 +75,17 @@ export class StitchProxy implements StitchProxySpec {
       },
     );
 
-    // Shared context for handlers
+    // Shared context for handlers. The proxy runs on the real
+    // StitchToolClient (one MCP stack, D9) — map proxy config onto the
+    // client's config shape.
     this.ctx = {
       config: this.config,
+      client: new StitchToolClient({
+        apiKey: this.config.apiKey,
+        accessToken: this.config.accessToken,
+        projectId: this.config.quotaProjectId,
+        baseUrl: this.config.url,
+      }),
       remoteTools: [] as Tool[],
     };
 
@@ -90,5 +106,6 @@ export class StitchProxy implements StitchProxySpec {
 
   async close(): Promise<void> {
     await this.server.close();
+    await this.ctx.client.close();
   }
 }

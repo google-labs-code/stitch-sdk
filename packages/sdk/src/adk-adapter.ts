@@ -12,10 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { FunctionTool } from "@google/adk";
+import type { FunctionTool as FunctionToolType } from "@google/adk";
 import type { Schema } from "@google/genai";
 import { toolDefinitions } from "../generated/src/tool-definitions.js";
 import { getOrCreateClient } from "./singleton.js";
+
+// @google/adk is an OPTIONAL peer dependency: it must not be required to
+// install or import the core SDK. Guarded dynamic import gives consumers an
+// actionable error instead of a bare ERR_MODULE_NOT_FOUND.
+let FunctionTool: typeof FunctionToolType;
+try {
+  ({ FunctionTool } = await import("@google/adk"));
+} catch {
+  throw new Error(
+    `"@google/stitch-sdk/adk" requires the optional peer dependency "@google/adk", ` +
+      `which is not installed. Install it with:\n\n  npm install @google/adk\n`,
+  );
+}
 
 /**
  * Recursively cleans and flattens a JSON Schema to make it compatible with the Google ADK/Gemini API.
@@ -29,6 +42,11 @@ import { getOrCreateClient } from "./singleton.js";
 function cleanSchema(schema: any): any {
   if (!schema || typeof schema !== "object") return schema;
   const defs = schema.$defs || {};
+  // Defs currently being resolved. A self-recursive $def cannot be
+  // expressed in the Gemini schema dialect — break the cycle with {}
+  // instead of embedding an in-progress object by reference (which
+  // produced circular output that exploded on JSON serialization).
+  const inProgress = new Set<string>();
 
   function stripAndResolve(node: any, seen = new Map()): any {
     if (!node || typeof node !== "object") return node;
@@ -50,7 +68,12 @@ function cleanSchema(schema: any): any {
     ) {
       const defName = node.$ref.replace("#/$defs/", "");
       if (defs[defName]) {
+        if (inProgress.has(defName)) {
+          return {}; // recursive $def — cycle broken
+        }
+        inProgress.add(defName);
         const target = stripAndResolve(defs[defName], seen);
+        inProgress.delete(defName);
         const resolved = { ...target };
         for (const [k, v] of Object.entries(node)) {
           if (
@@ -108,7 +131,20 @@ function cleanSchema(schema: any): any {
 export function stitchAdkTools(options?: {
   apiKey?: string;
   include?: string[];
-}): FunctionTool<Schema>[] {
+}): FunctionToolType<Schema>[] {
+  // A misspelled tool name silently vanishing from an agent's toolbox
+  // is undebuggable — validate loudly [V1_PLAN §3.6].
+  if (options?.include) {
+    const known = new Set(toolDefinitions.map((t) => t.name));
+    const unknown = options.include.filter((name) => !known.has(name));
+    if (unknown.length > 0) {
+      throw new Error(
+        `Unknown Stitch tool name(s) in include filter: ${unknown.join(", ")}.\n` +
+          `Available tools: ${[...known].join(", ")}`,
+      );
+    }
+  }
+
   const client = getOrCreateClient(options);
 
   const filtered = options?.include

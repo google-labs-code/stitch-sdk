@@ -14,11 +14,15 @@
 
 import { Project } from "../project-ext.js";
 import { VirtualToolDefinition } from "../spec/client.js";
-import { forwardToStitch } from "./client.js";
+import type { ProxyContext } from "./client.js";
 
-// Helper to create a project instance with a client
-function createProject(projectId: string, client: any) {
-  return new Project(client, projectId);
+/**
+ * Create a Project handle bound to a client, via the identity map.
+ * Exported for tests: direct `new Project(client, id)` does NOT hydrate
+ * projectId (that regression broke this tool silently once already).
+ */
+export function createProject(projectId: string, client: any): Project {
+  return client.entities.resolve(Project, ["projectId"], { projectId });
 }
 
 export const downloadAssetsTool: VirtualToolDefinition = {
@@ -43,28 +47,24 @@ export const downloadAssetsTool: VirtualToolDefinition = {
   },
 };
 
+/** Single registry: listTools, routing, and shadow-detection all derive from it. */
+export const virtualTools: VirtualToolDefinition[] = [downloadAssetsTool];
+
 export async function handleVirtualTool(
   name: string,
   args: any,
-  ctx: any,
+  ctx: Pick<ProxyContext, "client">,
 ): Promise<any> {
-  const dummyClient = {
-    callTool: async (toolName: string, toolArgs: any) => {
-      return forwardToStitch(ctx.config, "tools/call", {
-        name: toolName,
-        arguments: toolArgs,
-      });
-    },
-  };
-
-  switch (name) {
-    case "download_assets":
-      return downloadAssetsTool.execute(dummyClient as any, args);
-    default:
-      throw new Error(`Unknown virtual tool: ${name}`);
+  const tool = virtualTools.find((t) => t.name === name);
+  if (!tool) {
+    throw new Error(`Unknown virtual tool: ${name}`);
   }
+  // The real StitchToolClient already provides the parsed-payload callTool
+  // contract (isError envelopes throw StitchError) plus the EntityManager
+  // identity map — the old dummyClient/proxyClient shim is gone.
+  return tool.execute(ctx.client, args);
 }
 
 export function isVirtualTool(name: string): boolean {
-  return ["download_assets"].includes(name);
+  return virtualTools.some((t) => t.name === name);
 }

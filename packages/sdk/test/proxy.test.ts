@@ -15,10 +15,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { StitchProxy } from "../src/proxy/index.js";
 import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
-import {
-  forwardToStitch,
-  initializeStitchConnection,
-} from "../src/proxy/client.js";
 import { registerListToolsHandler } from "../src/proxy/handlers/listTools.js";
 import { registerCallToolHandler } from "../src/proxy/handlers/callTool.js";
 import {
@@ -33,25 +29,73 @@ const EXPECTED_VIRTUAL_TOOLS = [downloadAssetsTool].map((t) => ({
   inputSchema: t.inputSchema,
 }));
 
-// Mock fetch
-const globalFetch = global.fetch;
+// The proxy's upstream connection is a real StitchToolClient (one MCP
+// stack, D9). For StitchProxy lifecycle tests we substitute a fake
+// instance; the client's own wire behavior (headers, handshake, session
+// id) is covered by the MCP SDK and unit/client.test.ts.
+const { fakeUpstreamClient, StitchToolClientMock } = vi.hoisted(() => {
+  const fakeUpstreamClient = {
+    connect: vi.fn(),
+    listToolsRaw: vi.fn(),
+    callToolRaw: vi.fn(),
+    close: vi.fn(),
+  };
+  return {
+    fakeUpstreamClient,
+    StitchToolClientMock: vi.fn(() => fakeUpstreamClient),
+  };
+});
+
+vi.mock("../src/client.js", async (importOriginal) => {
+  const actual = await importOriginal<object>();
+  return { ...actual, StitchToolClient: StitchToolClientMock };
+});
 
 describe("StitchProxy", () => {
-  let mockFetch: any;
-
   beforeEach(() => {
-    mockFetch = vi.fn();
-    global.fetch = mockFetch;
+    vi.clearAllMocks();
+    fakeUpstreamClient.connect.mockResolvedValue(undefined);
+    fakeUpstreamClient.listToolsRaw.mockResolvedValue({ tools: [] });
+    fakeUpstreamClient.close.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
-    global.fetch = globalFetch;
     vi.clearAllMocks();
   });
 
   it("should initialize with valid config", () => {
     const proxy = new StitchProxy({ apiKey: "test-key" });
     expect(proxy).toBeDefined();
+  });
+
+  it("should map proxy config onto the StitchToolClient config", () => {
+    new StitchProxy({
+      apiKey: "test-key",
+      url: "https://example.com/mcp",
+    });
+    expect(StitchToolClientMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        apiKey: "test-key",
+        baseUrl: "https://example.com/mcp",
+      }),
+    );
+  });
+
+  it("should map accessToken + quotaProjectId onto the client's projectId", () => {
+    delete process.env.STITCH_API_KEY;
+    delete process.env.STITCH_ACCESS_TOKEN;
+    new StitchProxy({
+      accessToken: "test-token",
+      quotaProjectId: "test-project",
+      url: "https://example.com/mcp",
+    });
+    expect(StitchToolClientMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accessToken: "test-token",
+        projectId: "test-project",
+        baseUrl: "https://example.com/mcp",
+      }),
+    );
   });
 
   it("should throw if neither API key nor access token is provided", () => {
@@ -62,39 +106,43 @@ describe("StitchProxy", () => {
     );
   });
 
-  it("should initialize with accessToken instead of apiKey", () => {
+  it("should initialize with accessToken + quotaProjectId instead of apiKey", () => {
     delete process.env.STITCH_API_KEY;
     delete process.env.STITCH_ACCESS_TOKEN;
-    const proxy = new StitchProxy({ accessToken: "test-token" });
+    const proxy = new StitchProxy({
+      accessToken: "test-token",
+      quotaProjectId: "test-project",
+    });
     expect(proxy).toBeDefined();
+  });
+
+  it("should throw if accessToken is provided without a project (aligned with client)", () => {
+    delete process.env.STITCH_API_KEY;
+    delete process.env.STITCH_ACCESS_TOKEN;
+    delete process.env.STITCH_PROJECT_ID;
+    delete process.env.GOOGLE_CLOUD_PROJECT;
+    expect(() => new StitchProxy({ accessToken: "test-token" })).toThrow(
+      "Invalid configuration: provide either 'apiKey' OR ('accessToken' + 'projectId').",
+    );
   });
 
   it("should initialize with STITCH_ACCESS_TOKEN env var", () => {
     delete process.env.STITCH_API_KEY;
     process.env.STITCH_ACCESS_TOKEN = "env-token";
+    process.env.STITCH_PROJECT_ID = "env-project";
     const proxy = new StitchProxy({});
     expect(proxy).toBeDefined();
     delete process.env.STITCH_ACCESS_TOKEN;
+    delete process.env.STITCH_PROJECT_ID;
   });
 
   it("should connect to stitch and fetch tools on start", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     const proxy = new StitchProxy({ apiKey: "test-key" });
 
-    // Mock responses for initialize, initialized, and tools/list
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ result: { protocolVersion: "2024-11-05" } }),
-    } as Response); // initialize
-
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({}),
-    } as Response); // notifications/initialized (fire and forget, might not be awaited immediately but mocked anyway if called)
-
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ result: { tools: [{ name: "test-tool" }] } }),
-    } as Response); // tools/list
+    fakeUpstreamClient.listToolsRaw.mockResolvedValue({
+      tools: [{ name: "test-tool" }],
+    });
 
     const mockTransport = {
       start: vi.fn().mockResolvedValue(undefined),
@@ -107,146 +155,38 @@ describe("StitchProxy", () => {
 
     await proxy.start(mockTransport);
 
-    // Expect 3 calls: initialize, notifications/initialized (which might complete quickly), and tools/list
-    // Since notifications/initialized is fire-and-forget but we mock fetch, it counts if called.
-    expect(mockFetch).toHaveBeenCalledTimes(3);
+    // The MCP SDK client owns the initialize handshake: one connect(),
+    // one tools/list — no hand-rolled JSON-RPC requests anywhere.
+    expect(fakeUpstreamClient.connect).toHaveBeenCalledTimes(1);
+    expect(fakeUpstreamClient.listToolsRaw).toHaveBeenCalledTimes(1);
     expect(mockTransport.start).toHaveBeenCalled();
   });
-});
 
-describe("Proxy Client Error Handling", () => {
-  let mockFetch: any;
-
-  beforeEach(() => {
-    mockFetch = vi.fn();
-    global.fetch = mockFetch;
-    vi.spyOn(console, "error").mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    global.fetch = globalFetch;
-    vi.clearAllMocks();
-  });
-
-  it("forwardToStitch should send Authorization: Bearer header when accessToken is configured", async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({ result: "ok" }),
-    } as Response);
-
-    await forwardToStitch(
-      {
-        url: "http://test",
-        accessToken: "my-token",
-        quotaProjectId: "my-project",
-      } as any,
-      "testMethod",
-    );
-
-    const fetchCall = mockFetch.mock.calls[0];
-    expect(fetchCall[1].headers).toEqual(
-      expect.objectContaining({
-        Authorization: "Bearer my-token",
-        "X-Goog-User-Project": "my-project",
-      }),
-    );
-    expect(fetchCall[1].headers).not.toHaveProperty("X-Goog-Api-Key");
-  });
-
-  it("forwardToStitch should send X-Goog-Api-Key header when only apiKey is configured", async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({ result: "ok" }),
-    } as Response);
-
-    await forwardToStitch(
-      { url: "http://test", apiKey: "my-api-key" } as any,
-      "testMethod",
-    );
-
-    const fetchCall = mockFetch.mock.calls[0];
-    expect(fetchCall[1].headers).toEqual(
-      expect.objectContaining({
-        "X-Goog-Api-Key": "my-api-key",
-      }),
-    );
-    expect(fetchCall[1].headers).not.toHaveProperty("Authorization");
-  });
-
-  it("forwardToStitch should throw Stitch API error on non-ok response", async () => {
-    mockFetch.mockResolvedValue({
-      ok: false,
-      status: 500,
-      text: async () => "Internal Server Error",
-    } as Response);
-
-    await expect(
-      forwardToStitch(
-        { url: "http://test", apiKey: "test-key" } as any,
-        "testMethod",
-      ),
-    ).rejects.toThrow("Stitch API error (500): Internal Server Error");
-  });
-
-  it("forwardToStitch should throw Stitch RPC error on JSON-RPC error payload", async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({ error: { message: "Method not found" } }),
-    } as Response);
-
-    await expect(
-      forwardToStitch(
-        { url: "http://test", apiKey: "test-key" } as any,
-        "testMethod",
-      ),
-    ).rejects.toThrow("Stitch RPC error: Method not found");
-  });
-
-  it("initializeStitchConnection should catch and log rejected fetch on notifications/initialized", async () => {
-    // initialize request
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ result: {} }),
-    } as Response);
-
-    // notifications/initialized (rejects)
-    mockFetch.mockRejectedValueOnce(new Error("Network failure"));
-
-    // tools/list
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ result: { tools: [] } }),
-    } as Response);
-
-    const ctx = {
-      config: {
-        url: "http://test",
-        apiKey: "test-key",
-        name: "test",
-        version: "1.0",
-      },
-      remoteTools: [],
-    } as any;
-
-    await expect(initializeStitchConnection(ctx)).resolves.not.toThrow();
-
-    // allow the fire-and-forget promise to settle
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    expect(console.error).toHaveBeenCalledWith(
-      "[stitch-proxy] Failed to send initialized notification:",
-      expect.any(Error),
-    );
+  it("should close the upstream client on close()", async () => {
+    const proxy = new StitchProxy({ apiKey: "test-key" });
+    await proxy.close();
+    expect(fakeUpstreamClient.close).toHaveBeenCalledTimes(1);
   });
 });
 
 describe("Proxy Handlers", () => {
-  let mockFetch: any;
   let mockServer: any;
 
+  /** ctx shaped like ProxyContext with a fake upstream client. */
+  function makeCtx(remoteTools: any[] = []) {
+    return {
+      config: { url: "http://test", apiKey: "test-key" },
+      client: {
+        connect: vi.fn().mockResolvedValue(undefined),
+        listToolsRaw: vi.fn(),
+        callToolRaw: vi.fn(),
+        close: vi.fn(),
+      },
+      remoteTools,
+    } as any;
+  }
+
   beforeEach(() => {
-    mockFetch = vi.fn();
-    global.fetch = mockFetch;
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     // Mock for Server.setRequestHandler
@@ -259,25 +199,20 @@ describe("Proxy Handlers", () => {
   });
 
   afterEach(() => {
-    global.fetch = globalFetch;
     vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("registerListToolsHandler should invoke refreshTools and return cached tools", async () => {
-    const ctx = {
-      config: { url: "http://test", apiKey: "test-key" },
-      remoteTools: [],
-    } as any;
+    const ctx = makeCtx([]);
+    ctx.client.listToolsRaw.mockResolvedValue({
+      tools: [{ name: "refreshed-tool" }],
+    });
 
     registerListToolsHandler(mockServer as any, ctx);
 
     const handler = mockServer.handlers.get(ListToolsRequestSchema);
     expect(handler).toBeDefined();
-
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ result: { tools: [{ name: "refreshed-tool" }] } }),
-    } as Response);
 
     const result = await handler({} as any, {} as any);
 
@@ -287,18 +222,14 @@ describe("Proxy Handlers", () => {
     expect(ctx.remoteTools).toEqual([{ name: "refreshed-tool" }]);
   });
 
-  it("registerListToolsHandler should handle fetch error gracefully", async () => {
-    const ctx = {
-      config: { url: "http://test", apiKey: "test-key" },
-      remoteTools: [{ name: "existing-tool" }],
-    } as any;
+  it("registerListToolsHandler should handle refresh error gracefully", async () => {
+    const ctx = makeCtx([{ name: "existing-tool" }]);
+    ctx.client.listToolsRaw.mockRejectedValue(new Error("Network failure"));
 
     registerListToolsHandler(mockServer as any, ctx);
 
     const handler = mockServer.handlers.get(ListToolsRequestSchema);
     expect(handler).toBeDefined();
-
-    mockFetch.mockRejectedValueOnce(new Error("Network failure"));
 
     const result = await handler({} as any, {} as any);
 
@@ -312,23 +243,16 @@ describe("Proxy Handlers", () => {
     );
   });
 
-  it("registerCallToolHandler should invoke forwardToStitch and return result", async () => {
-    const ctx = {
-      config: { url: "http://test", apiKey: "test-key" },
-      remoteTools: [],
-    } as any;
+  it("registerCallToolHandler should invoke callToolRaw and return result", async () => {
+    const ctx = makeCtx();
+    ctx.client.callToolRaw.mockResolvedValue({
+      content: [{ type: "text", text: "success" }],
+    });
 
     registerCallToolHandler(mockServer as any, ctx);
 
     const handler = mockServer.handlers.get(CallToolRequestSchema);
     expect(handler).toBeDefined();
-
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        result: { content: [{ type: "text", text: "success" }] },
-      }),
-    } as Response);
 
     const request = {
       params: { name: "test_tool", arguments: { arg1: "value1" } },
@@ -336,6 +260,9 @@ describe("Proxy Handlers", () => {
 
     const result = await handler(request as any, {} as any);
 
+    expect(ctx.client.callToolRaw).toHaveBeenCalledWith("test_tool", {
+      arg1: "value1",
+    });
     expect(result).toEqual({ content: [{ type: "text", text: "success" }] });
     expect(console.error).toHaveBeenCalledWith(
       "[stitch-proxy] Calling tool: test_tool",
@@ -343,17 +270,13 @@ describe("Proxy Handlers", () => {
   });
 
   it("registerCallToolHandler should return isError: true on failure", async () => {
-    const ctx = {
-      config: { url: "http://test", apiKey: "test-key" },
-      remoteTools: [],
-    } as any;
+    const ctx = makeCtx();
+    ctx.client.callToolRaw.mockRejectedValue(new Error("RPC failed"));
 
     registerCallToolHandler(mockServer as any, ctx);
 
     const handler = mockServer.handlers.get(CallToolRequestSchema);
     expect(handler).toBeDefined();
-
-    mockFetch.mockRejectedValueOnce(new Error("RPC failed"));
 
     const request = {
       params: { name: "test_tool", arguments: { arg1: "value1" } },
@@ -364,10 +287,10 @@ describe("Proxy Handlers", () => {
     expect(result.isError).toBe(true);
     expect(result.content[0].type).toBe("text");
     expect(result.content[0].text).toContain(
-      "Error calling test_tool: Network failure connecting to Stitch API: RPC failed",
+      "Error calling test_tool: RPC failed",
     );
     expect(console.error).toHaveBeenCalledWith(
-      "[stitch-proxy] Tool call failed: Network failure connecting to Stitch API: RPC failed",
+      "[stitch-proxy] Tool call failed: RPC failed",
     );
   });
 });

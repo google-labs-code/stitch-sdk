@@ -15,7 +15,6 @@
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import type { ProxyContext } from "../client.js";
-import { forwardToStitch } from "../client.js";
 import { isVirtualTool, handleVirtualTool } from "../virtual-tools.js";
 
 /**
@@ -50,10 +49,19 @@ export function registerCallToolHandler(
     }
 
     try {
-      const result = await forwardToStitch(ctx.config, "tools/call", {
-        name,
-        arguments: args,
-      });
+      // Forward the RAW envelope verbatim — the downstream MCP client
+      // owns error semantics (isError stays an envelope, never a throw).
+      const result = await ctx.client.callToolRaw(name, args ?? {});
+      if (result == null) {
+        // A handler returning undefined is a protocol violation downstream;
+        // surface it as a proper MCP error envelope instead.
+        return {
+          isError: true,
+          content: [
+            { type: "text", text: `Upstream returned no result for ${name}` },
+          ],
+        };
+      }
       return result as { content: Array<{ type: string; text: string }> };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);

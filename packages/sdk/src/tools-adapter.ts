@@ -16,12 +16,36 @@ import type { Tool } from "ai";
 import { toolDefinitions } from "../generated/src/tool-definitions.js";
 import { getOrCreateClient } from "./singleton.js";
 
+// `ai` is an OPTIONAL peer dependency, imported through the SDK's own
+// public API (dynamicTool/jsonSchema) — never by forging internal
+// symbols, which broke whenever the package's internals moved
+// [V1_PLAN §3.6, D7].
+let dynamicTool: typeof import("ai").dynamicTool;
+let jsonSchema: typeof import("ai").jsonSchema;
+try {
+  ({ dynamicTool, jsonSchema } = await import("ai"));
+} catch {
+  throw new Error(
+    `"@google/stitch-sdk/ai" requires the optional peer dependency "ai" ` +
+      `(Vercel AI SDK v6+), which is not installed. Install it with:\n\n  npm install ai\n`,
+  );
+}
+
 /**
- * Well-known symbol used by the Vercel AI SDK to identify schema objects.
- * Using Symbol.for() ensures we match the exact same symbol the SDK uses
- * internally, without importing any runtime code from `ai`.
+ * Validate include filters LOUDLY: a misspelled tool name silently
+ * vanishing from an agent's toolbox is undebuggable.
  */
-const schemaSymbol = Symbol.for("vercel.ai.schema");
+export function validateIncludeFilter(include: string[] | undefined): void {
+  if (!include) return;
+  const known = new Set(toolDefinitions.map((t) => t.name));
+  const unknown = include.filter((name) => !known.has(name));
+  if (unknown.length > 0) {
+    throw new Error(
+      `Unknown Stitch tool name(s) in include filter: ${unknown.join(", ")}.\n` +
+        `Available tools: ${[...known].join(", ")}`,
+    );
+  }
+}
 
 /**
  * Returns Stitch tools in Vercel AI SDK format.
@@ -31,7 +55,7 @@ const schemaSymbol = Symbol.for("vercel.ai.schema");
  *
  * @example
  * import { generateText } from "ai";
- * import { stitchTools } from "@google/stitch-sdk";
+ * import { stitchTools } from "@google/stitch-sdk/ai";
  *
  * const { text } = await generateText({
  *   model: "google/gemini-2.5-pro",
@@ -42,12 +66,13 @@ const schemaSymbol = Symbol.for("vercel.ai.schema");
  *
  * @param options - Optional config
  * @param options.apiKey - Override STITCH_API_KEY env var
- * @param options.include - Only include specific tool names
+ * @param options.include - Only include specific tool names (unknown names THROW)
  */
 export function stitchTools(options?: {
   apiKey?: string;
   include?: string[];
 }): Record<string, Tool> {
+  validateIncludeFilter(options?.include);
   const client = getOrCreateClient(options);
 
   const filtered = options?.include
@@ -57,23 +82,12 @@ export function stitchTools(options?: {
   return Object.fromEntries(
     filtered.map((t) => [
       t.name,
-      // Construct a plain object that is runtime-identical to what
-      // dynamicTool() + jsonSchema() would produce. The `ai` package
-      // is NOT imported at runtime — only the type is used above.
-      {
-        type: "dynamic" as const,
+      dynamicTool({
         description: t.description,
-        inputSchema: {
-          [schemaSymbol]: true,
-          _type: undefined as unknown,
-          validate: undefined,
-          get jsonSchema() {
-            return t.inputSchema;
-          },
-        },
+        inputSchema: jsonSchema(t.inputSchema as Record<string, unknown>),
         execute: async (args: unknown) =>
           client.callTool(t.name, args as Record<string, any>),
-      } as unknown as Tool,
+      }) as Tool,
     ]),
   );
 }

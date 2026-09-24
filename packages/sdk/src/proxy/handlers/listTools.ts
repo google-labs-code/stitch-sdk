@@ -16,9 +16,10 @@ import { ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import type { ProxyContext } from "../client.js";
 import { refreshTools } from "../client.js";
-import { downloadAssetsTool } from "../virtual-tools.js";
+import { virtualTools } from "../virtual-tools.js";
+import { repairToolSchemas } from "../../schema-repair.js";
 
-const PROXY_VIRTUAL_TOOLS = [downloadAssetsTool].map((t) => ({
+const PROXY_VIRTUAL_TOOLS = virtualTools.map((t) => ({
   name: t.name,
   description: t.description,
   inputSchema: t.inputSchema,
@@ -44,6 +45,27 @@ export function registerListToolsHandler(
         );
       }
     }
-    return { tools: [...ctx.remoteTools, ...PROXY_VIRTUAL_TOOLS] };
+    // ctx.remoteTools holds RAW schemas (capture truth). Repair a copy at
+    // serving time: downstream MCP clients' AJV validators crash on
+    // unresolved $ref targets the backend sometimes omits.
+    const served = structuredClone(ctx.remoteTools);
+    repairToolSchemas(served);
+
+    // Collision detection: if the server ever ships a tool with a virtual
+    // tool's name, the virtual tool wins the callTool route (isVirtualTool
+    // is checked first) — so don't serve a duplicate listing, and say so
+    // loudly instead of silently shadowing.
+    const virtualNames = new Set(PROXY_VIRTUAL_TOOLS.map((t) => t.name));
+    const deduped = served.filter((t) => {
+      if (virtualNames.has(t.name)) {
+        console.warn(
+          `[stitch-proxy] Remote tool "${t.name}" collides with a local ` +
+            `virtual tool and is shadowed. Rename one of them.`,
+        );
+        return false;
+      }
+      return true;
+    });
+    return { tools: [...deduped, ...PROXY_VIRTUAL_TOOLS] };
   });
 }
