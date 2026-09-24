@@ -19,28 +19,34 @@ import { DEFAULT_STITCH_API_URL } from "../constants.js";
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. INPUT SCHEMA
 // ─────────────────────────────────────────────────────────────────────────────
-export const StitchProxyConfigSchema = z.object({
-  /** API key for Stitch authentication. Falls back to STITCH_API_KEY. */
-  apiKey: z.string().optional(),
+export const StitchProxyConfigSchema = z
+  .object({
+    /** API key for Stitch authentication. Falls back to STITCH_API_KEY. */
+    apiKey: z.string().optional(),
 
-  /** Access token for Stitch authentication (Bearer). Falls back to STITCH_ACCESS_TOKEN. */
-  accessToken: z.string().optional(),
+    /** Access token for Stitch authentication (Bearer). Falls back to STITCH_ACCESS_TOKEN. */
+    accessToken: z.string().optional(),
 
-  /** Quota project ID for billing. Required with accessToken auth. Falls back to STITCH_PROJECT_ID or GOOGLE_CLOUD_PROJECT. */
-  quotaProjectId: z.string().optional(),
+    /** Quota project ID for billing. Required with accessToken auth. Falls back to STITCH_PROJECT_ID or GOOGLE_CLOUD_PROJECT. */
+    quotaProjectId: z.string().optional(),
 
-  /** Target Stitch MCP URL. Default: https://stitch.googleapis.com/mcp */
-  url: z.string().default(DEFAULT_STITCH_API_URL),
+    /** Target Stitch MCP URL. Falls back to STITCH_BASE_URL, then STITCH_MCP_URL. Default: https://stitch.googleapis.com/mcp */
+    url: z.string().default(DEFAULT_STITCH_API_URL),
 
-  /** Name of the local proxy server. Default: stitch-proxy */
-  name: z.string().default("stitch-proxy"),
+    /** Name of the local proxy server. Default: stitch-proxy */
+    name: z.string().default("stitch-proxy"),
 
-  /** Version of the local proxy server. Default: 1.0.0 */
-  version: z.string().default("1.0.0"),
+    /** Version of the local proxy server. Default: 1.0.0 */
+    version: z.string().default("1.0.0"),
 
-  /** Protocol version to use for Stitch JSON-RPC connection. Default: '2024-11-05' */
-  protocolVersion: z.string().default("2024-11-05"),
-});
+    /** Protocol version to use for Stitch JSON-RPC connection. Default: '2025-06-18' */
+    protocolVersion: z.string().default("2025-06-18"),
+  })
+  .refine((data) => !data.accessToken || data.apiKey || !!data.quotaProjectId, {
+    // Aligned with StitchConfigSchema: token auth needs a quota project.
+    message:
+      "Invalid configuration: provide either 'apiKey' OR ('accessToken' + 'projectId').",
+  });
 
 export type StitchProxyConfig = z.infer<typeof StitchProxyConfigSchema>;
 

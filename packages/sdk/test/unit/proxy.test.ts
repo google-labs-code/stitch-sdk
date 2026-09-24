@@ -16,6 +16,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { registerListToolsHandler } from "../../src/proxy/handlers/listTools.js";
 import { registerCallToolHandler } from "../../src/proxy/handlers/callTool.js";
 import { downloadAssetsTool } from "../../src/proxy/virtual-tools.js";
+import { EntityManager } from "../../src/entity-manager.js";
 import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
@@ -28,9 +29,8 @@ const EXPECTED_VIRTUAL_TOOLS = [downloadAssetsTool].map((t) => ({
 }));
 
 // Use vi.hoisted to ensure variables are available in mocked modules
-const { mockDownloadAssets, mockForward } = vi.hoisted(() => ({
+const { mockDownloadAssets } = vi.hoisted(() => ({
   mockDownloadAssets: vi.fn(),
-  mockForward: vi.fn(),
 }));
 
 vi.mock("../../src/project-ext.js", () => ({
@@ -38,15 +38,6 @@ vi.mock("../../src/project-ext.js", () => ({
     downloadAssets: mockDownloadAssets,
   })),
 }));
-
-vi.mock("../../src/proxy/client.js", async () => {
-  const actual = await vi.importActual("../../src/proxy/client.js");
-  return {
-    ...actual,
-    refreshTools: vi.fn().mockResolvedValue(undefined),
-    forwardToStitch: mockForward,
-  };
-});
 
 describe("Proxy Handlers", () => {
   let mockServer: any;
@@ -62,8 +53,20 @@ describe("Proxy Handlers", () => {
       }),
     };
 
+    // The proxy's ONE MCP stack: a fake StitchToolClient. Handlers must
+    // route everything through it — no direct fetch/JSON-RPC anywhere.
+    const fakeClient: any = {
+      callToolRaw: vi.fn(),
+      listToolsRaw: vi.fn().mockResolvedValue({
+        tools: [{ name: "remote_tool", description: "Remote" }],
+      }),
+      callTool: vi.fn(),
+    };
+    fakeClient.entities = new EntityManager(fakeClient);
+
     mockCtx = {
       config: { apiKey: "test-key", url: "https://example.com" },
+      client: fakeClient,
       remoteTools: [{ name: "remote_tool", description: "Remote" }],
     };
   });
@@ -98,12 +101,16 @@ describe("Proxy Handlers", () => {
 
     const result = await handler(request);
     expect(result.content[0].text).toContain("/tmp/out");
+    // Virtual tools never round-trip through the upstream forwarder.
+    expect(mockCtx.client.callToolRaw).not.toHaveBeenCalled();
   });
 
   it("should forward non-virtual tool call", async () => {
-    mockForward.mockResolvedValue({
+    const envelope = {
       content: [{ type: "text", text: "forwarded" }],
-    });
+      structuredContent: { ok: true },
+    };
+    mockCtx.client.callToolRaw.mockResolvedValue(envelope);
 
     registerCallToolHandler(mockServer, mockCtx);
 
@@ -118,10 +125,42 @@ describe("Proxy Handlers", () => {
     };
 
     const result = await handler(request);
-    expect(mockForward).toHaveBeenCalledWith(mockCtx.config, "tools/call", {
-      name: "remote_tool",
-      arguments: { arg1: "val1" },
+    expect(mockCtx.client.callToolRaw).toHaveBeenCalledWith("remote_tool", {
+      arg1: "val1",
     });
-    expect(result.content[0].text).toBe("forwarded");
+    // The RAW envelope is forwarded VERBATIM — no parsing, no rewrapping.
+    expect(result).toEqual(envelope);
+  });
+
+  it("should forward isError envelopes verbatim (downstream owns error semantics)", async () => {
+    const errorEnvelope = {
+      isError: true,
+      content: [{ type: "text", text: "Project not found" }],
+    };
+    mockCtx.client.callToolRaw.mockResolvedValue(errorEnvelope);
+
+    registerCallToolHandler(mockServer, mockCtx);
+    const handler = handlers.get(CallToolRequestSchema);
+
+    const result = await handler({
+      params: { name: "remote_tool", arguments: {} },
+    });
+    expect(result).toEqual(errorEnvelope);
+  });
+
+  it("should return an isError envelope when the upstream result is undefined", async () => {
+    mockCtx.client.callToolRaw.mockResolvedValue(undefined);
+
+    registerCallToolHandler(mockServer, mockCtx);
+    const handler = handlers.get(CallToolRequestSchema);
+
+    const result = await handler({
+      params: { name: "remote_tool", arguments: {} },
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].type).toBe("text");
+    expect(result.content[0].text).toContain(
+      "Upstream returned no result for remote_tool",
+    );
   });
 });
