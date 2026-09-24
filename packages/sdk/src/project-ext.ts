@@ -25,7 +25,8 @@
  */
 
 import { Project as GeneratedProject } from "../generated/src/project.js";
-import { Screen } from "../generated/src/screen.js";
+import { Screen } from "./screen-ext.js";
+import { EntityManager } from "./entity-manager.js";
 import { StitchError, StitchErrorCode } from "./spec/errors.js";
 import { DownloadAssetsHandler } from "./download-handler.js";
 import { DownloadAssetsInputSchema } from "./spec/download.js";
@@ -115,3 +116,5 @@ export class Project extends GeneratedProject {
     };
   }
 }
+
+EntityManager.registerImplementation("Project", Project);

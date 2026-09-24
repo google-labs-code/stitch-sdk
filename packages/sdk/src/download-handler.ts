@@ -19,13 +19,35 @@ import * as cheerio from "cheerio";
 import type { AnyNode } from "domhandler";
 import type { StitchToolClientSpec } from "./spec/client.js";
 import { slugify } from "./slugify.js";
+import { classifyError } from "./spec/error-mapping.js";
 import { DownloadAssetsInputSchema } from "./spec/download.js";
 import type {
   DownloadAssetsSpec,
   DownloadAssetsInput,
   DownloadAssetsResult,
+  DownloadAssetsErrorCode,
   DownloadedScreenTrace,
 } from "./spec/download.js";
+
+/**
+ * Containment guard — the SECURITY BOUNDARY for downloads.
+ *
+ * `screenId`, screen `title`, and design-system names are all
+ * server-controlled. slugify() makes nice filenames but is NOT a
+ * security control (its fallback returns the raw screenId), so the
+ * handler must verify every target directory resolves to outputDir or
+ * a descendant before writing. Returns true iff `child` is contained.
+ */
+function isWithinOutput(parent: string, child: string): boolean {
+  const rel = path.relative(path.resolve(parent), path.resolve(child));
+  // Contained iff the relative path is "" (same dir) or stays below it.
+  // Reject only a true escape ("..", "../…", or an absolute path) — a dir
+  // merely *named* "..foo" is fine.
+  return (
+    rel === "" ||
+    (rel !== ".." && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel))
+  );
+}
 
 /** Atomically rename src → dest, falling back to copy+delete on EXDEV. */
 async function atomicRename(src: string, dest: string): Promise<void> {
@@ -44,23 +66,57 @@ async function atomicRename(src: string, dest: string): Promise<void> {
 
 const CONCURRENCY_LIMIT = 5;
 
-/** Run async task factories with a bounded concurrency limit. */
-async function runWithConcurrency(
+/**
+ * Run async task factories through a bounded worker pool.
+ *
+ * Every rejection is COLLECTED, never lost and never allowed to abort
+ * sibling tasks: the previous Promise.race-based pool either swallowed
+ * rejections (settled during another race) or aborted the whole batch,
+ * nondeterministically depending on timing.
+ */
+export async function runWithConcurrency(
   tasks: (() => Promise<void>)[],
   limit: number,
+): Promise<{ failed: { index: number; error: unknown }[] }> {
+  const failed: { index: number; error: unknown }[] = [];
+  let next = 0;
+
+  const workers = Array.from(
+    { length: Math.max(1, Math.min(limit, tasks.length)) },
+    async () => {
+      while (next < tasks.length) {
+        const index = next++;
+        try {
+          await tasks[index]();
+        } catch (error) {
+          failed.push({ index, error });
+        }
+      }
+    },
+  );
+
+  await Promise.all(workers);
+  return { failed };
+}
+
+/**
+ * Write to a temp path and atomically rename into place.
+ * The temp file is unlinked on ANY failure — no `.tmp-*` strays left
+ * in the user's output directory.
+ */
+async function writeAtomic(
+  tempPath: string,
+  targetPath: string,
+  data: string | Buffer,
+  opts: { flag: string; mode: number },
 ): Promise<void> {
-  const executing = new Set<Promise<void>>();
-
-  for (const task of tasks) {
-    const p = task().finally(() => executing.delete(p));
-    executing.add(p);
-
-    if (executing.size >= limit) {
-      await Promise.race(executing);
-    }
+  try {
+    await fs.writeFile(tempPath, data, opts);
+    await atomicRename(tempPath, targetPath);
+  } catch (err) {
+    await fs.unlink(tempPath).catch(() => {});
+    throw err;
   }
-
-  await Promise.all(executing);
 }
 
 export class DownloadAssetsHandler implements DownloadAssetsSpec {
@@ -85,11 +141,37 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
       const seenSlugs = new Set<string>();
 
       for (const screen of screens) {
-        const screenId = screen.id || screen.name.split("/").pop();
+        // A malformed row (neither id nor name) must skip+warn, not throw —
+        // one bad screen shouldn't abort the whole batch (the spec promises
+        // partial-failure resilience).
+        const screenId =
+          screen.id ||
+          (typeof screen.name === "string"
+            ? screen.name.split("/").pop()
+            : undefined);
+        if (!screenId) {
+          warnings.push("Skipped a screen with no id or name");
+          continue;
+        }
         const screenSlug = slugify(screen.title, screenId, seenSlugs);
 
         const screenDir = path.join(outputDir, screenSlug);
         const screenAssetsDir = path.join(screenDir, safeSubdir);
+
+        // SECURITY: a server-controlled screenId/title (e.g. "../../etc")
+        // must never escape outputDir. Fatal, not a per-screen skip — a
+        // traversal attempt signals a compromised or buggy upstream, and
+        // the proxy exposes download_assets to any downstream caller.
+        if (!isWithinOutput(outputDir, screenDir)) {
+          return {
+            success: false,
+            error: {
+              code: "PATH_TRAVERSAL_ATTEMPT",
+              message: `Refusing to write screen "${screenId}" outside the output directory (resolved to "${screenDir}")`,
+              recoverable: false,
+            },
+          };
+        }
 
         let htmlUrl = screen.htmlCode?.downloadUrl;
         if (!htmlUrl) {
@@ -101,22 +183,38 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
             });
             htmlUrl = (raw as any)?.htmlCode?.downloadUrl;
           } catch (error) {
-            // Skip if we can't get full screen details
+            warnings.push(
+              `Skipped ${screenId}: get_screen failed (${error instanceof Error ? error.message : String(error)})`,
+            );
             continue;
           }
         }
-        if (!htmlUrl) continue;
+        if (!htmlUrl) {
+          // Warn rather than silently dropping — otherwise an all-unreachable
+          // project is indistinguishable from an empty one.
+          warnings.push(`Skipped ${screenId}: no HTML download URL available`);
+          continue;
+        }
 
         await fs.mkdir(screenAssetsDir, { recursive: true });
 
-        const html = await fetch(htmlUrl).then((r) => r.text());
+        // A non-OK response (e.g. expired signed URL → 403 body) must not
+        // be saved as code.html and counted as a downloaded screen.
+        const htmlRes = await fetch(htmlUrl);
+        if (!htmlRes.ok) {
+          warnings.push(
+            `HTML fetch failed for ${screenId}: HTTP ${htmlRes.status}`,
+          );
+          continue;
+        }
+        const html = await htmlRes.text();
         const $ = cheerio.load(html);
 
         const assetTasks: (() => Promise<void>)[] = [];
 
         $("img").each((_, el) => {
           const src = $(el).attr("src");
-          if (src && src.startsWith("http")) {
+          if (src && src.startsWith("https://")) {
             assetTasks.push(() =>
               this._downloadAndRewrite(
                 $,
@@ -134,7 +232,7 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
 
         $('link[rel="stylesheet"]').each((_, el) => {
           const href = $(el).attr("href");
-          if (href && href.startsWith("http")) {
+          if (href && href.startsWith("https://")) {
             assetTasks.push(() =>
               this._downloadAndRewrite(
                 $,
@@ -150,7 +248,20 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
           }
         });
 
-        await runWithConcurrency(assetTasks, CONCURRENCY_LIMIT);
+        // Asset failures are reported per-asset, not silently swallowed:
+        // the un-rewritten URL still points at the remote original, so the
+        // HTML stays functional and the user is told what's missing.
+        const { failed } = await runWithConcurrency(
+          assetTasks,
+          CONCURRENCY_LIMIT,
+        );
+        for (const f of failed) {
+          warnings.push(
+            `Asset download failed for ${screenId}: ${
+              f.error instanceof Error ? f.error.message : String(f.error)
+            }`,
+          );
+        }
 
         const screenshotUrl = screen.screenshot?.downloadUrl;
         if (screenshotUrl) {
@@ -168,12 +279,12 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
               tempScreenshotFilename,
             );
 
-            await fs.writeFile(
+            await writeAtomic(
               tempScreenshotPath,
+              screenshotPath,
               Buffer.from(screenshotBuffer),
               { flag: "wx", mode: fileMode },
             );
-            await atomicRename(tempScreenshotPath, screenshotPath);
           } catch (error) {
             warnings.push(
               `Screenshot download failed for ${screenId}: ${error instanceof Error ? error.message : String(error)}`,
@@ -187,11 +298,10 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
         const tempPath = path.join(resolvedTempDir, tempFilename);
         const targetPath = path.join(screenDir, filename);
 
-        await fs.writeFile(tempPath, rewrittenHtml, {
+        await writeAtomic(tempPath, targetPath, rewrittenHtml, {
           flag: "wx",
           mode: fileMode,
         });
-        await atomicRename(tempPath, targetPath);
 
         downloadedScreens.push({
           screenId,
@@ -217,17 +327,32 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
             : ds.name.split("/").pop();
 
           const dsDir = path.join(outputDir, dsName);
+          // Same boundary as screens: displayName/ds.name are server data.
+          if (!isWithinOutput(outputDir, dsDir)) {
+            return {
+              success: false,
+              error: {
+                code: "PATH_TRAVERSAL_ATTEMPT",
+                message: `Refusing to write design system "${dsName}" outside the output directory`,
+                recoverable: false,
+              },
+            };
+          }
           await fs.mkdir(dsDir, { recursive: true });
 
           const dsPath = path.join(dsDir, "DESIGN.md");
           const tempDsFilename = `.tmp-ds-${crypto.randomBytes(8).toString("hex")}`;
           const tempDsPath = path.join(resolvedTempDir, tempDsFilename);
 
-          await fs.writeFile(tempDsPath, ds.designSystem.theme.designMd, {
-            flag: "wx",
-            mode: fileMode,
-          });
-          await atomicRename(tempDsPath, dsPath);
+          await writeAtomic(
+            tempDsPath,
+            dsPath,
+            ds.designSystem.theme.designMd,
+            {
+              flag: "wx",
+              mode: fileMode,
+            },
+          );
         }
       } catch (error) {
         warnings.push(
@@ -243,14 +368,24 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       const lowerMsg = msg.toLowerCase();
+      const fsCode = (error as any)?.code;
 
-      let code = "UNKNOWN_ERROR" as any;
-      if (lowerMsg.includes("not found")) {
-        code = "PROJECT_NOT_FOUND";
+      let code: DownloadAssetsErrorCode = "UNKNOWN_ERROR";
+      if (
+        fsCode === "EACCES" ||
+        fsCode === "ENOSPC" ||
+        fsCode === "EROFS" ||
+        fsCode === "EPERM" ||
+        fsCode === "EEXIST"
+      ) {
+        code = "WRITE_FAILED";
       } else if (lowerMsg.includes("fetch") || lowerMsg.includes("network")) {
+        // Local transport check stays ahead of the general mapper: a failed
+        // asset/HTML fetch is FETCH_FAILED even when its message embeds a
+        // status ("Asset fetch failed: 404 for ...").
         code = "FETCH_FAILED";
-      } else if (lowerMsg.includes("401") || lowerMsg.includes("auth")) {
-        code = "UNKNOWN_ERROR"; // Actually download-handler spec has a specific enum, let's just check NOT_FOUND
+      } else if (classifyError({ text: msg }) === "NOT_FOUND") {
+        code = "PROJECT_NOT_FOUND";
       }
 
       return {
@@ -282,11 +417,16 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
     const urlObj = new URL(url);
     const decodedPath = decodeURIComponent(urlObj.pathname);
     const rawFilename = path.basename(decodedPath);
-    const ext = path.extname(rawFilename);
+    // The extension goes through the same character allowlist as the base:
+    // URL-decoded extensions previously landed in filenames verbatim.
+    const rawExt = path.extname(rawFilename);
+    const ext = rawExt
+      ? `.${sanitizeFilename(rawExt.slice(1), "").slice(0, 10)}`
+      : "";
     const hash = crypto.createHash("md5").update(url).digest("hex");
 
     // SANITIZATION: Only allow alphanumeric, hyphen, underscore
-    const sanitizedBase = sanitizeFilename(rawFilename, ext);
+    const sanitizedBase = sanitizeFilename(rawFilename, rawExt);
 
     const filename = sanitizedBase
       ? `${sanitizedBase}-${hash}${ext}`
@@ -295,11 +435,10 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
     const tempFilename = `.tmp-${crypto.randomBytes(8).toString("hex")}`;
     const tempFullPath = path.join(resolvedTempDir, tempFilename);
 
-    await fs.writeFile(tempFullPath, Buffer.from(buffer), {
+    await writeAtomic(tempFullPath, fullPath, Buffer.from(buffer), {
       flag: "wx",
       mode: fileMode,
     });
-    await atomicRename(tempFullPath, fullPath);
 
     $(el).attr(attr, `${relativePrefix}/${filename}`);
   }

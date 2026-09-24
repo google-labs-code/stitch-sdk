@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { z } from "zod";
-import type { Screen } from "../../generated/src/screen.js";
+import type { Screen } from "../screen-ext.js";
 
 // ── Supported MIME types ───────────────────────────────────────────────────────
 

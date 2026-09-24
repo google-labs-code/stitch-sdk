@@ -1,1 +1,1 @@
-export type { Screen } from "../generated/src/screen.js";
+export { Screen } from "../generated/src/screen.js";
