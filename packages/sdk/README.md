@@ -10,12 +10,13 @@ Set your API key and generate a screen:
 import { stitch } from "@google/stitch-sdk";
 
 // STITCH_API_KEY must be set in the environment
-const project = await stitch.createProject("My App");
-const screen = await project.generate(
+const project = await stitch.createProject({ title: "My App" });
+const generation = await project.generate(
   "A login page with email and password fields",
 );
-const html = await screen.getHtml();
-const imageUrl = await screen.getImage();
+const screen = generation.first; // every screen: generation.screens
+const html = await screen.getHtml(); // HTML content (URL: getHtmlUrl())
+const png = await screen.getImage(); // screenshot bytes (URL: getImageUrl())
 ```
 
 `html` is a download URL for the screen's HTML. `imageUrl` is a download URL for the screenshot.
@@ -60,9 +61,9 @@ const screens = await project.screens();
 ### Edit a screen
 
 ```ts
-const screen = await project.generate("A dashboard with charts");
+const { first: screen } = await project.generate("A dashboard with charts");
 const edited = await screen.edit("Make the background dark and add a sidebar");
-const editedHtml = await edited.getHtml();
+const editedHtml = await edited.first.getHtml();
 ```
 
 ### Generate variants
@@ -74,8 +75,8 @@ const variants = await screen.variants("Try different color schemes", {
   aspects: ["COLOR_SCHEME", "LAYOUT"],
 });
 
-for (const variant of variants) {
-  console.log(variant.id, await variant.getHtml());
+for (const variant of variants.screens) {
+  console.log(variant.id, await variant.getHtmlUrl());
 }
 ```
 
@@ -103,11 +104,14 @@ for (const tool of tools) {
 }
 
 // Call a tool directly — returns are now strongly typed!
-import { CreateProjectResponse } from "@google/stitch-sdk";
+import { CreateProjectResponse, parseResourceName } from "@google/stitch-sdk";
 const result = await client.callTool<CreateProjectResponse>("create_project", {
   title: "Agent Project",
 });
-console.log(result.project?.projectId);
+// create_project returns the resource `name` (e.g. "projects/123"); the
+// bare id is the last segment. (The high-level Stitch.createProject() does
+// this for you and returns a Project.)
+console.log(result.name, parseResourceName(result.name ?? ""));
 
 await client.close();
 ```
@@ -121,11 +125,11 @@ All tool responses and input parameters are strictly typed and exported from the
 
 The root class. Manages projects.
 
-| Method                 | Parameters      | Returns              | Description                             |
-| ---------------------- | --------------- | -------------------- | --------------------------------------- |
-| `createProject(title)` | `title: string` | `Promise<Project>`   | Create a new project                    |
-| `projects()`           | —               | `Promise<Project[]>` | List all accessible projects            |
-| `project(id)`          | `id: string`    | `Project`            | Reference a project by ID (no API call) |
+| Method                    | Parameters                     | Returns              | Description                             |
+| ------------------------- | ------------------------------ | -------------------- | --------------------------------------- |
+| `createProject(options?)` | `options?: { title?: string }` | `Promise<Project>`   | Create a new project                    |
+| `projects()`              | —                              | `Promise<Project[]>` | List all accessible projects            |
+| `project(id)`             | `id: string`                   | `Project`            | Reference a project by ID (no API call) |
 
 ### `Project`
 
@@ -136,11 +140,11 @@ A Stitch project containing screens.
 | `id`        | `string` | Alias for `projectId`                   |
 | `projectId` | `string` | Bare project ID (no `projects/` prefix) |
 
-| Method                          | Parameters                                  | Returns             | Description                          |
-| ------------------------------- | ------------------------------------------- | ------------------- | ------------------------------------ |
-| `generate(prompt, deviceType?)` | `prompt: string`, `deviceType?: DeviceType` | `Promise<Screen>`   | Generate a screen from a text prompt |
-| `screens()`                     | —                                           | `Promise<Screen[]>` | List all screens in the project      |
-| `getScreen(screenId)`           | `screenId: string`                          | `Promise<Screen>`   | Retrieve a specific screen by ID     |
+| Method                       | Parameters                                              | Returns                       | Description                                     |
+| ---------------------------- | ------------------------------------------------------- | ----------------------------- | ----------------------------------------------- |
+| `generate(prompt, options?)` | `prompt: string`, `options?: { deviceType?, modelId? }` | `Promise<Generation<Screen>>` | Generate screens — `.screens`, `.first`, `.raw` |
+| `screens()`                  | —                                                       | `Promise<Screen[]>`           | List all screens in the project                 |
+| `getScreen(screenId)`        | `screenId: string`                                      | `Promise<Screen>`             | Retrieve a specific screen by ID                |
 
 `DeviceType`: `"MOBILE"` \| `"DESKTOP"` \| `"TABLET"` \| `"AGNOSTIC"`
 
@@ -154,16 +158,17 @@ A generated UI screen. Provides access to HTML and screenshots.
 | `screenId`  | `string` | Bare screen ID       |
 | `projectId` | `string` | Parent project ID    |
 
-| Method                                                    | Parameters                                 | Returns             | Description                              |
-| --------------------------------------------------------- | ------------------------------------------ | ------------------- | ---------------------------------------- |
-| `edit(prompt, deviceType?, modelId?)`                     | `prompt: string`                           | `Promise<Screen>`   | Edit the screen with a text prompt       |
-| `variants(prompt, variantOptions, deviceType?, modelId?)` | `prompt: string`, `variantOptions: object` | `Promise<Screen[]>` | Generate design variants                 |
-| `getHtml()`                                               | —                                          | `Promise<string>`   | Get the screen's HTML download URL       |
-| `getImage()`                                              | —                                          | `Promise<string>`   | Get the screen's screenshot download URL |
+| Method                                       | Parameters                                                                                | Returns                       | Description                                    |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------- | ----------------------------- | ---------------------------------------------- |
+| `edit(prompt, options?)`                     | `prompt: string`, `options?: { deviceType?, modelId? }`                                   | `Promise<Generation<Screen>>` | Edit the screen — `.screens`, `.first`, `.raw` |
+| `variants(prompt, variantOptions, options?)` | `prompt: string`, `variantOptions: VariantOptions`, `options?: { deviceType?, modelId? }` | `Promise<Generation<Screen>>` | Generate design variants                       |
+| `getHtml()`                                  | —                                                                                         | `Promise<string>`             | Fetch the screen's HTML content                |
+| `getImage()`                                 | —                                                                                         | `Promise<Uint8Array>`         | Fetch the screenshot bytes                     |
+| `getHtmlUrl()` / `getImageUrl()`             | —                                                                                         | `Promise<string>`             | Signed download URLs (cache-aware)             |
 
-`getHtml()` and `getImage()` use cached data from the generation response when available. If the screen was loaded from `screens()` or `getScreen()`, they call the `get_screen` API automatically.
+URL accessors use cached data from the generation response when available, write fetched responses back to the cache, and throw `StitchError` `NOT_FOUND` for missing artifacts (never a silent empty string).
 
-`modelId`: `"GEMINI_3_PRO"` \| `"GEMINI_3_FLASH"`
+`modelId`: `"GEMINI_3_8_FLASH"` \| `"GEMINI_3_5_FLASH_LITE"` (optional, defaults to backend default)
 
 ### `StitchToolClient`
 
@@ -213,13 +218,15 @@ const projects = await stitch.projects();
 
 ### `toolMap`
 
-Static tool schemas with pre-parsed parameters. Available on `stitch.toolMap` or as a standalone export. No network call or API key needed.
+Static tool schemas with pre-parsed parameters. Import from `@google/stitch-sdk/tools` (kept off the root entry so it stays lean). No network call or API key needed.
 
 ```ts
 import { stitch } from "@google/stitch-sdk";
 
 // Look up a tool
-const tool = stitch.toolMap.get("generate_screen_from_text");
+import { toolMap } from "@google/stitch-sdk/tools";
+
+const tool = toolMap.get("generate_screen_from_text");
 if (tool) {
   // Pre-parsed params — no JSON Schema parsing needed
   const required = tool.params.filter((p) => p.required);
@@ -229,7 +236,7 @@ if (tool) {
 }
 
 // Iterate all tools
-for (const [name, tool] of stitch.toolMap) {
+for (const [name, tool] of toolMap) {
   for (const param of tool.params) {
     console.log(param.name, param.type, param.required);
   }
@@ -238,7 +245,7 @@ for (const [name, tool] of stitch.toolMap) {
 
 Each `ToolParam` has: `name`, `type`, `description`, `required`, and `enum` (for constrained values).
 
-The raw `inputSchema` (`ToolInputSchema`) is also available on each entry. Standalone exports: `toolMap`, `toolDefinitions`, `ToolInfo`, `ToolParam`, `ToolDefinition`, `ToolInputSchema`, `ToolPropertySchema`.
+The raw `inputSchema` (`ToolInputSchema`) is also available on each entry. Exports from `@google/stitch-sdk/tools`: `toolMap`, `toolDefinitions`, `ToolInfo`, `ToolParam`, `ToolDefinition`, `ToolInputSchema`, `ToolPropertySchema`.
 
 ## Configuration
 

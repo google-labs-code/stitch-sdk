@@ -1,6 +1,9 @@
 # .github/workflows/ci.yml
 name: CI
 
+permissions:
+  contents: read
+
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -15,12 +18,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0 # Required to see commit history and changed files
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@f4d14e03ff726c06358e5557344e1da148b56cf7 # v1.2.2
         with:
           bun-version: "1.3.1"
 
@@ -37,11 +40,60 @@ jobs:
       - name: Type Check
         run: bun run typecheck
 
-      - name: Run Tests
-        run: bun run test
+      - name: Validate Generated SDK (lock integrity)
+        run: bun run validate:generated
+
+      - name: Script Tests (codegen + IR contract)
+        run: bun run test:scripts
+
+      - name: Skill/IR Consistency
+        run: bun run check:skills
+
+      - name: Run Tests (with coverage thresholds)
+        run: cd packages/sdk && bun run test:coverage
 
       - name: Production Build
         run: bun run build
 
       - name: Smoke Test
         run: bun run test:smoke
+
+      - name: Bundle Size (root entry budget)
+        run: bun run check:bundle
+
+      - name: Consumer Type Surface (public API compiles for a strict-TS consumer)
+        run: bun run check:consumer-types
+
+      - name: Examples Type-Check (repo examples compile against the built surface)
+        run: bun run check:examples
+
+      - name: Publish Readiness (pack + consumer install + subpath imports)
+        run: bun run publish:readiness
+
+  # The published target is Node (engines.node >=18, main: dist/...). The
+  # gate above runs everything under Bun; this lane re-runs the unit suite
+  # under Node so a Node-vs-Bun divergence cannot merge green unnoticed.
+  node-compat:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@f4d14e03ff726c06358e5557344e1da148b56cf7 # v1.2.2
+        with:
+          bun-version: "1.3.1"
+
+      - name: Setup Node
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
+      - name: Unit suite under Node (vitest runs on Node here, not Bun)
+        run: cd packages/sdk && npx vitest run

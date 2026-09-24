@@ -20,7 +20,8 @@ const prompt = "A dashboard for a SaaS analytics tool";
 console.log(`🎨 Generating screen with prompt: "${prompt}"...`);
 console.log("   (This may take up to a minute)");
 
-const screen = await project.generate(prompt);
+const generation = await project.generate(prompt);
+const screen = generation.first; // all screens: generation.screens
 console.log(`✅ Screen generated: ${screen.id}`);
 
 console.log("🔍 Fetching HTML...");

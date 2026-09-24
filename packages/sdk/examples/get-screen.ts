@@ -32,10 +32,7 @@ const retrievedScreen = await project.getScreen(firstScreenId);
 console.log("\n📱 Screen Details:");
 console.log(`   Screen ID:  ${retrievedScreen.id}`);
 console.log(`   Project ID: ${retrievedScreen.projectId}`);
-console.log(`   Data Name:  ${retrievedScreen.data?.name}`);
-console.log(
-  `   HTML URL:   ${retrievedScreen.data?.htmlCode?.downloadUrl || "N/A"}`,
-);
-console.log(
-  `   Image URL:  ${retrievedScreen.data?.screenshot?.downloadUrl || "N/A"}`,
-);
+console.log(`   Title:      ${retrievedScreen.title ?? "(untitled)"}`);
+// Typed, cache-aware URL accessors instead of poking untyped `data`.
+console.log(`   HTML URL:   ${await retrievedScreen.getHtmlUrl()}`);
+console.log(`   Image URL:  ${await retrievedScreen.getImageUrl()}`);

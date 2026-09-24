@@ -48,33 +48,22 @@ Each class represents a domain entity. Ask: "What noun does the user interact wi
 
 ### Key decisions:
 
-| Field               | Purpose                                                   | Example                                           |
-| ------------------- | --------------------------------------------------------- | ------------------------------------------------- |
-| `constructorParams` | Fields stored on the instance                             | `["projectId", "screenId"]`                       |
-| `fieldMapping`      | Per-field data source mapping with optional `stripPrefix` | See below                                         |
-| `parentField`       | Which param is injected from a parent class               | `"projectId"`                                     |
-| `idField`           | Which param the `.id` getter aliases                      | `"screenId"`                                      |
-| `factories`         | Local factory methods (no API call)                       | `[{ "method": "project", "returns": "Project" }]` |
+| Field               | Purpose                                                   | Example                                                                                |
+| ------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `constructorParams` | Fields stored on the instance                             | `["projectId", "screenId"]`                                                            |
+| `reference`         | Identity-map keys (`.id` aliases the LAST key)            | `{ "keys": ["projectId", "screenId"] }`                                                |
+| `parentField`       | Which param is injected from a parent class               | `"projectId"`                                                                          |
+| `factories`         | Local factory methods (no API call)                       | `[{ "method": "project", "returns": "Project" }]`                                      |
+| `sideEffects`       | Handwritten extension methods (declared, never generated) | `[{ "method": "upload", "reason": "private_rest", "specPath": "src/spec/upload.ts" }]` |
+| `extensionPath`     | Module re-exporting the class with handwritten methods    | `"../../src/project-ext.js"`                                                           |
 
-### Field Mapping
-
-Use `fieldMapping` when a param needs a different source field, prefix stripping, or a fallback:
-
-```json
-{
-  "constructorParams": ["projectId", "screenId"],
-  "fieldMapping": {
-    "projectId": { "from": "name", "stripPrefix": "projects/" },
-    "screenId": {
-      "from": "id",
-      "fallback": { "field": "name", "splitOn": "/screens/" }
-    }
-  }
-}
-```
-
-- **`stripPrefix`**: Removes a resource name prefix from the value
-- **`fallback`**: If the primary field is missing, splits an alternate field on a delimiter
+> [!IMPORTANT]
+> **The IR schema is STRICT.** Unknown keys are hard validation errors, not
+> silently ignored. Per-field source-mapping helpers described in older docs
+> were never implemented and do not exist — identity fields are populated by
+> the EntityManager from `reference.keys`, resource `name` parsing, and `id`
+> fallback. If validation rejects a key you expected to exist, the feature
+> does not exist — do not work around it.
 
 ---
 
@@ -84,21 +73,29 @@ Each binding maps one MCP tool to one class method. Ask: "Who owns this action?"
 
 ### Arg routing
 
-| Type        | Meaning                  | Code generated                                             |
-| ----------- | ------------------------ | ---------------------------------------------------------- |
-| `self`      | From `this.field`        | `projectId: this.projectId`                                |
-| `param`     | From method parameter    | `prompt: prompt`                                           |
-| `computed`  | Template interpolation   | `name: \`projects/${this.projectId}/screens/${screenId}\`` |
-| `selfArray` | Wrap self field as array | `selectedScreenIds: [this.screenId]`                       |
+| Type        | Meaning                                                         | Code generated                                             |
+| ----------- | --------------------------------------------------------------- | ---------------------------------------------------------- |
+| `self`      | From `this.field`                                               | `projectId: this.projectId`                                |
+| `param`     | From method parameter                                           | `prompt: prompt`                                           |
+| `computed`  | `template` interpolation (`"template": "projects/{projectId}"`) | `name: \`projects/${this.projectId}/screens/${screenId}\`` |
+| `selfArray` | Wrap self field as array                                        | `selectedScreenIds: [this.screenId]`                       |
 
 Optional params use `"optional": true`. Renamed params use `"rename": "newName"`.
+A `"default": "VALUE"` (requires `optional: true`) is sent when the caller
+omits the value: `deviceType: options?.deviceType ?? "DESKTOP"`.
+
+> [!IMPORTANT]
+> **Method signature shape (D12):** required params are positional, in IR
+> order; ALL optional params are emitted into a single trailing
+> `options?: { ... }` object. `generate(prompt, options?)`, never
+> `generate(prompt, deviceType?)`.
 
 ### Response Projections
 
 The `returns.projection` array tells codegen how to navigate the API response. Each step is a `ProjectionStep`:
 
 ```typescript
-{ prop: string; index?: number; each?: boolean; fallback?: string }
+{ prop: string; index?: number; each?: boolean; find?: string; acknowledgeSingle?: boolean }
 ```
 
 | Projection                                                                                                  | Generated code                              | Use when                        |
@@ -109,10 +106,17 @@ The `returns.projection` array tells codegen how to navigate the API response. E
 | `[{ "prop": "outputComponents", "each": true }, { "prop": "design" }, { "prop": "screens", "each": true }]` | `flatMap` chain                             | Collect all items across arrays |
 | `[{ "prop": "screenshot" }, { "prop": "downloadUrl" }]`                                                     | `raw.screenshot.downloadUrl`                | Navigate nested properties      |
 
-**Decision**: Use `"index": 0` when extracting a single item. Use `"each": true` when collecting all items (array result). You **cannot** use both on the same step.
+**Decision**: Use `"index": 0` when extracting a single item. Use `"each": true` when collecting all items (array result). You **cannot** use both on the same step. `"find": "a.b"` scans an array for the first element whose nested path is non-null.
 
 > [!TIP]
-> Every `prop` in a projection is validated against the tool's `outputSchema` at codegen time. If you typo a property name, codegen will fail with a diagnostic listing the available properties.
+> Every `prop` in a projection is validated against the tool's `outputSchema` at codegen time. If you typo a property name, codegen will fail with a diagnostic listing the available properties. Stepping THROUGH an array without `index`/`each`/`find` is also a codegen error — the emitted chain would be `undefined` at runtime.
+
+> [!WARNING]
+> **Truncation lint:** using `index` or `find` on an UNBOUNDED array emits a
+> warning — every other element is silently dropped (this exact pattern caused
+> `project.generate()` to return one screen of many). Prefer `"each": true` +
+> `"array": true`. Only if the result is semantically singular, acknowledge it
+> with `"acknowledgeSingle": true` on the step.
 
 ### Return class wrapping
 

@@ -2,6 +2,6 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@google/stitch-sdk": "^0.0.3"
+    "@google/stitch-sdk": "^0.4.0"
   }
 }

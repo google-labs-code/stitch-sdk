@@ -45,7 +45,7 @@ console.log(`\n🎨 Editing screen with prompt: "${editPrompt}"...`);
 console.log("   (This may take up to a minute)");
 
 try {
-  const editedScreen = await targetScreen.edit(editPrompt);
+  const editedScreen = (await targetScreen.edit(editPrompt)).first;
   console.log(`✅ Screen successfully edited: ${editedScreen.id}`);
 
   const originalHtml = await targetScreen.getHtml();

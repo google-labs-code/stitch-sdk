@@ -16,25 +16,14 @@ if (projects.length === 0) {
 const project = projects[0];
 
 console.log(`🎨 Generating a screen in project ${project.id}...`);
-const screen = await project.generate(
-  "A modern login page with a custom Tailwind theme",
-);
+const screen = (
+  await project.generate("A modern login page with a custom Tailwind theme")
+).first;
 console.log(`✅ Screen generated: ${screen.id}`);
 
-const htmlOrUrl = await screen.getHtml();
-let html = htmlOrUrl;
-
-// If getHtml() returns a download URL, fetch the actual HTML content
-if (htmlOrUrl.startsWith("http")) {
-  console.log(`📥 Fetching HTML from ${htmlOrUrl}...`);
-  const response = await fetch(htmlOrUrl);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch HTML: ${response.statusText}`);
-  }
-  html = await response.text();
-} else {
-  console.log(`📥 Using HTML directly (length: ${html.length})`);
-}
+// getHtml() returns the HTML content directly (getHtmlUrl() for the URL).
+const html = await screen.getHtml();
+console.log(`📥 Fetched HTML content (length: ${html.length})`);
 
 // Parse out the Tailwind configuration
 console.log("🔍 Parsing Tailwind config...");

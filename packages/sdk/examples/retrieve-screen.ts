@@ -16,16 +16,17 @@ if (projects.length === 0) {
 const project = projects[0];
 
 console.log(`🎨 Generating a screen in project ${project.id}...`);
-const generatedScreen = await project.generate("A simple primary button");
+const generatedScreen = (await project.generate("A simple primary button"))
+  .first;
 console.log(`✅ Screen generated. ID: ${generatedScreen.id}`);
-console.log(`   Initial data name: ${generatedScreen.data?.name}`);
+console.log(`   Initial title: ${generatedScreen.title ?? "(untitled)"}`);
 
 console.log(
   `\n🔍 Fetching screen directly via project.getScreen("${generatedScreen.id}")...`,
 );
 const retrievedScreen = await project.getScreen(generatedScreen.id);
 console.log(`✅ Retrieved screen. ID: ${retrievedScreen.id}`);
-console.log(`   Retrieved data name: ${retrievedScreen.data?.name}`);
+console.log(`   Retrieved title: ${retrievedScreen.title ?? "(untitled)"}`);
 
 if (generatedScreen.id === retrievedScreen.id) {
   console.log(
