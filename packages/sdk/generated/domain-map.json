@@ -118,14 +118,16 @@
         "projection": [
           {
             "prop": "outputComponents",
-            "find": "design.screens"
+            "find": "design.screens",
+            "acknowledgeSingle": true
           },
           {
             "prop": "design"
           },
           {
             "prop": "screens",
-            "index": 0
+            "index": 0,
+            "acknowledgeSingle": true
           }
         ]
       }
@@ -159,14 +161,16 @@
         "projection": [
           {
             "prop": "outputComponents",
-            "find": "design.screens"
+            "find": "design.screens",
+            "acknowledgeSingle": true
           },
           {
             "prop": "design"
           },
           {
             "prop": "screens",
-            "index": 0
+            "index": 0,
+            "acknowledgeSingle": true
           }
         ]
       }

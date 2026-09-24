@@ -1,0 +1,122 @@
+{
+  "classes": {
+    "Root": {
+      "description": "Fixture root entry point.",
+      "constructorParams": [],
+      "isRoot": true,
+      "factories": [
+        {
+          "method": "gizmo",
+          "returns": "Gizmo",
+          "description": "Create a Gizmo handle from an ID."
+        }
+      ]
+    },
+    "Gizmo": {
+      "description": "A fixture gizmo.",
+      "constructorParams": ["gizmoId"],
+      "reference": { "keys": ["gizmoId"] },
+      "factories": [
+        {
+          "method": "widget",
+          "returns": "Widget",
+          "description": "Create a Widget handle from an ID."
+        }
+      ]
+    },
+    "Widget": {
+      "description": "A fixture widget belonging to a gizmo.",
+      "constructorParams": ["gizmoId", "widgetId"],
+      "parentField": "gizmoId",
+      "publicInterface": {
+        "name": "WidgetExtras",
+        "importPath": "../../src/spec/widget-extras.js"
+      },
+      "reference": { "keys": ["gizmoId", "widgetId"] }
+    }
+  },
+  "bindings": [
+    {
+      "tool": "create_gizmo",
+      "class": "Root",
+      "method": "createGizmo",
+      "args": {
+        "title": { "from": "param", "optional": true },
+        "labels": { "from": "param", "optional": true }
+      },
+      "returns": {
+        "class": "Gizmo",
+        "projection": []
+      }
+    },
+    {
+      "tool": "list_gizmos",
+      "class": "Root",
+      "method": "gizmos",
+      "args": {},
+      "returns": {
+        "class": "Gizmo",
+        "projection": [{ "prop": "gizmos" }],
+        "array": true
+      }
+    },
+    {
+      "tool": "get_gizmo_asset",
+      "class": "Gizmo",
+      "method": "getUrl",
+      "args": {
+        "gizmoId": { "from": "self" },
+        "name": {
+          "from": "computed",
+          "template": "gizmos/{gizmoId}"
+        }
+      },
+      "returns": {
+        "type": "string",
+        "projection": [{ "prop": "htmlCode" }, { "prop": "downloadUrl" }]
+      },
+      "cache": {
+        "projection": [{ "prop": "htmlCode" }, { "prop": "downloadUrl" }],
+        "description": "Use cached download URL when present"
+      }
+    },
+    {
+      "tool": "spawn_widgets",
+      "class": "Gizmo",
+      "method": "spawnFirst",
+      "args": {
+        "gizmoId": { "from": "self" },
+        "prompt": { "from": "param" },
+        "mode": { "from": "param", "optional": true, "default": "FAST" }
+      },
+      "returns": {
+        "class": "Widget",
+        "projection": [
+          { "prop": "outputComponents", "find": "design.widgets" },
+          { "prop": "design" },
+          { "prop": "widgets", "index": 0, "acknowledgeSingle": true }
+        ]
+      }
+    },
+    {
+      "tool": "spawn_widgets",
+      "class": "Widget",
+      "method": "spawnAll",
+      "args": {
+        "gizmoId": { "from": "self" },
+        "selectedWidgetIds": { "from": "selfArray", "field": "widgetId" },
+        "prompt": { "from": "param" },
+        "mode": { "from": "param", "optional": true, "rename": "spawnMode" }
+      },
+      "returns": {
+        "class": "Widget",
+        "kind": "generation",
+        "projection": [
+          { "prop": "outputComponents", "each": true },
+          { "prop": "design" },
+          { "prop": "widgets", "each": true }
+        ]
+      }
+    }
+  ]
+}

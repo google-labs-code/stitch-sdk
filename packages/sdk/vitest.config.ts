@@ -17,5 +17,23 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     exclude: ["**/node_modules/**", "**/dist/**", "test/integration/**"],
+    coverage: {
+      provider: "v8",
+      include: ["src/**/*.ts", "generated/src/**/*.ts"],
+      exclude: [
+        "src/version.ts",
+        "generated/src/tool-definitions.ts",
+        "generated/src/types.generated.ts",
+        "generated/src/responses.generated.ts",
+      ],
+      // Floors, not targets. The two most regression-prone modules are
+      // held at 100% — both shipped subtle bugs that tests would have
+      // caught [V1_PLAN §4.1].
+      thresholds: {
+        "src/entity-manager.ts": { lines: 100, functions: 100 },
+        "src/spec/error-mapping.ts": { lines: 100, functions: 100 },
+        lines: 70,
+      },
+    },
   },
 });

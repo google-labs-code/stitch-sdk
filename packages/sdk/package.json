@@ -1,13 +1,13 @@
 {
   "name": "@google/stitch-sdk",
-  "version": "0.3.5",
+  "version": "0.4.0",
   "type": "module",
   "private": false,
   "description": "Generate UI screens from text prompts and extract their HTML and screenshots programmatically.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/google-labs-code/stitch-sdk.git",
+    "url": "git+https://github.com/google-labs-code/stitch-sdk.git",
     "directory": "packages/sdk"
   },
   "keywords": [
@@ -24,35 +24,47 @@
   "types": "dist/src/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/src/index.js",
-      "types": "./dist/src/index.d.ts"
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
     },
     "./ai": {
-      "import": "./dist/src/ai.js",
-      "types": "./dist/src/ai.d.ts"
+      "types": "./dist/src/ai.d.ts",
+      "import": "./dist/src/ai.js"
     },
     "./adk": {
-      "import": "./dist/src/adk.js",
-      "types": "./dist/src/adk.d.ts"
+      "types": "./dist/src/adk.d.ts",
+      "import": "./dist/src/adk.js"
+    },
+    "./tools": {
+      "types": "./dist/src/tools.d.ts",
+      "import": "./dist/src/tools.js"
     }
   },
+  "sideEffects": [
+    "./dist/src/project-ext.js",
+    "./dist/src/screen-ext.js",
+    "./dist/src/adk-adapter.js",
+    "./dist/src/tools-adapter.js"
+  ],
   "files": [
     "dist",
     "!dist/tsconfig.tsbuildinfo",
     "!dist/test",
     "!dist/**/*.tsbuildinfo",
     "!dist/package.json",
+    "!dist/**/*.map",
     "README.md"
   ],
   "publishConfig": {
     "registry": "https://wombat-dressing-room.appspot.com",
     "access": "public",
-    "tag": "latest"
+    "tag": "next"
   },
   "scripts": {
     "build": "bun scripts/inject-version.ts && tsc",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "test:integration": "vitest run --dir test/integration",
     "prepublishOnly": "npm run build && npm run test"
@@ -61,6 +73,22 @@
     "@modelcontextprotocol/sdk": "^1.23.0",
     "cheerio": "^1.0.0-rc.12",
     "zod": "^4.3.5"
+  },
+  "peerDependencies": {
+    "@google/adk": "^0.6.1",
+    "@google/genai": "^1.48.0",
+    "ai": "^6.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@google/adk": {
+      "optional": true
+    },
+    "@google/genai": {
+      "optional": true
+    },
+    "ai": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@a2a-js/sdk": "^0.3.13",
@@ -71,10 +99,12 @@
     "@mikro-orm/sqlite": "^6.6.12",
     "@swc/core": "^1.15.18",
     "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "^1.6.0",
     "ai": "^6.0.116",
-    "lodash-es": "^4.18.1",
-    "sqlite3": "^5.1.7",
     "domhandler": "5.0.3",
+    "lodash-es": "^4.18.1",
+    "publint": "^0.3.0",
+    "sqlite3": "^5.1.7",
     "typescript": "^5.5.0",
     "vitest": "^1.6.0"
   }

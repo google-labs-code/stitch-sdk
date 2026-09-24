@@ -1,0 +1,6 @@
+node_modules
+dist
+packages/sdk/dist
+packages/sdk/generated/tools-manifest.json
+packages/sdk/generated/stitch-sdk.lock
+bun.lock

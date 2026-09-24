@@ -30,7 +30,7 @@ import {
   emitNamedInterfaces,
   emitResponseType,
   generateArgsObject,
-  generateParamType,
+  generateMethodParams,
   resolveRef,
 } from "../generate-sdk.js";
 
@@ -93,7 +93,7 @@ describe("emitProjection", () => {
 describe("emitCacheProjection", () => {
   test("single prop → this.data?.prop", () => {
     const steps: ProjectionStep[] = [{ prop: "htmlCode" }];
-    expect(emitCacheProjection(steps)).toBe("this.data?.htmlCode");
+    expect(emitCacheProjection(steps)).toBe("(this.data as any)?.htmlCode");
   });
 
   test("deep path → this.data?.a?.b?.c", () => {
@@ -102,12 +102,12 @@ describe("emitCacheProjection", () => {
       { prop: "downloadUrl" },
     ];
     expect(emitCacheProjection(steps)).toBe(
-      "this.data?.screenshot?.downloadUrl",
+      "(this.data as any)?.screenshot?.downloadUrl",
     );
   });
 
   test("empty steps → this.data", () => {
-    expect(emitCacheProjection([])).toBe("this.data");
+    expect(emitCacheProjection([])).toBe("(this.data as any)");
   });
 });
 
@@ -348,9 +348,9 @@ describe("emitNamedInterfaces", () => {
   });
 });
 
-// ── generateParamType ───────────────────────────────────────
+// ── generateMethodParams ─────────────────────────────────────
 
-describe("generateParamType", () => {
+describe("generateMethodParams", () => {
   test("uses named type for $ref", () => {
     const tool: any = {
       name: "apply_design_system",
@@ -377,10 +377,111 @@ describe("generateParamType", () => {
       ["SelectedScreenInstance", "SelectedScreenInstance"],
     ]);
     const args = { selectedScreenInstances: { from: "param" as const } };
-    const result = generateParamType(tool, args as any, namedTypes);
-    expect(result).toContain(
-      "selectedScreenInstances: SelectedScreenInstance[]",
-    );
+    const result = generateMethodParams(tool, args as any, namedTypes);
+    expect(result).toEqual([
+      {
+        name: "selectedScreenInstances",
+        type: "SelectedScreenInstance[]",
+        hasQuestionToken: false,
+      },
+    ]);
+  });
+
+  test("required params stay positional, optional params fold into polymorphic options parameter", () => {
+    const tool: any = {
+      name: "generate_screen_from_text",
+      inputSchema: {
+        properties: {
+          prompt: { type: "string" },
+          deviceType: { enum: ["MOBILE", "DESKTOP"] },
+          modelId: { type: "string" },
+        },
+      },
+    };
+    const args = {
+      projectId: { from: "self" as const },
+      prompt: { from: "param" as const },
+      deviceType: { from: "param" as const, optional: true },
+      modelId: { from: "param" as const, optional: true },
+    };
+    const result = generateMethodParams(tool, args as any);
+    expect(result).toEqual([
+      { name: "prompt", type: "string", hasQuestionToken: false },
+      {
+        name: "deviceTypeOrOptions",
+        type: '"MOBILE" | "DESKTOP" | { deviceType?: "MOBILE" | "DESKTOP"; modelId?: string }',
+        hasQuestionToken: true,
+      },
+      {
+        name: "modelId",
+        type: "string",
+        hasQuestionToken: true,
+      },
+    ]);
+  });
+
+  test("no optional params → no options object", () => {
+    const tool: any = {
+      name: "get_screen",
+      inputSchema: { properties: { screenId: { type: "string" } } },
+    };
+    const args = { screenId: { from: "param" as const } };
+    const result = generateMethodParams(tool, args as any);
+    expect(result).toEqual([
+      { name: "screenId", type: "string", hasQuestionToken: false },
+    ]);
+  });
+
+  test("only optional params → polymorphic options param", () => {
+    const tool: any = {
+      name: "create_project",
+      inputSchema: { properties: { title: { type: "string" } } },
+    };
+    const args = { title: { from: "param" as const, optional: true } };
+    const result = generateMethodParams(tool, args as any);
+    expect(result).toEqual([
+      {
+        name: "titleOrOptions",
+        type: "string | { title?: string }",
+        hasQuestionToken: true,
+      },
+    ]);
+  });
+
+  test("rename applies inside the options object", () => {
+    const tool: any = {
+      name: "x",
+      inputSchema: { properties: { device_type: { type: "string" } } },
+    };
+    const args = {
+      device_type: {
+        from: "param" as const,
+        optional: true,
+        rename: "deviceType",
+      },
+    };
+    const result = generateMethodParams(tool, args as any);
+    expect(result[0].name).toBe("deviceTypeOrOptions");
+    expect(result[0].type).toBe("string | { deviceType?: string }");
+  });
+
+  test("required param named 'options' alongside optional params throws", () => {
+    const tool: any = {
+      name: "x",
+      inputSchema: {
+        properties: {
+          options: { type: "string" },
+          extra: { type: "string" },
+        },
+      },
+    };
+    const args = {
+      options: { from: "param" as const },
+      extra: { from: "param" as const, optional: true },
+    };
+    expect(() =>
+      generateMethodParams(tool, args as any, undefined, "Test.method"),
+    ).toThrow(/collides/);
   });
 });
 
@@ -436,6 +537,31 @@ describe("generateArgsObject", () => {
     expect(result).toContain("title: newTitle");
   });
 
+  test("optional param → routed through options object (D12)", () => {
+    const result = generateArgsObject({
+      deviceType: { from: "param", optional: true },
+    });
+    expect(result).toContain("deviceType: options?.deviceType");
+  });
+
+  test("optional param with rename → options?.renamed", () => {
+    const result = generateArgsObject({
+      device_type: { from: "param", optional: true, rename: "deviceType" },
+    });
+    expect(result).toContain("device_type: options?.deviceType");
+  });
+
+  test("computed template referencing an optional param → options?.x interpolation", () => {
+    const result = generateArgsObject({
+      revision: { from: "param", optional: true },
+      name: {
+        from: "computed",
+        template: "projects/{projectId}/rev/{revision}",
+      },
+    });
+    expect(result).toContain("${options?.revision}");
+  });
+
   test("selfArray → wrapped array", () => {
     const result = generateArgsObject({
       selectedScreenIds: { from: "selfArray", field: "screenId" },
@@ -458,5 +584,176 @@ describe("generateArgsObject", () => {
     });
     expect(result).toContain("projectId: this.projectId");
     expect(result).toContain("prompt");
+  });
+});
+
+// ── validateProjection: strict array semantics + lint [V1_PLAN §1.2] ──
+
+describe("validateProjection strict semantics", () => {
+  const schema = {
+    type: "object",
+    properties: {
+      title: { type: "string" },
+      screens: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: { name: { type: "string" } },
+        },
+      },
+      comps: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            design: {
+              type: "object",
+              properties: {
+                widgets: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: { id: { type: "string" } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+
+  test("rejects plain prop access THROUGH an array (validation == emission)", () => {
+    expect(() =>
+      validateProjection(
+        [{ prop: "screens" }, { prop: "name" }],
+        schema,
+        "T.m",
+      ),
+    ).toThrow(/ARRAY schema/);
+  });
+
+  test("terminal array access without index/each is fine (returns the array)", () => {
+    expect(() =>
+      validateProjection([{ prop: "screens" }], schema, "T.m"),
+    ).not.toThrow();
+  });
+
+  test("index on a non-array property throws", () => {
+    expect(() =>
+      validateProjection([{ prop: "title", index: 0 }], schema, "T.m"),
+    ).toThrow(/non-array/);
+  });
+
+  test("find on a non-array property throws", () => {
+    expect(() =>
+      validateProjection([{ prop: "title", find: "x.y" }], schema, "T.m"),
+    ).toThrow(/requires an array/);
+  });
+
+  test("find dot-path is validated against the item schema", () => {
+    expect(() =>
+      validateProjection(
+        [{ prop: "comps", find: "design.bogus" }],
+        schema,
+        "T.m",
+      ),
+    ).toThrow(/bogus/);
+    expect(() =>
+      validateProjection(
+        [
+          { prop: "comps", find: "design.widgets", acknowledgeSingle: true },
+          { prop: "design" },
+          { prop: "widgets", each: true },
+        ],
+        schema,
+        "T.m",
+      ),
+    ).not.toThrow();
+  });
+
+  test("LINT: warns when index truncates an unbounded array", () => {
+    const warnings = validateProjection(
+      [{ prop: "screens", index: 0 }],
+      schema,
+      "T.m",
+    );
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain("acknowledgeSingle");
+  });
+
+  test("LINT: acknowledgeSingle suppresses the warning", () => {
+    const warnings = validateProjection(
+      [{ prop: "screens", index: 0, acknowledgeSingle: true }],
+      schema,
+      "T.m",
+    );
+    expect(warnings).toEqual([]);
+  });
+});
+
+// ── default emission + cache index [V1_PLAN §1.3] ──
+
+describe("ArgParam default emission", () => {
+  test("optional param with default → options?.x ?? default", () => {
+    const result = generateArgsObject({
+      deviceType: { from: "param", optional: true, default: "DESKTOP" },
+    });
+    expect(result).toContain('deviceType: options?.deviceType ?? "DESKTOP"');
+  });
+});
+
+describe("emitCacheProjection with index", () => {
+  test("index step → this.data?.cards?.[0]?.url", () => {
+    expect(
+      emitCacheProjection([{ prop: "cards", index: 0 }, { prop: "url" }]),
+    ).toBe("(this.data as any)?.cards?.[0]?.url");
+  });
+});
+
+// ── M4: union array item types are parenthesized [V1_REVIEW_FIXES] ──
+
+describe("jsonSchemaToTs array-of-union precedence", () => {
+  test('array of enum → ("A" | "B")[], not "A" | "B"[]', () => {
+    const result = jsonSchemaToTs({
+      type: "array",
+      items: { enum: ["LAYOUT", "COLOR_SCHEME", "TEXT_CONTENT"] },
+    });
+    expect(result).toBe('("LAYOUT" | "COLOR_SCHEME" | "TEXT_CONTENT")[]');
+  });
+
+  test("array of plain string is NOT over-parenthesized", () => {
+    expect(jsonSchemaToTs({ type: "array", items: { type: "string" } })).toBe(
+      "string[]",
+    );
+  });
+});
+
+// ── M5: flatMap index emission is optional-guarded [V1_REVIEW_FIXES] ──
+
+describe("emitFlatMapProjection guards trailing index", () => {
+  test("each + trailing index emits ?.[n] (no bare bracket)", () => {
+    const code = emitProjection([
+      { prop: "outputComponents", each: true },
+      { prop: "design" },
+      { prop: "screens", index: 0 },
+    ]);
+    expect(code).toContain("?.[0]");
+    expect(code).not.toMatch(/screens\[0\]/); // no UNGUARDED bracket
+  });
+
+  test("emitted each+index code returns [] (not throw) on a missing intermediate", () => {
+    const code = emitProjection([
+      { prop: "outputComponents", each: true },
+      { prop: "design" },
+      { prop: "screens", index: 0 },
+    ]);
+    // Strip TS `: any` annotations so the expression is valid JS to eval.
+    const js = code.replace(/:\s*any/g, "");
+    const fn = new Function("raw", `return ${js}`);
+    // design present but screens absent — the old bare [0] threw here.
+    expect(() => fn({ outputComponents: [{ design: {} }] })).not.toThrow();
+    expect(fn({ outputComponents: [{ design: {} }] })).toEqual([]);
   });
 });
