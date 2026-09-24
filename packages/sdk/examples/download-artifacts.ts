@@ -36,37 +36,19 @@ const outDir = path.join(process.cwd(), "out");
 await fs.mkdir(outDir, { recursive: true });
 
 try {
-  // Download HTML
-  console.log("Fetching HTML URL...");
-  const htmlUrl = await screen.getHtml();
-  if (htmlUrl) {
-    console.log(`Downloading HTML from ${htmlUrl}...`);
-    const htmlResponse = await fetch(htmlUrl);
-    if (!htmlResponse.ok)
-      throw new Error(`HTML fetch failed: ${htmlResponse.statusText}`);
-    const htmlCode = await htmlResponse.text();
-    const htmlPath = path.join(outDir, `${screen.id}.html`);
-    await fs.writeFile(htmlPath, htmlCode);
-    console.log(`✅ Saved HTML to ${htmlPath}`);
-  } else {
-    console.log("⚠️ No HTML URL available for this screen.");
-  }
+  // getHtml() returns the HTML CONTENT (use getHtmlUrl() for just the URL).
+  console.log("Fetching HTML content...");
+  const htmlCode = await screen.getHtml();
+  const htmlPath = path.join(outDir, `${screen.id}.html`);
+  await fs.writeFile(htmlPath, htmlCode);
+  console.log(`✅ Saved HTML to ${htmlPath}`);
 
-  // Download Image
-  console.log("Fetching Image URL...");
-  const imageUrl = await screen.getImage();
-  if (imageUrl) {
-    console.log(`Downloading Image from ${imageUrl}...`);
-    const imageResponse = await fetch(imageUrl);
-    if (!imageResponse.ok)
-      throw new Error(`Image fetch failed: ${imageResponse.statusText}`);
-    const imageBuffer = await imageResponse.arrayBuffer();
-    const imagePath = path.join(outDir, `${screen.id}.jpeg`);
-    await fs.writeFile(imagePath, Buffer.from(imageBuffer));
-    console.log(`✅ Saved Image to ${imagePath}`);
-  } else {
-    console.log("⚠️ No Image URL available for this screen.");
-  }
+  // getImage() returns the screenshot BYTES as a Uint8Array.
+  console.log("Fetching image bytes...");
+  const imageBytes = await screen.getImage();
+  const imagePath = path.join(outDir, `${screen.id}.png`);
+  await fs.writeFile(imagePath, imageBytes);
+  console.log(`✅ Saved image to ${imagePath}`);
 } catch (error) {
   console.error("Failed to download artifacts:", error);
 }

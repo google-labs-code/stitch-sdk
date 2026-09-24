@@ -56,15 +56,8 @@ When the Stitch MCP server adds a new tool:
 {
   "Screen": {
     "constructorParams": ["projectId", "screenId"],
-    "fieldMapping": {
-      "projectId": { "from": "projectId" },
-      "screenId": {
-        "from": "id",
-        "fallback": { "field": "name", "splitOn": "/screens/" }
-      }
-    },
     "parentField": "projectId",
-    "idField": "screenId"
+    "reference": { "keys": ["projectId", "screenId"] }
   }
 }
 ```
@@ -140,7 +133,7 @@ const result = await stitch.callTool("generate_screen_from_text", {
 await stitch.close();
 ```
 
-The singleton reads `STITCH_API_KEY` (or `STITCH_ACCESS_TOKEN` + `GOOGLE_CLOUD_PROJECT`) from the environment. Set `STITCH_HOST` to override the server URL.
+The singleton reads `STITCH_API_KEY` (or `STITCH_ACCESS_TOKEN` + `GOOGLE_CLOUD_PROJECT`) from the environment. Set `STITCH_BASE_URL` to override the server URL. (`STITCH_HOST` is a deprecated alias, removed in 2.0.)
 
 #### Direct Instantiation
 
@@ -178,25 +171,26 @@ const result = await generateText({
 
 `stitchTools()` is exported from the `/ai` subpath to keep the `ai` dependency optional. It uses the same shared `StitchToolClient` singleton internally.
 
-`stitch.toolMap` provides O(1) tool lookup with pre-parsed params — static, auth-free, no network call:
+The `/tools` subpath provides O(1) tool lookup with pre-parsed params — static, auth-free, no network call:
 
 ```typescript
-const tool = stitch.toolMap.get("create_project");
+import { toolMap } from "@google/stitch-sdk/tools";
+const tool = toolMap.get("create_project");
 tool.params; // ToolParam[] — flat, pre-parsed
 tool.params.filter((p) => p.required); // required params only
 tool.inputSchema; // raw ToolInputSchema still available
 ```
 
-The raw `toolDefinitions` array and standalone `toolMap` are also exported from the main entry point.
+Both `toolDefinitions` and `toolMap` are exported from the `@google/stitch-sdk/tools` subpath (kept off the root entry so it stays lean).
 
 ### SDK Modality — Generated Domain Classes
 
 For humans writing precise, programmatic scripts. Generated domain facade over `callTool`. Typed parameters, domain objects returned, `StitchError` thrown on failure.
 
 ```typescript
-const project = await stitch.createProject("My App");
-const screen = await project.generate("A login page");
-const html = await screen.getHtml();
+const project = await stitch.createProject({ title: "My App" });
+const generation = await project.generate("A login page");
+const html = await generation.first.getHtml();
 ```
 
 Both modalities share `StitchToolClient` underneath. The domain classes are a typed layer over `callTool`.
@@ -241,7 +235,7 @@ The membrane is declared in `domain-map.json` via `sideEffects` on any class wit
     "extensionPath": "../../src/project-ext.js",
     "sideEffects": [
       {
-        "method": "uploadImage",
+        "method": "upload",
         "reason": "private_rest",
         "specPath": "src/spec/upload.ts"
       },

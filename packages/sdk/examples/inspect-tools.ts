@@ -1,15 +1,15 @@
 /**
- * Inspect available Stitch tools offline using stitch.toolMap.
+ * Inspect available Stitch tools offline using the /tools catalog.
  * No API key or network connection required.
  *
  * Usage:
  *   bun packages/sdk/examples/inspect-tools.ts
  */
-import { stitch } from "@google/stitch-sdk";
+import { toolMap } from "@google/stitch-sdk/tools";
 
-console.log(`📋 ${stitch.toolMap.size} tools available:\n`);
+console.log(`📋 ${toolMap.size} tools available:\n`);
 
-for (const [name, tool] of stitch.toolMap) {
+for (const [name, tool] of toolMap) {
   console.log(`🔹 ${name}`);
   console.log(`   ${tool.description.split("\n")[0].trim()}`);
   for (const param of tool.params) {
@@ -20,7 +20,7 @@ for (const [name, tool] of stitch.toolMap) {
 }
 
 // Look up a specific tool by name
-const tool = stitch.toolMap.get("generate_screen_from_text");
+const tool = toolMap.get("generate_screen_from_text");
 if (tool) {
   console.log(`🔎 Found tool: ${tool.name}`);
   console.log(
@@ -38,7 +38,8 @@ if (tool) {
 }
 
 // Introspect a tool, then call it (requires STITCH_API_KEY)
-// const gen = stitch.toolMap.get("generate_screen_from_text")!;
+// import { stitch } from "@google/stitch-sdk";
+// const gen = toolMap.get("generate_screen_from_text")!;
 // const args: Record<string, unknown> = {};
 // for (const param of gen.params) {
 //   if (param.required) {

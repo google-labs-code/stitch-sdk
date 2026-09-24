@@ -19,7 +19,9 @@ console.log(`✅ Project created: ${project.id}`);
 
 // 2. Generate a screen
 console.log("🎨 Generating a screen: 'A simple login page'...");
-const screen = await project.generate("A simple login page");
+const generation = await project.generate("A simple login page");
+console.log(`Generated ${generation.length} screen(s)`);
+const screen = generation.first;
 console.log(`✅ Screen generated: ${screen.id}`);
 
 // 3. Get outputs

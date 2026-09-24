@@ -50,6 +50,34 @@ function assert(condition: boolean, message: string) {
 
 console.log("🔑 STITCH_API_KEY found. Running e2e tests...\n");
 
+let e2eProjectId: string | undefined;
+
+/**
+ * Best-effort cleanup. No delete-project tool exists on the server yet
+ * (requested — see V1_EXECUTION.md needs-human ledger); this adopts it
+ * automatically the moment it ships. Until then, e2e-sdk-* naming marks
+ * projects as sweepable test artifacts.
+ */
+async function teardown(): Promise<void> {
+  if (!e2eProjectId) return;
+  try {
+    const { tools } = await stitch.listTools();
+    const deleteTool = (tools as any[]).find((t) =>
+      /delete.*project/.test(t.name),
+    );
+    if (!deleteTool) {
+      console.log(
+        `\n🧹 No delete-project tool on the server yet — project ${e2eProjectId} left behind (e2e-sdk-* naming marks it sweepable).`,
+      );
+      return;
+    }
+    await stitch.callTool(deleteTool.name, { projectId: e2eProjectId });
+    console.log(`\n🧹 Deleted e2e project ${e2eProjectId}`);
+  } catch (err) {
+    console.warn(`\n🧹 Teardown failed (non-fatal): ${err}`);
+  }
+}
+
 try {
   // ── 1. List projects ────────────────────────────────────────
   console.log("📋 Listing projects...");
@@ -58,7 +86,12 @@ try {
 
   // ── 2. Create project via callTool ────────────────────────────
   console.log("\n📦 Creating project via callTool...");
-  const projectName = `E2E Test ${new Date().toISOString().slice(0, 16)}`;
+  const runId = `${Date.now().toString(36)}`;
+  // Naming convention e2e-sdk-<runId> marks projects as sweepable test
+  // artifacts. No delete tool exists on the server yet (requested —
+  // see V1_EXECUTION.md needs-human ledger); teardown() adopts it the
+  // moment it ships.
+  const projectName = `e2e-sdk-${runId}`;
   const createResult = await stitch.callTool("create_project", {
     title: projectName,
   });
@@ -69,6 +102,7 @@ try {
     typeof createdId === "string" && createdId.length > 0,
     `Created project: ${createdId}`,
   );
+  e2eProjectId = createdId;
 
   // ── 3. Retrieve project by identity map ─────────────────────
   console.log("\n🔍 Retrieving project by identity map...");
@@ -87,9 +121,14 @@ try {
 
   // ── 4. Generate screen ──────────────────────────────────────
   console.log("\n🎨 Generating screen...");
-  const screen = await project.generate(`
+  const generation = await project.generate(`
     A simple hello world page with centered text
   `);
+  assert(
+    generation.screens.length >= 1,
+    `Generate returned ${generation.screens.length} screen(s) (all collected, none truncated)`,
+  );
+  const screen = generation.first;
   assert(screen !== null && screen !== undefined, "Generate returned a screen");
   assert(
     typeof screen.id === "string" && screen.id.length > 0,
@@ -100,23 +139,29 @@ try {
   console.log("\n📄 Getting HTML (cached)...");
   const html = await screen.getHtml();
   assert(
-    typeof html === "string" && html.length > 0,
-    `Got HTML (${html.length} chars)`,
+    typeof html === "string" && html.length > 0 && !html.startsWith("http"),
+    `Got HTML CONTENT (${html.length} chars, not a URL)`,
   );
 
   // ── 6. Get Image (cached path — data from generate) ─────────
   console.log("\n🖼️  Getting image (cached)...");
-  const imageUrl = await screen.getImage();
+  const imageUrl = await screen.getImageUrl();
   assert(
     typeof imageUrl === "string" && imageUrl.length > 0,
     `Got image URL (${imageUrl.slice(0, 60)}...)`,
   );
+  const imageBytes = await screen.getImage();
+  assert(
+    imageBytes.byteLength > 0,
+    `Got image bytes (${imageBytes.byteLength})`,
+  );
 
   // ── 7. Edit screen ─────────────────────────────────────────
   console.log("\n✏️  Editing screen...");
-  const edited = await screen.edit(
+  const editGen = await screen.edit(
     "Make the background dark and add a subtitle",
   );
+  const edited = editGen.first;
   assert(edited !== null && edited !== undefined, "Edit returned a screen");
   assert(
     typeof edited.id === "string" && edited.id.length > 0,
@@ -131,9 +176,10 @@ try {
 
   // ── 8. Generate variants ────────────────────────────────────
   console.log("\n🎭 Generating variants...");
-  const variants = await screen.variants("Try different color schemes", {
-    variantCount: 2,
-  });
+  const { screens: variants } = await screen.variants(
+    "Try different color schemes",
+    { variantCount: 2 },
+  );
   assert(Array.isArray(variants), `Got ${variants.length} variant(s)`);
   assert(variants.length > 0, "At least 1 variant returned");
 
@@ -207,11 +253,13 @@ try {
 } catch (err) {
   console.error(`\n💥 Unexpected error: ${err}`);
   if (err instanceof Error) console.error(err.stack);
+  await teardown(); // clean up the e2e project even on failure
   process.exit(1);
 }
 
 // ── Summary ─────────────────────────────────────────────────
 console.log("");
+await teardown(); // always — success or assertion failure
 if (failures > 0) {
   console.error(`💥 ${failures} e2e check(s) failed, ${passed} passed.`);
   process.exit(1);

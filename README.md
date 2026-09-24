@@ -235,7 +235,7 @@ A generated UI screen. Provides access to HTML and screenshots.
 
 `getHtml()` and `getImage()` use cached data from the generation response when available. If the screen was loaded from `screens()` or `getScreen()`, they call the `get_screen` API automatically.
 
-`modelId`: `"GEMINI_3_PRO"` \| `"GEMINI_3_FLASH"`
+`modelId`: `"GEMINI_3_8_FLASH"` \| `"GEMINI_3_5_FLASH_LITE"` (optional, defaults to backend default)
 
 ### `DesignSystem`
 
