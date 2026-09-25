@@ -1,12 +1,16 @@
 {
   "schemaVersion": 1,
   "generated": {
-    "generatedAt": "2026-09-23T18:39:30.614Z",
-    "sourceHash": "sha256:a126fbb6fcc1161fd4de0d05e23cbaceacccddeb61f60fa54433d47aba54ff15",
+    "generatedAt": "2026-09-25T04:45:34.219Z",
+    "sourceHash": "sha256:aad79acad078a250f95d5e58767a9082c41be37d4f5565bf307c96f1cd654b38",
     "manifestHash": "sha256:88ec3dfa066ce5060be236b0a5c0b5fb51671a7dd60d05556c028e6c4c8f0e1c",
     "domainMapHash": "sha256:a6177cc7e2f44d2d536928d4e0ae7bd51ed2dd3393235787216b976498c3b1b2",
     "fileCount": 8,
-    "repairedTools": []
+    "repairedTools": [
+      "generate_screen_from_text",
+      "edit_screens",
+      "generate_variants"
+    ]
   },
   "domainMap": {
     "generatedAt": "2026-09-23T18:36:09.460Z",

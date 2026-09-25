@@ -63,6 +63,12 @@ export class DesignSystem {
     private client: StitchToolClientSpec,
     data: any,
   ) {
+    Object.defineProperty(this, "client", {
+      value: client,
+      enumerable: false,
+      writable: true,
+      configurable: true,
+    });
     this.data = typeof data === "object" && data !== null ? data : undefined;
     const _rawName =
       typeof data === "string"

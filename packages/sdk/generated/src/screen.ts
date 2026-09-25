@@ -64,6 +64,12 @@ export class Screen {
     protected client: StitchToolClientSpec,
     data: any,
   ) {
+    Object.defineProperty(this, "client", {
+      value: client,
+      enumerable: false,
+      writable: true,
+      configurable: true,
+    });
     this.data = typeof data === "object" && data !== null ? data : undefined;
     const _rawName =
       typeof data === "string"
@@ -124,12 +130,18 @@ export class Screen {
           modelId?:
             | "MODEL_ID_UNSPECIFIED"
             | "GEMINI_3_8_FLASH"
-            | "GEMINI_3_5_FLASH_LITE";
+            | "GEMINI_3_5_FLASH_LITE"
+            | "GEMINI_3_PRO"
+            | "GEMINI_3_FLASH"
+            | "GEMINI_3_1_PRO";
         },
     modelId?:
       | "MODEL_ID_UNSPECIFIED"
       | "GEMINI_3_8_FLASH"
-      | "GEMINI_3_5_FLASH_LITE",
+      | "GEMINI_3_5_FLASH_LITE"
+      | "GEMINI_3_PRO"
+      | "GEMINI_3_FLASH"
+      | "GEMINI_3_1_PRO",
   ): Promise<Generation<Screen, EditScreensResponse>> {
     const options =
       typeof deviceTypeOrOptions === "object" &&
@@ -194,12 +206,18 @@ export class Screen {
           modelId?:
             | "MODEL_ID_UNSPECIFIED"
             | "GEMINI_3_8_FLASH"
-            | "GEMINI_3_5_FLASH_LITE";
+            | "GEMINI_3_5_FLASH_LITE"
+            | "GEMINI_3_PRO"
+            | "GEMINI_3_FLASH"
+            | "GEMINI_3_1_PRO";
         },
     modelId?:
       | "MODEL_ID_UNSPECIFIED"
       | "GEMINI_3_8_FLASH"
-      | "GEMINI_3_5_FLASH_LITE",
+      | "GEMINI_3_5_FLASH_LITE"
+      | "GEMINI_3_PRO"
+      | "GEMINI_3_FLASH"
+      | "GEMINI_3_1_PRO",
   ): Promise<Generation<Screen, GenerateVariantsResponse>> {
     const options =
       typeof deviceTypeOrOptions === "object" &&

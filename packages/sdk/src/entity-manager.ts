@@ -82,7 +82,12 @@ export class EntityManager {
   }
 
   constructor(client: any, opts?: { enabled?: boolean }) {
-    this.client = client;
+    Object.defineProperty(this, "client", {
+      value: client,
+      enumerable: false,
+      writable: true,
+      configurable: true,
+    });
     this.enabled = opts?.enabled ?? true;
   }
 

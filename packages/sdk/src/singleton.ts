@@ -78,7 +78,7 @@ export function getOrCreateClient(
 ): StitchToolClient {
   const { resolved, key } = resolveAndKey(config);
 
-  if (_client && key !== _clientCacheKey) {
+  if (_client && (_client.closed || key !== _clientCacheKey)) {
     _client.close().catch(() => {});
     _client = null;
     _stitch = null;
@@ -145,7 +145,17 @@ function getMethodWrapper(
   if (cached) return cached;
 
   let wrapper: ((...args: unknown[]) => unknown) | undefined;
-  if (CLIENT_METHODS.has(prop)) {
+  if (prop === "close") {
+    wrapper = async () => {
+      const current = _client;
+      _client = null;
+      _clientCacheKey = null;
+      _stitch = null;
+      if (current) {
+        await current.close();
+      }
+    };
+  } else if (CLIENT_METHODS.has(prop)) {
     wrapper = (...args: unknown[]) => {
       const client = getOrCreateClient();
       return (

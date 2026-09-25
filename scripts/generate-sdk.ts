@@ -745,6 +745,9 @@ function buildConstructorBody(
   const params = config.constructorParams || [];
   const lastParam = params[params.length - 1];
   statements.push(
+    `Object.defineProperty(this, "client", { value: client, enumerable: false, writable: true, configurable: true });`,
+  );
+  statements.push(
     `this.data = typeof data === "object" && data !== null ? data : undefined;`,
   );
   if (params.length > 0) {
