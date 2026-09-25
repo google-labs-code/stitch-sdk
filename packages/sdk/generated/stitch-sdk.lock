@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "generated": {
-    "generatedAt": "2026-09-25T04:45:34.219Z",
-    "sourceHash": "sha256:aad79acad078a250f95d5e58767a9082c41be37d4f5565bf307c96f1cd654b38",
+    "generatedAt": "2026-09-25T05:45:19.883Z",
+    "sourceHash": "sha256:77d5e0d5f2a9dd242fda6962c86e75615a3211e0a8d6eea30a47e2b96bc3d24c",
     "manifestHash": "sha256:88ec3dfa066ce5060be236b0a5c0b5fb51671a7dd60d05556c028e6c4c8f0e1c",
-    "domainMapHash": "sha256:a6177cc7e2f44d2d536928d4e0ae7bd51ed2dd3393235787216b976498c3b1b2",
+    "domainMapHash": "sha256:cd10fec78b1365854d5453e47970c4c73896e32bb6b33255baeb5228851e5b89",
     "fileCount": 8,
     "repairedTools": [
       "generate_screen_from_text",
@@ -13,11 +13,11 @@
     ]
   },
   "domainMap": {
-    "generatedAt": "2026-09-23T18:36:09.460Z",
-    "sourceHash": "sha256:a6177cc7e2f44d2d536928d4e0ae7bd51ed2dd3393235787216b976498c3b1b2",
+    "generatedAt": "2026-09-25T05:40:41.689Z",
+    "sourceHash": "sha256:cd10fec78b1365854d5453e47970c4c73896e32bb6b33255baeb5228851e5b89",
     "manifestHash": "sha256:88ec3dfa066ce5060be236b0a5c0b5fb51671a7dd60d05556c028e6c4c8f0e1c",
     "classCount": 4,
-    "bindingCount": 15
+    "bindingCount": 16
   },
   "manifest": {
     "capturedAt": "2026-09-23T18:42:56.588Z",

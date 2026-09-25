@@ -3,7 +3,7 @@
 DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:88ec3dfa066c...)
-        domain-map.json     (sha256:a6177cc7e2f4...)
+        domain-map.json     (sha256:cd10fec78b13...)
  */
 import { type StitchToolClientSpec } from "../../src/spec/client.js";
 import { StitchError } from "../../src/spec/errors.js";
@@ -40,6 +40,7 @@ import {
   ProjectData,
 } from "./types.generated.js";
 import {
+  GetProjectResponse,
   GenerateScreenFromTextResponse,
   ListScreensResponse,
   GetScreenResponse,
@@ -110,6 +111,22 @@ export class Project {
   /** Convenience alias for projectId */
   get id(): string {
     return this.projectId;
+  }
+
+  /**
+   * Retrieves the details of a specific Stitch project using its project name.
+   * Tool: get_project
+   */
+  async get(): Promise<Project> {
+    try {
+      const raw = await this.client.callTool<GetProjectResponse>(
+        "get_project",
+        { name: `projects/${this.projectId}` },
+      );
+      return this.client.entities.resolve(Project, ["projectId"], raw);
+    } catch (error) {
+      throw StitchError.fromUnknown(error);
+    }
   }
 
   /**

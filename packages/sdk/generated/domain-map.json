@@ -38,6 +38,11 @@
           "method": "downloadAssets",
           "reason": "filesystem_io",
           "specPath": "src/spec/download.ts"
+        },
+        {
+          "method": "getCanvasLayout",
+          "reason": "complex_orchestration",
+          "specPath": "src/spec/canvas.ts"
         }
       ],
       "reference": {
@@ -89,6 +94,21 @@
     }
   },
   "bindings": [
+    {
+      "tool": "get_project",
+      "class": "Project",
+      "method": "get",
+      "args": {
+        "name": {
+          "from": "computed",
+          "template": "projects/${this.projectId}"
+        }
+      },
+      "returns": {
+        "class": "Project",
+        "projection": []
+      }
+    },
     {
       "tool": "list_projects",
       "class": "Stitch",

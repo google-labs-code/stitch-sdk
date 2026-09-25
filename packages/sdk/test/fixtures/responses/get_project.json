@@ -1,0 +1,19 @@
+{
+  "name": "projects/p-fix",
+  "title": "Fixture Project",
+  "visibility": "PRIVATE",
+  "projectType": "PROJECT_DESIGN",
+  "deviceType": "DESKTOP",
+  "screenInstances": [
+    {
+      "id": "inst-1",
+      "sourceScreen": "projects/p-fix/screens/s-1",
+      "x": 100,
+      "y": 200,
+      "width": 1280,
+      "height": 800,
+      "deviceType": "DESKTOP",
+      "label": "Home Screen"
+    }
+  ]
+}
