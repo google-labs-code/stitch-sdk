@@ -2,7 +2,7 @@
   "name": "stitch-root",
   "private": true,
   "type": "module",
-  "version": "0.4.0",
+  "version": "0.4.0-canary.1",
   "workspaces": [
     "packages/*"
   ],

@@ -38,10 +38,15 @@ describe("0.4.0 Premortem Tigers & Reconciled PRs (#363, #368)", () => {
   });
 
   describe("Tiger 1: publishConfig.tag is 'latest'", () => {
-    it("declares publishConfig.tag === 'latest' in packages/sdk/package.json", () => {
+    it("declares publishConfig.tag === 'latest' in packages/sdk/package.json (or non-latest for prerelease)", () => {
       const pkgPath = resolve(import.meta.dirname, "../../package.json");
       const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
-      expect(pkg.publishConfig?.tag).toBe("latest");
+      const isPrerelease = String(pkg.version).includes("-");
+      if (isPrerelease) {
+        expect(pkg.publishConfig?.tag).not.toBe("latest");
+      } else {
+        expect(pkg.publishConfig?.tag).toBe("latest");
+      }
     });
   });
 
