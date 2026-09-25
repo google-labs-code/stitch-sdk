@@ -1026,6 +1026,15 @@ async function main() {
             `  title?: string;\n` +
             `  htmlCode?: File;\n` +
             `  screenshot?: File;\n` +
+            `  width?: string | number;\n` +
+            `  height?: string | number;\n` +
+            `  deviceType?: string;\n` +
+            `  screenType?: string;\n` +
+            `  generatedBy?: string;\n` +
+            `  prompt?: string;\n` +
+            `  theme?: DesignTheme;\n` +
+            `  designSystem?: DesignSystemInput;\n` +
+            `  screenMetadata?: ScreenMetadata;\n` +
             `  [key: string]: any;\n` +
             `}`,
         );

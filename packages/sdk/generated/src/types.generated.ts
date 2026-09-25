@@ -3,7 +3,7 @@
 DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:88ec3dfa066c...)
-        domain-map.json     (sha256:a6177cc7e2f4...)
+        domain-map.json     (sha256:cd10fec78b13...)
  */
 
 /** A component style token in a design system. */
@@ -682,6 +682,15 @@ export interface ScreenData {
   title?: string;
   htmlCode?: File;
   screenshot?: File;
+  width?: string | number;
+  height?: string | number;
+  deviceType?: string;
+  screenType?: string;
+  generatedBy?: string;
+  prompt?: string;
+  theme?: DesignTheme;
+  designSystem?: DesignSystemInput;
+  screenMetadata?: ScreenMetadata;
   [key: string]: any;
 }
 

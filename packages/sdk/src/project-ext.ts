@@ -25,6 +25,7 @@
  */
 
 import { Project as GeneratedProject } from "../generated/src/project.js";
+import type { ScreenInstance } from "../generated/src/types.generated.js";
 import { Screen } from "./screen-ext.js";
 import { EntityManager } from "./entity-manager.js";
 import { StitchError, StitchErrorCode } from "./spec/errors.js";
@@ -114,6 +115,16 @@ export class Project extends GeneratedProject {
       screens: result.downloadedScreens,
       warnings: result.warnings ?? [],
     };
+  }
+
+  /**
+   * Retrieves the project's canvas layout (`screenInstances`) containing
+   * placement coordinates (`x`, `y`, `width`, `height`), labels, and
+   * `sourceScreen` resource names (#365).
+   */
+  async getCanvasLayout(): Promise<ScreenInstance[]> {
+    const updated = await this.get();
+    return updated.data?.screenInstances ?? [];
   }
 }
 

@@ -93,6 +93,12 @@ const BINDING_CASES: Record<string, () => Promise<void>> = {
     const result = await new Stitch(client).createProject({ title: "x" });
     expect(result.id).toBe("p-new");
   },
+  "Project.get": async () => {
+    arm("get_project");
+    const result = await project().get();
+    expect(result.id).toBe("p-fix");
+    expect(result.title).toBe("Fixture Project");
+  },
   "Project.generate": async () => {
     arm("generate_screen_from_text");
     const result = await project().generate("a page");
