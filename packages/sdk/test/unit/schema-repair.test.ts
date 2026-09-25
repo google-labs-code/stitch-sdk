@@ -13,7 +13,11 @@
 // limitations under the License.
 
 import { describe, it, expect } from "vitest";
-import { repairSchema, repairToolSchemas } from "../../src/schema-repair.js";
+import {
+  repairSchema,
+  repairToolSchemas,
+  collectDefPool,
+} from "../../src/schema-repair.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 
 describe("repairSchema", () => {
@@ -234,5 +238,85 @@ describe("repairToolSchemas", () => {
 
   it("should handle empty tools array", () => {
     expect(() => repairToolSchemas([])).not.toThrow();
+  });
+
+  it("should share $defs across sibling tools and resolve transitive $refs (PR #368)", () => {
+    const tools: any[] = [
+      {
+        name: "create_design_system",
+        description: "Defines DesignTheme and ColorPalette in $defs",
+        inputSchema: {
+          type: "object",
+          $defs: {
+            DesignTheme: {
+              type: "object",
+              properties: {
+                palette: { $ref: "#/$defs/ColorPalette" },
+              },
+            },
+            ColorPalette: {
+              type: "object",
+              properties: {
+                primary: { type: "string" },
+              },
+            },
+          },
+          properties: {
+            theme: { $ref: "#/$defs/DesignTheme" },
+          },
+        },
+      },
+      {
+        name: "update_design_system",
+        description: "References DesignTheme without defining it or ColorPalette",
+        inputSchema: {
+          type: "object",
+          properties: {
+            theme: { $ref: "#/$defs/DesignTheme" },
+          },
+        },
+      },
+    ];
+
+    const pool = collectDefPool(tools);
+    expect(pool.DesignTheme).toBeDefined();
+    expect(pool.ColorPalette).toBeDefined();
+
+    repairToolSchemas(tools);
+
+    const repairedDefs = tools[1].inputSchema.$defs;
+    expect(repairedDefs.DesignTheme).toBeDefined();
+    // Transitive dependency referenced inside DesignTheme must also be injected
+    expect(repairedDefs.ColorPalette).toBeDefined();
+    expect(repairedDefs.ColorPalette.properties.primary).toEqual({
+      type: "string",
+    });
+  });
+
+  it("should preserve legacy 0.3.5 modelId enum values alongside 0.4.0 values", () => {
+    const schema: Record<string, any> = {
+      type: "object",
+      properties: {
+        modelId: {
+          type: "string",
+          enum: [
+            "MODEL_ID_UNSPECIFIED",
+            "GEMINI_3_8_FLASH",
+            "GEMINI_3_5_FLASH_LITE",
+          ],
+        },
+      },
+    };
+
+    repairSchema(schema);
+
+    expect(schema.properties.modelId.enum).toEqual([
+      "MODEL_ID_UNSPECIFIED",
+      "GEMINI_3_8_FLASH",
+      "GEMINI_3_5_FLASH_LITE",
+      "GEMINI_3_PRO",
+      "GEMINI_3_FLASH",
+      "GEMINI_3_1_PRO",
+    ]);
   });
 });

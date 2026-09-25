@@ -58,7 +58,7 @@
   "publishConfig": {
     "registry": "https://wombat-dressing-room.appspot.com",
     "access": "public",
-    "tag": "next"
+    "tag": "latest"
   },
   "scripts": {
     "build": "bun scripts/inject-version.ts && tsc",

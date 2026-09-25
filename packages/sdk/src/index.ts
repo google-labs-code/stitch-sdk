@@ -36,6 +36,13 @@ export { StitchError, StitchErrorCode } from "./spec/errors.js";
 // Resource name utilities
 export { parseResourceName } from "./utils.js";
 
+// Schema repair utilities
+export {
+  repairToolSchemas,
+  repairSchema,
+  collectDefPool,
+} from "./schema-repair.js";
+
 // Tool catalog (re-exported with deprecation for 0.4.0 bridge; preferred subpath is @google/stitch-sdk/tools)
 /** @deprecated Import from "@google/stitch-sdk/tools" to optimize bundle size. */
 export { toolDefinitions, toolMap } from "./tools.js";

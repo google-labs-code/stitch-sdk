@@ -12,129 +12,215 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { describe, it, expect } from "vitest";
-import { Project, Screen, DesignSystem, Generation } from "../../src/index.js";
-import { EntityManager } from "../../src/entity-manager.js";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import {
+  stitch,
+  resetStitchSingleton,
+  StitchToolClient,
+  Stitch,
+  DesignSystem,
+  StitchError,
+} from "../../src/index.js";
+import { getOrCreateClient } from "../../src/singleton.js";
+import { toolMap } from "../../src/tools.js";
 
-function makeMockClient() {
-  const client: any = {
-    callTool: async () => ({}),
-  };
-  client.entities = new EntityManager(client);
-  return client;
-}
+describe("0.4.0 Premortem Tigers & Reconciled PRs (#363, #368)", () => {
+  beforeEach(() => {
+    resetStitchSingleton();
+  });
 
-describe("0.4.0 Non-Breaking Bridge Pre-Mortem Regressions", () => {
-  describe("Tiger 1: Direct Entity Construction Hydration", () => {
-    it("hydrates Project from MCP resource name object { name: 'projects/123' }", () => {
-      const client = makeMockClient();
-      const project = new Project(client, {
-        name: "projects/123",
-        title: "My App",
-      });
-      expect(project.projectId).toBe("123");
-      expect(project.id).toBe("123");
-      expect(project.title).toBe("My App");
-    });
+  afterEach(() => {
+    resetStitchSingleton();
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
 
-    it("hydrates Project from prefixed resource string 'projects/123'", () => {
-      const client = makeMockClient();
-      const project = new Project(client, "projects/123");
-      expect(project.projectId).toBe("123");
-      expect(project.id).toBe("123");
-    });
-
-    it("hydrates Project from object with { id: '456' }", () => {
-      const client = makeMockClient();
-      const project = new Project(client, { id: "456", title: "Fallback ID" });
-      expect(project.projectId).toBe("456");
-      expect(project.id).toBe("456");
-    });
-
-    it("hydrates Screen from multi-segment resource string 'projects/p-1/screens/s-2'", () => {
-      const client = makeMockClient();
-      const screen = new Screen(client, "projects/p-1/screens/s-2");
-      expect(screen.projectId).toBe("p-1");
-      expect(screen.screenId).toBe("s-2");
-      expect(screen.id).toBe("s-2");
-    });
-
-    it("hydrates Screen from MCP resource object { name: 'projects/p-1/screens/s-2' }", () => {
-      const client = makeMockClient();
-      const screen = new Screen(client, {
-        name: "projects/p-1/screens/s-2",
-        title: "Login Screen",
-      });
-      expect(screen.projectId).toBe("p-1");
-      expect(screen.screenId).toBe("s-2");
-      expect(screen.id).toBe("s-2");
-      expect(screen.title).toBe("Login Screen");
-    });
-
-    it("hydrates DesignSystem from multi-segment resource string 'projects/p-1/assets/a-9'", () => {
-      const client = makeMockClient();
-      const ds = new DesignSystem(client, "projects/p-1/assets/a-9");
-      expect(ds.projectId).toBe("p-1");
-      expect(ds.assetId).toBe("a-9");
-      expect(ds.id).toBe("a-9");
+  describe("Tiger 1: publishConfig.tag is 'latest'", () => {
+    it("declares publishConfig.tag === 'latest' in packages/sdk/package.json", () => {
+      const pkgPath = resolve(import.meta.dirname, "../../package.json");
+      const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+      expect(pkg.publishConfig?.tag).toBe("latest");
     });
   });
 
-  describe("Tiger 2: Generation Proxy instanceof, Spread, and EntityManager.dispose", () => {
-    it("satisfies both instanceof Screen and instanceof Generation at runtime", () => {
-      const client = makeMockClient();
-      const s = client.entities.resolve(Screen, ["projectId", "screenId"], {
-        projectId: "p1",
-        screenId: "s1",
-        title: "Home",
-      });
-      const gen = new Generation([s], { rawField: true });
+  describe("Tiger 2: stitch.close() lifecycle safety", () => {
+    it("await stitch.close() before first use is a safe no-op without credentials", async () => {
+      vi.stubEnv("STITCH_API_KEY", "");
+      vi.stubEnv("STITCH_ACCESS_TOKEN", "");
 
-      expect(gen instanceof Generation).toBe(true);
-      expect(gen instanceof Screen).toBe(true);
-      expect(s instanceof Screen).toBe(true);
-      expect(s instanceof Generation).toBe(false);
+      await expect(stitch.close()).resolves.toBeUndefined();
     });
 
-    it("includes Screen own properties (projectId, screenId, data) in Object.keys and object spread", () => {
-      const client = makeMockClient();
-      const s = client.entities.resolve(Screen, ["projectId", "screenId"], {
-        projectId: "p1",
-        screenId: "s1",
-        title: "Home",
-      });
-      const gen = new Generation([s], { rawField: true });
+    it("await stitch.close() resets the singleton so subsequent calls create a fresh client", async () => {
+      vi.stubEnv("STITCH_API_KEY", "test-key-1");
 
-      const keys = Object.keys(gen);
-      expect(keys).toContain("projectId");
-      expect(keys).toContain("screenId");
-      expect(keys).toContain("data");
-      expect(keys).toContain("screens");
+      const firstClient = getOrCreateClient();
+      expect(firstClient.closed).toBe(false);
 
-      const spread = { ...gen };
-      expect(spread.projectId).toBe("p1");
-      expect(spread.screenId).toBe("s1");
-      expect(spread.data?.title).toBe("Home");
+      await stitch.close();
+      expect(firstClient.closed).toBe(true);
+
+      const secondClient = getOrCreateClient();
+      expect(secondClient).not.toBe(firstClient);
+      expect(secondClient.closed).toBe(false);
     });
 
-    it("evicts wrapped Screen from EntityManager when client.entities.dispose(gen) is called", () => {
-      const client = makeMockClient();
-      const s1 = client.entities.resolve(Screen, ["projectId", "screenId"], {
-        projectId: "p1",
-        screenId: "s1",
-        title: "Home",
-      });
-      const gen = new Generation([s1], {});
+    it("getOrCreateClient() replaces a cached client that was closed directly", async () => {
+      vi.stubEnv("STITCH_API_KEY", "test-key-1");
 
-      // Dispose using the Generation handle directly (as a 0.x single-screen caller would)
-      client.entities.dispose(gen);
+      const firstClient = getOrCreateClient();
+      await firstClient.close();
+      expect(firstClient.closed).toBe(true);
 
-      const s2 = client.entities.resolve(Screen, ["projectId", "screenId"], {
-        projectId: "p1",
-        screenId: "s1",
-        title: "Home",
+      const secondClient = getOrCreateClient();
+      expect(secondClient).not.toBe(firstClient);
+      expect(secondClient.closed).toBe(false);
+    });
+  });
+
+  describe("Tiger 3: Legacy 0.3.5 modelId union compatibility", () => {
+    it("preserves GEMINI_3_PRO, GEMINI_3_FLASH, and GEMINI_3_1_PRO in toolMap", () => {
+      const genEnum = (
+        toolMap.get("generate_screen_from_text")?.inputSchema.properties
+          .modelId as any
+      ).enum;
+      const editEnum = (
+        toolMap.get("edit_screens")?.inputSchema.properties.modelId as any
+      ).enum;
+
+      for (const legacyId of [
+        "GEMINI_3_PRO",
+        "GEMINI_3_FLASH",
+        "GEMINI_3_1_PRO",
+      ]) {
+        expect(genEnum).toContain(legacyId);
+        expect(editEnum).toContain(legacyId);
+      }
+    });
+
+    it("accepts legacy 0.3.5 modelId values on project.generate and screen.edit", async () => {
+      const client = new StitchToolClient({ apiKey: "k" });
+      const callToolSpy = vi
+        .spyOn(client, "callTool")
+        .mockResolvedValue({
+          outputComponents: [
+            {
+              design: {
+                screens: [{ name: "projects/p1/screens/s1", title: "Home" }],
+              },
+            },
+          ],
+        } as any);
+
+      const sdk = new Stitch(client);
+      const project = sdk.project("p1");
+
+      const gen = await project.generate(
+        "Dashboard",
+        "DESKTOP",
+        "GEMINI_3_PRO",
+      );
+      expect(gen.id).toBe("s1");
+      expect(callToolSpy).toHaveBeenCalledWith(
+        "generate_screen_from_text",
+        expect.objectContaining({
+          modelId: "GEMINI_3_PRO",
+        }),
+      );
+
+      const edited = await gen.screens[0].edit("Make dark", {
+        modelId: "GEMINI_3_FLASH",
       });
-      expect(s2).not.toBe(s1);
+      expect(edited.id).toBe("s1");
+      expect(callToolSpy).toHaveBeenCalledWith(
+        "edit_screens",
+        expect.objectContaining({
+          modelId: "GEMINI_3_FLASH",
+        }),
+      );
+    });
+  });
+
+  describe("Tiger 4: JSON.stringify() and object spread on entities and Generation", () => {
+    it("serializes Project, Screen, DesignSystem, and Generation without cyclic TypeError", async () => {
+      const client = new StitchToolClient({ apiKey: "k" });
+      vi.spyOn(client, "callTool").mockResolvedValue({
+        outputComponents: [
+          {
+            design: {
+              screens: [{ name: "projects/p1/screens/s1", title: "Home" }],
+            },
+          },
+        ],
+      } as any);
+
+      const sdk = new Stitch(client);
+      const project = sdk.project("p1");
+      const screen = project.screen("s1");
+      const ds = new DesignSystem(client, "assets/ds1");
+      const generation = await project.generate("Home");
+
+      expect(() => JSON.stringify(project)).not.toThrow();
+      expect(() => JSON.stringify(screen)).not.toThrow();
+      expect(() => JSON.stringify(ds)).not.toThrow();
+      expect(() => JSON.stringify(generation)).not.toThrow();
+
+      expect(Object.keys(screen)).not.toContain("client");
+      expect(Object.keys({ ...screen })).not.toContain("client");
+
+      client.entities.dispose(generation);
+    });
+  });
+
+  describe("PR #363: Reconnect on transient network error during callTool", () => {
+    it("reconnects and retries idempotent reads (list_*) after a transient fetch failure", async () => {
+      vi.useFakeTimers();
+      try {
+        const client = new StitchToolClient({ apiKey: "k" });
+        client["isConnected"] = true;
+
+        const connectSpy = vi
+          .spyOn(client, "connect")
+          .mockImplementation(async () => {
+            client["isConnected"] = true;
+          });
+
+        client["client"].callTool = vi
+          .fn()
+          .mockRejectedValueOnce(new TypeError("fetch failed"))
+          .mockResolvedValueOnce({
+            isError: false,
+            content: [],
+            structuredContent: { projects: [{ name: "projects/p1" }] },
+          });
+
+        const promise = client.callTool("list_projects", {});
+        await vi.runAllTimersAsync();
+        const result = await promise;
+
+        expect(connectSpy).toHaveBeenCalledTimes(1);
+        expect(result).toEqual({ projects: [{ name: "projects/p1" }] });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("normalizes transient socket errors to StitchError(NETWORK_ERROR) and resets isConnected without retrying generative tools", async () => {
+      const client = new StitchToolClient({ apiKey: "k" });
+      client["isConnected"] = true;
+      client["client"].callTool = vi
+        .fn()
+        .mockRejectedValueOnce(new Error("socket hang up (ECONNRESET)"));
+
+      const err = await client
+        .callTool("generate_screen_from_text", { prompt: "hi" })
+        .catch((e) => e);
+
+      expect(err).toBeInstanceOf(StitchError);
+      expect(err.code).toBe("NETWORK_ERROR");
+      expect(client["isConnected"]).toBe(false);
     });
   });
 });

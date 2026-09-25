@@ -29,8 +29,8 @@ bun run check:bundle         # root-entry size budget + catalog-leak probe
 
 ## Dist-tag policy (semver safety)
 
-- **Pre-1.0 / rc:** version is `1.0.0-rc.N` and `publishConfig.tag` is `next`. An rc does NOT satisfy a consumer's `^0.3`/`~0.3` range and `next` is not installed by default, so a breaking pre-release can never auto-upgrade existing `0.x` consumers. This is the current state.
-- **GA:** flip the version to `1.0.0` and `publishConfig.tag` to `latest` ONLY after the open post-review majors land (see `V1_REVIEW_FIXES.md` Tranches 2–4) — several are wrong public types/behavior that are themselves breaking to fix after GA.
+- **Stable / Bridge releases (`0.4.0`, `1.0.0`):** `publishConfig.tag` is `latest` so `npm install @google/stitch-sdk` installs the active release.
+- **Pre-releases (`1.0.0-rc.N`):** version includes a pre-release suffix (`-rc.N`) and `publishConfig.tag` is `next` (`publish:readiness` enforces `prerelease → next, GA → latest`).
 
 ## Invariants the gates enforce
 

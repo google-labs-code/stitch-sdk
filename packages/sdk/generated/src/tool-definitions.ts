@@ -186,6 +186,9 @@ export const toolDefinitions: ToolDefinition[] = [
             "MODEL_ID_UNSPECIFIED",
             "GEMINI_3_8_FLASH",
             "GEMINI_3_5_FLASH_LITE",
+            "GEMINI_3_PRO",
+            "GEMINI_3_FLASH",
+            "GEMINI_3_1_PRO",
           ],
           type: "string",
           "x-google-enum-descriptions": [
@@ -240,6 +243,9 @@ export const toolDefinitions: ToolDefinition[] = [
             "MODEL_ID_UNSPECIFIED",
             "GEMINI_3_8_FLASH",
             "GEMINI_3_5_FLASH_LITE",
+            "GEMINI_3_PRO",
+            "GEMINI_3_FLASH",
+            "GEMINI_3_1_PRO",
           ],
           type: "string",
           "x-google-enum-descriptions": [
@@ -302,6 +308,9 @@ export const toolDefinitions: ToolDefinition[] = [
             "MODEL_ID_UNSPECIFIED",
             "GEMINI_3_8_FLASH",
             "GEMINI_3_5_FLASH_LITE",
+            "GEMINI_3_PRO",
+            "GEMINI_3_FLASH",
+            "GEMINI_3_1_PRO",
           ],
           type: "string",
           "x-google-enum-descriptions": [

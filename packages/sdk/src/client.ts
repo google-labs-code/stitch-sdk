@@ -209,6 +209,23 @@ function normalizeTransportError(err: unknown, toolName: string): unknown {
       retryAfter: parseRetryAfter(retryAfterVal),
     });
   }
+  if (err instanceof Error) {
+    const causeMsg =
+      err.cause instanceof Error ? err.cause.message : String(err.cause ?? "");
+    const combined = `${err.message} ${causeMsg}`;
+    if (
+      /fetch failed|econnreset|socket|other side closed|econnrefused|etimedout|network/i.test(
+        combined,
+      )
+    ) {
+      return new StitchError({
+        code: "NETWORK_ERROR",
+        message: `Tool Call Failed [${toolName}]: ${err.message}`,
+        recoverable: true,
+        toolName,
+      });
+    }
+  }
   return err;
 }
 
@@ -235,6 +252,11 @@ export class StitchToolClient implements StitchToolClientSpec {
   private connectPromise: Promise<void> | null = null;
   private localVirtualTools: VirtualToolDefinition[] = [];
   public entities: EntityManager;
+
+  /** Whether close() has been called on this client. */
+  public get closed(): boolean {
+    return this.isClosed;
+  }
 
   constructor(
     inputConfig?: Partial<StitchConfig> & {
@@ -387,6 +409,7 @@ export class StitchToolClient implements StitchToolClientSpec {
     const maxAttempts = retry ? retry.attempts : 1;
 
     for (let attempt = 0; ; attempt++) {
+      if (!this.isConnected) await this.connect();
       try {
         const result = await this.client.callTool(
           { name, arguments: args },
@@ -395,13 +418,19 @@ export class StitchToolClient implements StitchToolClientSpec {
         );
         return this.parseToolResponse<T>(result, name);
       } catch (rawErr) {
-        // Normalize transport HTTP errors first, so a real 429 is both
-        // classified and retry-eligible (it never reaches parseToolResult).
+        // Normalize transport HTTP / network errors first, so a real 429 or
+        // transient socket reset is classified and retry-eligible.
         const err = normalizeTransportError(rawErr, name);
+        if (err instanceof StitchError && err.code === "NETWORK_ERROR") {
+          this.isConnected = false;
+          this.connectPromise = null;
+        }
         const isRetryable =
           retry !== null &&
           err instanceof StitchError &&
-          (err.code === "RATE_LIMITED" || err.code === "SERVICE_UNAVAILABLE");
+          (err.code === "RATE_LIMITED" ||
+            err.code === "SERVICE_UNAVAILABLE" ||
+            err.code === "NETWORK_ERROR");
         if (!isRetryable || attempt >= maxAttempts - 1) throw err;
         debugLog("retry", `${err.code} on ${name}; backing off`, {
           attempt: attempt + 1,

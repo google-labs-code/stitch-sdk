@@ -170,9 +170,10 @@ check("dist-tag matches release channel (prerelease→next, GA→latest)", () =>
       `prerelease ${pkg.version} must NOT publish to 'latest' (tag=${tag}); use 'next'`,
     );
   } else {
-    assert(
-      tag === "latest" || tag === "next",
-      `Release ${pkg.version} should publish to 'latest' or 'next' (tag=${tag})`,
+    assert.strictEqual(
+      tag,
+      "latest",
+      `GA ${pkg.version} should publish to 'latest' (tag=${tag})`,
     );
   }
 });
