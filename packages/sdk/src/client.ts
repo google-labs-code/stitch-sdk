@@ -417,6 +417,12 @@ export class StitchToolClient implements StitchToolClientSpec {
           { timeout: this.config.timeout },
         );
         const parsed = this.parseToolResponse<T>(result, name);
+        if (
+          (name === "edit_screens" || name === "apply_design_system") &&
+          typeof args.projectId === "string"
+        ) {
+          this.reconcileEditedScreens(args, parsed as any);
+        }
         if (name === "list_screens" && typeof args.projectId === "string") {
           const serverScreens: Record<string, any>[] = Array.isArray(
             (parsed as any)?.screens,
@@ -583,6 +589,50 @@ export class StitchToolClient implements StitchToolClientSpec {
     return {
       tools: [...tools, ...localTools],
     };
+  }
+
+  /**
+   * Invalidate stale cached `htmlCode`/`screenshot` URLs on edited screens and
+   * prioritize newly minted revision screens in `outputComponents` (Issue #361).
+   */
+  private reconcileEditedScreens(
+    args: Record<string, any>,
+    parsed: Record<string, any> | null | undefined,
+  ): void {
+    const projectId = String(args.projectId);
+    const selectedIds: string[] = Array.isArray(args.selectedScreenIds)
+      ? args.selectedScreenIds.map(String)
+      : typeof args.screenId === "string"
+        ? [args.screenId]
+        : [];
+
+    for (const sid of selectedIds) {
+      this.entities.invalidateScreenAssets(projectId, sid);
+    }
+
+    if (!parsed || !Array.isArray(parsed.outputComponents)) return;
+    const selectedSet = new Set(selectedIds);
+
+    for (const comp of parsed.outputComponents) {
+      const screens = comp?.design?.screens;
+      if (!Array.isArray(screens) || screens.length <= 1) continue;
+
+      const newRevisions: any[] = [];
+      const existingSelected: any[] = [];
+      for (const s of screens) {
+        const sid =
+          s?.id ||
+          (typeof s?.name === "string" ? s.name.split("/").pop() : undefined);
+        if (sid && selectedSet.has(sid)) {
+          existingSelected.push(s);
+        } else {
+          newRevisions.push(s);
+        }
+      }
+      if (newRevisions.length > 0 && existingSelected.length > 0) {
+        comp.design.screens = [...newRevisions, ...existingSelected];
+      }
+    }
   }
 
   /**
