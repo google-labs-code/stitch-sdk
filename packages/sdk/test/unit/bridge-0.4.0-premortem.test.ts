@@ -102,17 +102,15 @@ describe("0.4.0 Premortem Tigers & Reconciled PRs (#363, #368)", () => {
 
     it("accepts legacy 0.3.5 modelId values on project.generate and screen.edit", async () => {
       const client = new StitchToolClient({ apiKey: "k" });
-      const callToolSpy = vi
-        .spyOn(client, "callTool")
-        .mockResolvedValue({
-          outputComponents: [
-            {
-              design: {
-                screens: [{ name: "projects/p1/screens/s1", title: "Home" }],
-              },
+      const callToolSpy = vi.spyOn(client, "callTool").mockResolvedValue({
+        outputComponents: [
+          {
+            design: {
+              screens: [{ name: "projects/p1/screens/s1", title: "Home" }],
             },
-          ],
-        } as any);
+          },
+        ],
+      } as any);
 
       const sdk = new Stitch(client);
       const project = sdk.project("p1");
@@ -128,6 +126,7 @@ describe("0.4.0 Premortem Tigers & Reconciled PRs (#363, #368)", () => {
         expect.objectContaining({
           modelId: "GEMINI_3_PRO",
         }),
+        expect.any(Object),
       );
 
       const edited = await gen.screens[0].edit("Make dark", {

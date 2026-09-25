@@ -268,7 +268,8 @@ describe("repairToolSchemas", () => {
       },
       {
         name: "update_design_system",
-        description: "References DesignTheme without defining it or ColorPalette",
+        description:
+          "References DesignTheme without defining it or ColorPalette",
         inputSchema: {
           type: "object",
           properties: {
