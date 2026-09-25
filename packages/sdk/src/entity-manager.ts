@@ -254,4 +254,17 @@ export class EntityManager {
     }
     return results;
   }
+
+  /**
+   * Invalidates cached `htmlCode` and `screenshot` download URLs for a mutated Screen
+   * so subsequent `getHtmlUrl()` / `getImageUrl()` calls fetch fresh post-edit data (#361).
+   */
+  invalidateScreenAssets(projectId: string, screenId: string): void {
+    const cacheKey = `Screen:${JSON.stringify([projectId, screenId])}`;
+    const instance = this.cache.get(cacheKey);
+    if (instance?.data && typeof instance.data === "object") {
+      delete instance.data.htmlCode;
+      delete instance.data.screenshot;
+    }
+  }
 }
