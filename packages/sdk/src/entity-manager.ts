@@ -236,4 +236,22 @@ export class EntityManager {
     }
     this.cache.clear();
   }
+
+  /**
+   * Returns raw data payloads for all cached Screen entities belonging to `projectId`.
+   * Used when `list_screens` returns empty before the Stitch web UI hydrates the project.
+   */
+  getCachedScreensData(projectId: string): Record<string, any>[] {
+    const results: Record<string, any>[] = [];
+    for (const [key, val] of this.cache.entries()) {
+      if (key.startsWith("Screen:") && val?.projectId === projectId) {
+        results.push({
+          name: `projects/${projectId}/screens/${val.screenId}`,
+          id: val.screenId,
+          ...(val.data ?? {}),
+        });
+      }
+    }
+    return results;
+  }
 }

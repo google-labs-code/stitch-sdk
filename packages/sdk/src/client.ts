@@ -416,7 +416,41 @@ export class StitchToolClient implements StitchToolClientSpec {
           undefined,
           { timeout: this.config.timeout },
         );
-        return this.parseToolResponse<T>(result, name);
+        const parsed = this.parseToolResponse<T>(result, name);
+        if (name === "list_screens" && typeof args.projectId === "string") {
+          const serverScreens: Record<string, any>[] = Array.isArray(
+            (parsed as any)?.screens,
+          )
+            ? (parsed as any).screens
+            : [];
+          if (serverScreens.length === 0) {
+            const recovered = await this.recoverScreensFromProject(
+              args.projectId,
+            );
+            if (recovered.length > 0) {
+              return { ...(parsed as any), screens: recovered } as T;
+            }
+          } else {
+            const cached = this.entities.getCachedScreensData(args.projectId);
+            if (cached.length > 0) {
+              const seenIds = new Set(
+                serverScreens.map((s) => s.id || s.name?.split("/").pop()),
+              );
+              const merged = [...serverScreens];
+              for (const c of cached) {
+                const cid = c.id || c.name?.split("/").pop();
+                if (cid && !seenIds.has(cid)) {
+                  seenIds.add(cid);
+                  merged.push(c);
+                }
+              }
+              if (merged.length > serverScreens.length) {
+                return { ...(parsed as any), screens: merged } as T;
+              }
+            }
+          }
+        }
+        return parsed;
       } catch (rawErr) {
         // Normalize transport HTTP / network errors first, so a real 429 or
         // transient socket reset is classified and retry-eligible.
@@ -549,6 +583,73 @@ export class StitchToolClient implements StitchToolClientSpec {
     return {
       tools: [...tools, ...localTools],
     };
+  }
+
+  /**
+   * Recover screens for `projectId` from `EntityManager` and `get_project`'s
+   * `screenInstances` when the MCP `list_screens` endpoint returns empty
+   * prior to a Stitch web UI visit (Issue #149).
+   */
+  private async recoverScreensFromProject(
+    projectId: string,
+  ): Promise<Record<string, any>[]> {
+    const byId = new Map<string, Record<string, any>>();
+
+    for (const cached of this.entities.getCachedScreensData(projectId)) {
+      const id = cached.id || cached.name?.split("/").pop();
+      if (id) byId.set(id, cached);
+    }
+
+    try {
+      const project = await this.callTool<any>("get_project", {
+        name: `projects/${projectId}`,
+      });
+      const instances = Array.isArray(project?.screenInstances)
+        ? project.screenInstances
+        : [];
+      for (const inst of instances) {
+        const sourceScreen =
+          typeof inst?.sourceScreen === "string" ? inst.sourceScreen : "";
+        const screenId = sourceScreen.includes("/screens/")
+          ? sourceScreen.split("/screens/").pop()
+          : undefined;
+        if (!screenId) continue;
+
+        const existing = byId.get(screenId);
+        if (existing?.htmlCode?.downloadUrl) continue;
+
+        try {
+          const full = await this.callTool<any>("get_screen", {
+            projectId,
+            screenId,
+            name: `projects/${projectId}/screens/${screenId}`,
+          });
+          if (full && typeof full === "object") {
+            byId.set(screenId, {
+              id: screenId,
+              name: `projects/${projectId}/screens/${screenId}`,
+              title: inst.label,
+              ...full,
+            });
+            continue;
+          }
+        } catch {
+          // Fall back to metadata on ScreenInstance
+        }
+        byId.set(screenId, {
+          id: screenId,
+          name: sourceScreen || `projects/${projectId}/screens/${screenId}`,
+          title: inst.label,
+          width: inst.width,
+          height: inst.height,
+          ...(existing ?? {}),
+        });
+      }
+    } catch {
+      // Ignore get_project errors and return any cached in-session screens
+    }
+
+    return Array.from(byId.values());
   }
 
   /**
