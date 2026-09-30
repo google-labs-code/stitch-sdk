@@ -373,7 +373,29 @@ try {
 }
 ```
 
-Error codes: `AUTH_FAILED`, `NOT_FOUND`, `PERMISSION_DENIED`, `RATE_LIMITED`, `NETWORK_ERROR`, `VALIDATION_ERROR`, `UNKNOWN_ERROR`.
+Error codes: `AUTH_FAILED`, `NOT_FOUND`, `PERMISSION_DENIED`, `RATE_LIMITED`, `NETWORK_ERROR`, `VALIDATION_ERROR`, `CLARIFICATION_REQUIRED`, `UNKNOWN_ERROR`.
+
+### Answering a clarifying question
+
+`generate()`, `edit()`, `variants()`, and `apply()` can end with Stitch asking a question instead of producing screens. That throws a recoverable `StitchError` with code `CLARIFICATION_REQUIRED`, and `error.clarification` holds the question and suggested replies. To answer, call the method again with your answer as the prompt:
+
+```ts
+import { stitch, StitchError } from "@google/stitch-sdk";
+
+const project = stitch.project("4044680601076201931");
+try {
+  await project.generate("An app that picks your morning espresso");
+} catch (error) {
+  if (error instanceof StitchError && error.code === "CLARIFICATION_REQUIRED") {
+    console.log(error.clarification?.question);
+    const reply = error.clarification?.suggestions[0] ?? "Keep it simple";
+    const screen = await project.generate(reply);
+    console.log(screen.id);
+  } else {
+    throw error;
+  }
+}
+```
 
 ---
 

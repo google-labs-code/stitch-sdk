@@ -230,6 +230,27 @@ describe("SDK Unit Tests", () => {
       expect((err as StitchError).message).toContain("edit_screens");
     });
 
+    it("edit surfaces a question without suggestions as CLARIFICATION_REQUIRED", async () => {
+      const screen = mockClient.entities.resolve(
+        Screen,
+        ["projectId", "screenId"],
+        screenData,
+      );
+
+      (mockClient.callTool as Mock).mockResolvedValue({
+        outputComponents: [{ text: "  Which section should change?  " }],
+        projectId,
+      });
+
+      const err = await screen.edit("Make it better").catch((e) => e);
+      expect((err as StitchError).code).toBe("CLARIFICATION_REQUIRED");
+      expect((err as StitchError).toolName).toBe("edit_screens");
+      expect((err as StitchError).clarification).toEqual({
+        question: "Which section should change?",
+        suggestions: [],
+      });
+    });
+
     it("edit should throw StitchError when outputComponents is empty", async () => {
       const screen = mockClient.entities.resolve(
         Screen,
@@ -419,6 +440,46 @@ describe("SDK Unit Tests", () => {
       expect((err as StitchError).code).toBe("UNKNOWN_ERROR");
       expect((err as StitchError).message).toContain(
         "generate_screen_from_text",
+      );
+    });
+
+    it("generate surfaces a clarifying question as a recoverable CLARIFICATION_REQUIRED error", async () => {
+      const project = mockClient.entities.resolve(
+        Project,
+        ["projectId"],
+        projectId,
+      );
+
+      // Shape observed live from generate_screen_from_text when the Stitch
+      // agent asks a question instead of producing a screen.
+      (mockClient.callTool as Mock).mockResolvedValue({
+        outputComponents: [
+          { text: "Should the picker be random or based on your mood?" },
+          { suggestion: "Random pick every morning" },
+          { suggestion: "Based on my mood" },
+        ],
+        projectId,
+        sessionId: "session-1",
+      });
+
+      const err = await project.generate("espresso app").catch((e) => e);
+      expect(err).toBeInstanceOf(StitchError);
+      expect({
+        code: (err as StitchError).code,
+        recoverable: (err as StitchError).recoverable,
+        toolName: (err as StitchError).toolName,
+        clarification: (err as StitchError).clarification,
+      }).toEqual({
+        code: "CLARIFICATION_REQUIRED",
+        recoverable: true,
+        toolName: "generate_screen_from_text",
+        clarification: {
+          question: "Should the picker be random or based on your mood?",
+          suggestions: ["Random pick every morning", "Based on my mood"],
+        },
+      });
+      expect((err as StitchError).message).toContain(
+        "Should the picker be random or based on your mood?",
       );
     });
 

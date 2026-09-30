@@ -7,7 +7,7 @@ Source: tools-manifest.json (sha256:88ec3dfa066c...)
  */
 import { type StitchToolClientSpec } from "../../src/spec/client.js";
 import { StitchError } from "../../src/spec/errors.js";
-import { Generation } from "../../src/generation.js";
+import { Generation, emptyGenerationError } from "../../src/generation.js";
 import {
   ComponentTokens,
   DesignTheme,
@@ -171,12 +171,7 @@ export class Screen {
         }),
       );
       if (_screens.length === 0)
-        throw new StitchError({
-          code: "UNKNOWN_ERROR",
-          message:
-            "Incomplete API response from edit_screens: no screens in response",
-          recoverable: false,
-        });
+        throw emptyGenerationError("edit_screens", raw);
       return new Generation(_screens, raw);
     } catch (error) {
       throw StitchError.fromUnknown(error);
@@ -248,12 +243,7 @@ export class Screen {
         }),
       );
       if (_screens.length === 0)
-        throw new StitchError({
-          code: "UNKNOWN_ERROR",
-          message:
-            "Incomplete API response from generate_variants: no screens in response",
-          recoverable: false,
-        });
+        throw emptyGenerationError("generate_variants", raw);
       return new Generation(_screens, raw);
     } catch (error) {
       throw StitchError.fromUnknown(error);

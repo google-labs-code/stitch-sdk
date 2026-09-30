@@ -680,7 +680,7 @@ function generateReturnExpression(
       : "item";
     return (
       `const _screens = (${projectionExpr} || []).map((item) => this.client.entities.resolve(${binding.returns.class}, ${keys}, ${itemExpr}));\n` +
-      `  if (_screens.length === 0) throw new StitchError({ code: "UNKNOWN_ERROR", message: "Incomplete API response from ${binding.tool}: no screens in response", recoverable: false });\n` +
+      `  if (_screens.length === 0) throw emptyGenerationError(${JSON.stringify(binding.tool)}, raw);\n` +
       `  return new Generation(_screens, raw)`
     );
   }
@@ -1123,7 +1123,7 @@ async function main() {
     if (classBindings.some((b) => b.returns.kind === "generation")) {
       sourceFile.addImportDeclaration({
         moduleSpecifier: "../../src/generation.js",
-        namedImports: ["Generation"],
+        namedImports: ["Generation", "emptyGenerationError"],
       });
     }
     const typesToImport = new Set(namedTypes.values());
