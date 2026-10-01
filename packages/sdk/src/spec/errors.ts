@@ -27,10 +27,24 @@ export const StitchErrorCode = z.enum([
   "NETWORK_ERROR",
   "VALIDATION_ERROR",
   "CLIENT_CLOSED",
+  /**
+   * A generative tool answered with a question instead of screens. Not a
+   * failure: reply by calling the same method again with a prompt that
+   * answers `clarification.question` (e.g. one of its `suggestions`).
+   */
+  "CLARIFICATION_REQUIRED",
   "UNKNOWN_ERROR",
 ]);
 
 export type StitchErrorCode = z.infer<typeof StitchErrorCode>;
+
+/** The question a generative tool asked instead of producing screens. */
+export interface StitchClarification {
+  /** The agent's question, joined from every `outputComponents[].text`. */
+  question: string;
+  /** Replies the agent proposed, from `outputComponents[].suggestion`. */
+  suggestions: string[];
+}
 
 /**
  * Structured error data for internal Result types.
@@ -46,6 +60,8 @@ export interface StitchErrorData {
   toolName?: string;
   /** Delay in milliseconds requested by the server before retrying. */
   retryAfter?: number;
+  /** Present when `code` is `CLARIFICATION_REQUIRED`. */
+  clarification?: StitchClarification;
 }
 
 /**
@@ -62,6 +78,8 @@ export class StitchError extends Error {
   public readonly toolName?: string;
   /** Delay in milliseconds requested by the server before retrying. */
   public readonly retryAfter?: number;
+  /** Present when `code` is `CLARIFICATION_REQUIRED`. */
+  public readonly clarification?: StitchClarification;
 
   constructor(data: StitchErrorData) {
     super(data.message);
@@ -72,6 +90,7 @@ export class StitchError extends Error {
     this.status = data.status;
     this.toolName = data.toolName;
     this.retryAfter = data.retryAfter;
+    this.clarification = data.clarification;
   }
 
   /**

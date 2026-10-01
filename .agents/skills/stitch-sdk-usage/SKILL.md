@@ -189,7 +189,9 @@ try {
 }
 ```
 
-Error codes: `AUTH_FAILED`, `NOT_FOUND`, `PERMISSION_DENIED`, `RATE_LIMITED`, `NETWORK_ERROR`, `VALIDATION_ERROR`, `UNKNOWN_ERROR`
+Error codes: `AUTH_FAILED`, `NOT_FOUND`, `PERMISSION_DENIED`, `RATE_LIMITED`, `NETWORK_ERROR`, `VALIDATION_ERROR`, `CLARIFICATION_REQUIRED`, `UNKNOWN_ERROR`
+
+`CLARIFICATION_REQUIRED` is recoverable: `generate()`/`edit()`/`variants()` got a question instead of screens. Read `e.clarification.question` / `e.clarification.suggestions` and call the same method again with an answering prompt.
 
 ## API Reference
 

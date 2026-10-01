@@ -32,6 +32,7 @@ export { stitch, resetStitchSingleton } from "./singleton.js";
 
 // Error handling
 export { StitchError, StitchErrorCode } from "./spec/errors.js";
+export type { StitchClarification } from "./spec/errors.js";
 
 // Resource name utilities
 export { parseResourceName } from "./utils.js";

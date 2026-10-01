@@ -73,7 +73,14 @@ const ERRORS_STUB = `
 export class StitchError extends Error {
   code: string;
   recoverable: boolean;
-  constructor(opts: { code: string; message: string; recoverable: boolean }) {
+  constructor(opts: {
+    code: string;
+    message: string;
+    recoverable: boolean;
+    suggestion?: string;
+    toolName?: string;
+    clarification?: { question: string; suggestions: string[] };
+  }) {
     super(opts.message);
     this.code = opts.code;
     this.recoverable = opts.recoverable;

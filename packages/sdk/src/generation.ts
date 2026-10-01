@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import type { Screen } from "./screen-ext.js";
+import { StitchError } from "./spec/errors.js";
 
 /**
  * Result container for generative operations (generate / edit /
@@ -116,4 +117,55 @@ export class Generation<TItem = Screen, TRaw = unknown> {
   [Symbol.iterator](): Iterator<TItem> {
     return this.screens[Symbol.iterator]();
   }
+}
+
+/**
+ * The error a generated method throws when a generative tool returns no
+ * screens, so that `Generation` stays non-empty.
+ *
+ * Stitch's agent can answer with a question instead of a design: the
+ * response then carries `outputComponents[].text` (the question) and
+ * `outputComponents[].suggestion` (proposed replies) but no
+ * `design.screens`. That is a conversational turn, not a broken response,
+ * so it surfaces as a recoverable `CLARIFICATION_REQUIRED` with the
+ * question attached. A response with neither screens nor text is still an
+ * incomplete response (`UNKNOWN_ERROR`).
+ */
+export function emptyGenerationError(
+  toolName: string,
+  raw: unknown,
+): StitchError {
+  const components: unknown[] = Array.isArray(
+    (raw as { outputComponents?: unknown })?.outputComponents,
+  )
+    ? (raw as { outputComponents: unknown[] }).outputComponents
+    : [];
+  const strings = (key: "text" | "suggestion") =>
+    components
+      .map((c) => (c as Record<string, unknown> | null)?.[key])
+      .filter((v): v is string => typeof v === "string")
+      .map((v) => v.trim())
+      .filter(Boolean);
+
+  const question = strings("text").join("\n\n");
+  if (!question) {
+    return new StitchError({
+      code: "UNKNOWN_ERROR",
+      message: `Incomplete API response from ${toolName}: no screens in response`,
+      recoverable: false,
+      toolName,
+    });
+  }
+  const suggestions = strings("suggestion");
+  return new StitchError({
+    code: "CLARIFICATION_REQUIRED",
+    message: `Stitch asked a question instead of generating screens: ${question}`,
+    suggestion:
+      suggestions.length > 0
+        ? `Call again with a prompt that answers it, e.g. "${suggestions[0]}".`
+        : "Call again with a prompt that answers the question.",
+    recoverable: true,
+    toolName,
+    clarification: { question, suggestions },
+  });
 }

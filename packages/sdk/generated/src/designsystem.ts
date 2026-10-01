@@ -7,7 +7,7 @@ Source: tools-manifest.json (sha256:88ec3dfa066c...)
  */
 import { type StitchToolClientSpec } from "../../src/spec/client.js";
 import { StitchError } from "../../src/spec/errors.js";
-import { Generation } from "../../src/generation.js";
+import { Generation, emptyGenerationError } from "../../src/generation.js";
 import {
   ComponentTokens,
   DesignTheme,
@@ -158,12 +158,7 @@ export class DesignSystem {
         }),
       );
       if (_screens.length === 0)
-        throw new StitchError({
-          code: "UNKNOWN_ERROR",
-          message:
-            "Incomplete API response from apply_design_system: no screens in response",
-          recoverable: false,
-        });
+        throw emptyGenerationError("apply_design_system", raw);
       return new Generation(_screens, raw);
     } catch (error) {
       throw StitchError.fromUnknown(error);
