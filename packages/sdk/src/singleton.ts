@@ -23,6 +23,7 @@ export interface SingletonClientConfig {
   projectId?: string;
   baseUrl?: string;
   timeout?: number;
+  headers?: Record<string, string>;
   retry?: StitchConfig["retry"];
   entityCache?: boolean;
 }
@@ -50,16 +51,21 @@ function resolveAndKey(config?: SingletonClientConfig): {
       projectId: config?.projectId,
       baseUrl: config?.baseUrl,
       timeout: config?.timeout,
+      headers: config?.headers,
       retry: config?.retry,
       entityCache: config?.entityCache,
     }),
   );
+  const sortedHeaders = resolved.headers
+    ? Object.entries(resolved.headers).sort(([a], [b]) => a.localeCompare(b))
+    : undefined;
   const key = JSON.stringify({
     apiKey: resolved.apiKey,
     accessToken: resolved.accessToken,
     projectId: resolved.projectId,
     baseUrl: resolved.baseUrl,
     timeout: resolved.timeout,
+    headers: sortedHeaders,
     retry: resolved.retry,
     entityCache: resolved.entityCache,
   });

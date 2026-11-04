@@ -36,6 +36,12 @@ export const StitchConfigSchema = z
     timeout: z.number().default(300_000),
 
     /**
+     * Additional HTTP headers merged case-insensitively onto outbound MCP and
+     * REST requests (for example, overriding `X-Goog-Api-Client`).
+     */
+    headers: z.record(z.string(), z.string()).optional(),
+
+    /**
      * Identity-map toggle. Default true: resolving the same entity
      * yields the same instance (with data merged on refresh). Set false
      * for value-object behavior — every resolve returns a fresh,

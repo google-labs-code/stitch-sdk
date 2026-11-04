@@ -13,7 +13,12 @@
 // limitations under the License.
 
 import { describe, it, expect } from "vitest";
-import { buildAuthHeaders } from "../../src/auth.js";
+import {
+  buildAuthHeaders,
+  buildClientSurfaceHeader,
+  mergeHeadersCaseInsensitive,
+} from "../../src/auth.js";
+import { SDK_VERSION } from "../../src/version.js";
 
 describe("buildAuthHeaders", () => {
   it("emits X-Goog-Api-Key for an API key", () => {
@@ -37,6 +42,49 @@ describe("buildAuthHeaders", () => {
   it("THROWS when neither credential is provided (the previously-untested branch)", () => {
     expect(() => buildAuthHeaders({})).toThrow(
       /No authentication credentials provided/,
+    );
+  });
+});
+
+describe("buildClientSurfaceHeader", () => {
+  it("defaults to sdk client surface with SDK_VERSION", () => {
+    expect(buildClientSurfaceHeader()).toBe(`gccl/${SDK_VERSION} client/sdk`);
+  });
+
+  it("formats mcp and cli surfaces explicitly", () => {
+    expect(buildClientSurfaceHeader("mcp")).toBe(
+      `gccl/${SDK_VERSION} client/mcp`,
+    );
+    expect(buildClientSurfaceHeader("cli")).toBe(
+      `gccl/${SDK_VERSION} client/cli`,
+    );
+  });
+});
+
+describe("mergeHeadersCaseInsensitive", () => {
+  it("replaces mixed-case duplicates without retaining earlier keys", () => {
+    const merged = mergeHeadersCaseInsensitive(
+      {
+        Accept: "application/json",
+        "X-Goog-Api-Client": "gccl/0.4.0 client/sdk",
+      },
+      {
+        "x-goog-api-client": "gl-node/22.0.0 gccl/0.12.0 client/cli",
+        "X-Custom": "1",
+      },
+    );
+
+    expect(merged).toEqual({
+      Accept: "application/json",
+      "x-goog-api-client": "gl-node/22.0.0 gccl/0.12.0 client/cli",
+      "X-Custom": "1",
+    });
+    expect(Object.keys(merged)).not.toContain("X-Goog-Api-Client");
+  });
+
+  it("returns base headers cleanly when overrides are omitted", () => {
+    expect(mergeHeadersCaseInsensitive({ Accept: "application/json" })).toEqual(
+      { Accept: "application/json" },
     );
   });
 });

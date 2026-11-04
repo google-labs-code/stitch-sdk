@@ -18,6 +18,7 @@ import {
   StitchToolClient,
   __resetStitchHostWarning,
 } from "../../src/client.js";
+import { SDK_VERSION } from "../../src/version.js";
 import { ZodError } from "zod";
 
 // Mock child_process for gcloud calls
@@ -127,6 +128,45 @@ describe("StitchToolClient", () => {
       const client = new StitchToolClient({ apiKey: "k" });
       const headers = client["buildAuthHeaders"]();
       expect(headers["Accept"]).toContain("application/json");
+    });
+
+    it("should emit X-Goog-Api-Client sdk surface header by default", () => {
+      const client = new StitchToolClient({ apiKey: "k" });
+      const headers = client["buildAuthHeaders"]();
+      expect(headers["X-Goog-Api-Client"]).toBe(
+        `gccl/${SDK_VERSION} client/sdk`,
+      );
+    });
+
+    it("should allow case-insensitive override of X-Goog-Api-Client via config.headers", () => {
+      const client = new StitchToolClient({
+        apiKey: "k",
+        headers: {
+          "x-goog-api-client": "gl-node/22.0.0 gccl/0.12.0 client/cli",
+        },
+      });
+      const headers = client["buildAuthHeaders"]();
+      expect(headers["x-goog-api-client"]).toBe(
+        "gl-node/22.0.0 gccl/0.12.0 client/cli",
+      );
+      expect(headers["X-Goog-Api-Client"]).toBeUndefined();
+      expect(headers["X-Goog-Api-Key"]).toBe("k");
+    });
+
+    it("should support spread-override of buildAuthHeaders by downstream wrappers", () => {
+      const client = new StitchToolClient({ apiKey: "k" });
+      const headers = {
+        ...client["buildAuthHeaders"](),
+        "X-Goog-Api-Client": "gl-node/22.0.0 gccl/0.12.0 client/cli",
+      };
+      expect(headers["X-Goog-Api-Client"]).toBe(
+        "gl-node/22.0.0 gccl/0.12.0 client/cli",
+      );
+      expect(
+        Object.keys(headers).filter(
+          (k) => k.toLowerCase() === "x-goog-api-client",
+        ),
+      ).toEqual(["X-Goog-Api-Client"]);
     });
   });
 
@@ -506,6 +546,10 @@ describe("StitchToolClient", () => {
         requests: [],
       });
       expect(capturedHeaders["X-Goog-Api-Key"]).toBe("test-key");
+      expect(capturedHeaders["X-Goog-Api-Client"]).toBe(
+        `gccl/${SDK_VERSION} client/sdk`,
+      );
+      expect(capturedHeaders["Content-Type"]).toBe("application/json");
     });
 
     // Test 11: throws StitchError with AUTH_FAILED on 401
