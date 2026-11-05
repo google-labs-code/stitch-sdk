@@ -41,6 +41,9 @@ export const StitchProxyConfigSchema = z
 
     /** Protocol version to use for Stitch JSON-RPC connection. Default: '2025-06-18' */
     protocolVersion: z.string().default("2025-06-18"),
+
+    /** Additional HTTP headers merged case-insensitively onto upstream Stitch requests. */
+    headers: z.record(z.string(), z.string()).optional(),
   })
   .refine((data) => !data.accessToken || data.apiKey || !!data.quotaProjectId, {
     // Aligned with StitchConfigSchema: token auth needs a quota project.

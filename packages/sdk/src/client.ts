@@ -27,7 +27,11 @@ import {
 } from "./spec/client.js";
 import { StitchError } from "./spec/errors.js";
 import { classifyError, isRecoverable } from "./spec/error-mapping.js";
-import { buildAuthHeaders as buildBaseAuthHeaders } from "./auth.js";
+import {
+  buildAuthHeaders as buildBaseAuthHeaders,
+  buildClientSurfaceHeader,
+  mergeHeadersCaseInsensitive,
+} from "./auth.js";
 import { SDK_VERSION } from "./version.js";
 import { repairToolSchemas } from "./schema-repair.js";
 import { EntityManager } from "./entity-manager.js";
@@ -87,6 +91,7 @@ export function resolveConfigWithEnv(
       env("GOOGLE_CLOUD_PROJECT"),
     baseUrl,
     timeout: input?.timeout,
+    headers: input?.headers,
     retry: input?.retry,
     entityCache: input?.entityCache,
   };
@@ -299,17 +304,21 @@ export class StitchToolClient implements StitchToolClientSpec {
   }
 
   /**
-   * Build auth headers based on config (API key or OAuth).
+   * Build auth and client identification headers based on config.
    */
   private buildAuthHeaders(): Record<string, string> {
-    return {
-      Accept: "application/json, text/event-stream",
-      ...buildBaseAuthHeaders({
-        apiKey: this.config.apiKey,
-        accessToken: this.config.accessToken,
-        quotaProjectId: this.config.projectId,
-      }),
-    };
+    return mergeHeadersCaseInsensitive(
+      {
+        Accept: "application/json, text/event-stream",
+        "X-Goog-Api-Client": buildClientSurfaceHeader("sdk"),
+        ...buildBaseAuthHeaders({
+          apiKey: this.config.apiKey,
+          accessToken: this.config.accessToken,
+          quotaProjectId: this.config.projectId,
+        }),
+      },
+      this.config.headers,
+    );
   }
 
   private parseToolResponse<T>(result: any, name: string): T {
@@ -482,10 +491,9 @@ export class StitchToolClient implements StitchToolClientSpec {
     const url = `${this.config.baseUrl.replace(/\/mcp$/, "").replace(/\/$/, "")}/v1/${path}`;
     const response = await fetch(url, {
       method: "POST",
-      headers: {
-        ...this.buildAuthHeaders(),
+      headers: mergeHeadersCaseInsensitive(this.buildAuthHeaders(), {
         "Content-Type": "application/json",
-      },
+      }),
       body: JSON.stringify(body),
     });
 

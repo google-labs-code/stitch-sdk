@@ -15,8 +15,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { registerListToolsHandler } from "../../src/proxy/handlers/listTools.js";
 import { registerCallToolHandler } from "../../src/proxy/handlers/callTool.js";
+import { StitchProxy } from "../../src/proxy/core.js";
 import { downloadAssetsTool } from "../../src/proxy/virtual-tools.js";
 import { EntityManager } from "../../src/entity-manager.js";
+import { SDK_VERSION } from "../../src/version.js";
 import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
@@ -162,5 +164,34 @@ describe("Proxy Handlers", () => {
     expect(result.content[0].text).toContain(
       "Upstream returned no result for remote_tool",
     );
+  });
+});
+
+describe("StitchProxy client surface header", () => {
+  it("tags upstream StitchToolClient requests as client/mcp by default", async () => {
+    const proxy = new StitchProxy({ apiKey: "proxy-key" });
+    const upstreamClient = (proxy as any).ctx.client;
+    const headers = upstreamClient["buildAuthHeaders"]();
+
+    expect(headers["X-Goog-Api-Key"]).toBe("proxy-key");
+    expect(headers["X-Goog-Api-Client"]).toBe(`gccl/${SDK_VERSION} client/mcp`);
+    await proxy.close();
+  });
+
+  it("allows custom headers to override X-Goog-Api-Client case-insensitively", async () => {
+    const proxy = new StitchProxy({
+      apiKey: "proxy-key",
+      headers: {
+        "x-goog-api-client": "custom-mcp/1.0 client/mcp",
+        "X-Proxy-Trace": "trace-1",
+      },
+    });
+    const upstreamClient = (proxy as any).ctx.client;
+    const headers = upstreamClient["buildAuthHeaders"]();
+
+    expect(headers["x-goog-api-client"]).toBe("custom-mcp/1.0 client/mcp");
+    expect(headers["X-Goog-Api-Client"]).toBeUndefined();
+    expect(headers["X-Proxy-Trace"]).toBe("trace-1");
+    await proxy.close();
   });
 });

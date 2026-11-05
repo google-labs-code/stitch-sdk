@@ -20,11 +20,56 @@
  * logic so both code paths stay in sync.
  */
 
+import { SDK_VERSION } from "./version.js";
+
+export type ClientSurface = "sdk" | "mcp" | "cli";
+
 export interface AuthHeaderOptions {
   apiKey?: string;
   accessToken?: string;
   /** Google Cloud project ID for quota/billing with Bearer auth. */
   quotaProjectId?: string;
+}
+
+/**
+ * Build the Google API client telemetry header identifying the Stitch SDK
+ * version and top-level client surface (`gccl/<version> client/<surface>`).
+ */
+export function buildClientSurfaceHeader(
+  surface: ClientSurface = "sdk",
+): string {
+  return `gccl/${SDK_VERSION} client/${surface}`;
+}
+
+/**
+ * Merge HTTP headers case-insensitively. When an override matches an existing
+ * header name regardless of casing, the earlier entry is replaced cleanly so
+ * mixed-case duplicate keys cannot reach `fetch` or MCP transports.
+ */
+export function mergeHeadersCaseInsensitive(
+  base: Record<string, string>,
+  overrides?: Record<string, string>,
+): Record<string, string> {
+  const merged: Record<string, string> = {};
+  const keyByLower = new Map<string, string>();
+
+  const apply = (source: Record<string, string>) => {
+    for (const [key, value] of Object.entries(source)) {
+      const lower = key.toLowerCase();
+      const existingKey = keyByLower.get(lower);
+      if (existingKey !== undefined && existingKey !== key) {
+        delete merged[existingKey];
+      }
+      keyByLower.set(lower, key);
+      merged[key] = value;
+    }
+  };
+
+  apply(base);
+  if (overrides) {
+    apply(overrides);
+  }
+  return merged;
 }
 
 /**

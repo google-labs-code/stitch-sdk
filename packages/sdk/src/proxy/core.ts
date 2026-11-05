@@ -20,6 +20,10 @@ import {
   StitchProxyConfig,
   StitchProxySpec,
 } from "../spec/proxy.js";
+import {
+  buildClientSurfaceHeader,
+  mergeHeadersCaseInsensitive,
+} from "../auth.js";
 import { StitchToolClient } from "../client.js";
 import { ProxyContext, initializeStitchConnection } from "./client.js";
 import { registerListToolsHandler } from "./handlers/listTools.js";
@@ -52,6 +56,7 @@ export class StitchProxy implements StitchProxySpec {
         process.env.STITCH_MCP_URL,
       name: inputConfig?.name,
       version: inputConfig?.version,
+      headers: inputConfig?.headers,
     };
 
     // Validate config
@@ -85,6 +90,10 @@ export class StitchProxy implements StitchProxySpec {
         accessToken: this.config.accessToken,
         projectId: this.config.quotaProjectId,
         baseUrl: this.config.url,
+        headers: mergeHeadersCaseInsensitive(
+          { "X-Goog-Api-Client": buildClientSurfaceHeader("mcp") },
+          this.config.headers,
+        ),
       }),
       remoteTools: [] as Tool[],
     };

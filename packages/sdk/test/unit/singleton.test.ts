@@ -100,6 +100,24 @@ describe("getOrCreateClient", () => {
     expect(client2).not.toBe(client1);
   });
 
+  it("invalidates the cache when headers change and reuses when key order differs", () => {
+    const client1 = getOrCreateClient({
+      apiKey: "k",
+      headers: { "X-B": "2", "X-A": "1" },
+    });
+    const client2 = getOrCreateClient({
+      apiKey: "k",
+      headers: { "X-A": "1", "X-B": "2" },
+    });
+    expect(client2).toBe(client1);
+
+    const client3 = getOrCreateClient({
+      apiKey: "k",
+      headers: { "X-Goog-Api-Client": "gccl/0.4.0 client/cli" },
+    });
+    expect(client3).not.toBe(client1);
+  });
+
   it("picks up STITCH_PROJECT_ID before GOOGLE_CLOUD_PROJECT", () => {
     vi.stubEnv("STITCH_ACCESS_TOKEN", "tok");
     vi.stubEnv("STITCH_PROJECT_ID", "stitch-proj");
