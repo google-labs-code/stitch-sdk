@@ -66,6 +66,14 @@ describe("UploadInputSchema", () => {
       expect(result.data.createScreenInstances).toBe(false);
     }
   });
+
+  it("rejects a deviceType outside MOBILE, DESKTOP, TABLET and AGNOSTIC", () => {
+    const result = UploadInputSchema.safeParse({
+      filePath: "/pages/home.html",
+      deviceType: "PHONE",
+    });
+    expect(result.success).toBe(false);
+  });
 });
 
 // ─── Slice 2: Handler Tests ───────────────────────────────────────────────────
@@ -262,5 +270,21 @@ describe("Project.upload (generic integration)", () => {
     expect(screens[0].screenId).toBe("s-abc");
     expect(screens[0].projectId).toBe("test-project-id");
     expect(screens[0].id).toBe("s-abc");
+  });
+
+  it("sends the deviceType option on the uploaded screen", async () => {
+    const httpPost = vi.fn().mockResolvedValue({ results: [] });
+    const proj = createProjectWithMockedClient(httpPost);
+    await proj.upload("/fake/document.html", { deviceType: "DESKTOP" });
+    const [, body] = httpPost.mock.calls[0];
+    expect(body.requests[0].screen.deviceType).toBe("DESKTOP");
+  });
+
+  it("omits deviceType from the uploaded screen when the option is unset", async () => {
+    const httpPost = vi.fn().mockResolvedValue({ results: [] });
+    const proj = createProjectWithMockedClient(httpPost);
+    await proj.upload("/fake/document.html");
+    const [, body] = httpPost.mock.calls[0];
+    expect(body.requests[0].screen).not.toHaveProperty("deviceType");
   });
 });

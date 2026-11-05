@@ -42,6 +42,8 @@ export const UploadInputSchema = z.object({
   title: z.string().optional(),
   /** If true (default), creates screen instances on the project canvas. */
   createScreenInstances: z.boolean().default(true),
+  /** Optional device the uploaded page or screenshot represents. */
+  deviceType: z.enum(["MOBILE", "DESKTOP", "TABLET", "AGNOSTIC"]).optional(),
 });
 
 export type UploadInput = z.infer<typeof UploadInputSchema>;

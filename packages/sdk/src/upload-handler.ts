@@ -78,6 +78,10 @@ function buildBatchCreateScreensBody(
     screen["title"] = input.title;
   }
 
+  if (input.deviceType) {
+    screen["deviceType"] = input.deviceType;
+  }
+
   return {
     parent: `projects/${projectId}`,
     requests: [{ screen }],

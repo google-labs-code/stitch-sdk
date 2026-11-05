@@ -99,6 +99,7 @@ The method reads the file from disk and posts it directly to the Stitch REST API
 |---|---|---|---|
 | `title` | `string` | — | Display title for the created screen |
 | `createScreenInstances` | `boolean` | `true` | Whether to add the screen to the canvas |
+| `deviceType` | `"MOBILE"` \| `"DESKTOP"` \| `"TABLET"` \| `"AGNOSTIC"` | — | Device the uploaded page or screenshot represents |
 
 **Throws** `StitchError` with codes: `NOT_FOUND` (file not found), `UNKNOWN_ERROR` (unsupported format or upload failure), `AUTH_FAILED` (invalid API key).
 
