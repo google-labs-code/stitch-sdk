@@ -32,6 +32,7 @@ import {
   generateArgsObject,
   generateMethodParams,
   resolveRef,
+  validateArgs,
 } from "../generate-sdk.js";
 
 import type { ProjectionStep } from "../ir-schema.js";
@@ -577,6 +578,19 @@ describe("generateArgsObject", () => {
     expect(result).toContain("projects/");
   });
 
+  test("templateOnly param → interpolated into the template, never sent", () => {
+    const result = generateArgsObject({
+      screenId: { from: "param", templateOnly: true },
+      name: {
+        from: "computed",
+        template: "projects/{projectId}/screens/{screenId}",
+      },
+    });
+    expect(result).toBe(
+      "{ name: `projects/${this.projectId}/screens/${screenId}` }",
+    );
+  });
+
   test("mixed args", () => {
     const result = generateArgsObject({
       projectId: { from: "self" },
@@ -584,6 +598,69 @@ describe("generateArgsObject", () => {
     });
     expect(result).toContain("projectId: this.projectId");
     expect(result).toContain("prompt");
+  });
+});
+
+// ── validateArgs ────────────────────────────────────────────
+
+describe("validateArgs", () => {
+  // get_screen's live inputSchema: `name` only (#381)
+  const getScreenInput = {
+    type: "object",
+    properties: { name: { type: "string" } },
+    required: ["name"],
+  };
+  const nameTemplate = {
+    from: "computed" as const,
+    template: "projects/{projectId}/screens/{screenId}",
+  };
+
+  test("accepts args declared by the inputSchema, plus templateOnly params", () => {
+    expect(() =>
+      validateArgs(
+        {
+          screenId: { from: "param", templateOnly: true },
+          name: nameTemplate,
+        },
+        getScreenInput,
+        "Project.getScreen",
+      ),
+    ).not.toThrow();
+  });
+
+  test("rejects a sent arg the inputSchema does not declare", () => {
+    expect(() =>
+      validateArgs(
+        {
+          projectId: { from: "self" },
+          screenId: { from: "self" },
+          name: nameTemplate,
+        },
+        getScreenInput,
+        "Screen.getHtmlUrl",
+      ),
+    ).toThrow(
+      /Screen\.getHtmlUrl.*"projectId" is not declared[\s\S]*Available properties: name/,
+    );
+  });
+
+  test("rejects a templateOnly param that no computed template references", () => {
+    expect(() =>
+      validateArgs(
+        {
+          screenId: { from: "param", templateOnly: true },
+          name: { from: "computed", template: "projects/{projectId}" },
+        },
+        getScreenInput,
+        "Project.getScreen",
+      ),
+    ).toThrow(/templateOnly param "screenId"/);
+  });
+
+  test("skips validation when the inputSchema declares no properties", () => {
+    expect(() =>
+      validateArgs({ anything: { from: "param" } }, { type: "object" }, "T.m"),
+    ).not.toThrow();
   });
 });
 

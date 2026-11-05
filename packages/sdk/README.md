@@ -179,8 +179,7 @@ import { StitchToolClient, GetScreenResponse } from "@google/stitch-sdk";
 
 const client = new StitchToolClient({ apiKey: "..." });
 const result = await client.callTool<GetScreenResponse>("get_screen", {
-  projectId: "...",
-  screenId: "...",
+  name: "projects/.../screens/...",
 });
 await client.close();
 ```

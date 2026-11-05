@@ -242,6 +242,50 @@ function lintUnbounded(
   }
 }
 
+// ── Input Schema Validation ───────────────────────────────────
+
+/**
+ * Validate that every arg a binding SENDS is declared by the tool's
+ * inputSchema. The server rejects undeclared fields ("Request contains an
+ * invalid argument"), so this is a codegen error, not a runtime surprise:
+ * a re-captured manifest that drops an input field fails here.
+ *
+ * `templateOnly` params are never sent, so they are exempt — but they must
+ * feed a `computed` template, otherwise they are dead method parameters.
+ */
+export function validateArgs(
+  args: Record<string, ArgSpec>,
+  inputSchema: ToolSchema | null | undefined,
+  bindingLabel: string,
+): void {
+  const templates = Object.values(args).flatMap((spec) =>
+    spec.from === "computed" ? [spec.template] : [],
+  );
+  const props = inputSchema?.properties;
+
+  for (const [name, spec] of Object.entries(args)) {
+    if (spec.from === "param" && spec.templateOnly) {
+      if (!templates.some((t) => t.includes(`{${name}}`))) {
+        throw new Error(
+          `❌ Binding "${bindingLabel}": templateOnly param "${name}" is not ` +
+            `referenced by any computed template.`,
+        );
+      }
+      continue;
+    }
+    if (!props) continue; // Can't validate (schema is too loose)
+    if (!(name in props)) {
+      throw new Error(
+        `❌ Binding "${bindingLabel}": arg "${name}" is not declared in the ` +
+          `tool's inputSchema.\n` +
+          `   Available properties: ${Object.keys(props).join(", ")}\n` +
+          `   Fix: remove the arg, or mark a param "templateOnly" if it only ` +
+          `feeds a computed template.`,
+      );
+    }
+  }
+}
+
 // ── Projection Code Emission ──────────────────────────────────
 
 /**
@@ -626,6 +670,8 @@ export function generateArgsObject(args: Record<string, ArgSpec>): string {
       const field = spec.field || name;
       entries.push(`${name}: [this.${field}]`);
     } else if (spec.from === "param") {
+      // templateOnly params only feed computed templates — never sent
+      if (spec.templateOnly) continue;
       const paramName = spec.rename || name;
       // Optional params live on the trailing options object (D12);
       // a declared default is applied when the caller omits the value.
@@ -871,6 +917,19 @@ async function main() {
 
   console.log("🔍 Validating binding IR...");
   console.log("  ✓ IR schema valid");
+
+  // Validate sent args against input schemas
+  console.log("🔍 Validating args against input schemas...");
+  for (const binding of domainMap.bindings) {
+    const tool = manifest.find((t) => t.name === binding.tool);
+    if (!tool) continue;
+    validateArgs(
+      binding.args,
+      tool.inputSchema,
+      `${binding.class}.${binding.method}`,
+    );
+  }
+  console.log("  ✓ All sent args declared by tool input schemas");
 
   // Validate projections against output schemas
   console.log("🔍 Validating projections against output schemas...");

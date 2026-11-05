@@ -176,9 +176,8 @@ export class DownloadAssetsHandler implements DownloadAssetsSpec {
         let htmlUrl = screen.htmlCode?.downloadUrl;
         if (!htmlUrl) {
           try {
+            // get_screen accepts only `name`; extra fields are rejected
             const raw = await this.client.callTool("get_screen", {
-              projectId,
-              screenId: screenId,
               name: `projects/${projectId}/screens/${screenId}`,
             });
             htmlUrl = (raw as any)?.htmlCode?.downloadUrl;

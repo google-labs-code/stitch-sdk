@@ -90,6 +90,13 @@ const ArgParam = z
      * on a required param is a contradiction.
      */
     default: z.string().optional(),
+    /**
+     * Method parameter that only feeds a `computed` template and is NOT
+     * sent to the tool. For tools that take a resource `name` built from
+     * the caller's IDs (get_screen accepts only `name`, and rejects any
+     * extra field).
+     */
+    templateOnly: z.boolean().optional(),
   })
   .strict()
   .refine((data) => data.default === undefined || data.optional === true, {

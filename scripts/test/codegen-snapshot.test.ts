@@ -287,6 +287,25 @@ describe("fixture output behavior", () => {
     expect(url).toBe("https://x/y.html");
   });
 
+  test("templateOnly params feed the computed name but are never sent", async () => {
+    const { Gizmo } = await import(join(outDir, "gizmo.ts"));
+    const client = makeFakeClient();
+    client.nextResponse = { name: "gizmos/g-9/widgets/w-4", label: "Knob" };
+
+    const gizmo = client.entities.resolve(Gizmo, ["gizmoId"], {
+      gizmoId: "g-9",
+    });
+    const widget = await gizmo.getWidget("w-4");
+
+    // Exactly the declared input: no gizmoId/widgetId beside `name` (#381)
+    expect(client.calls[0]).toEqual({
+      tool: "get_widget",
+      args: { name: "gizmos/g-9/widgets/w-4" },
+    });
+    expect(widget.gizmoId).toBe("g-9");
+    expect(widget.widgetId).toBe("w-4");
+  });
+
   test("cache projection short-circuits without an API call", async () => {
     const { Gizmo } = await import(join(outDir, "gizmo.ts"));
     const client = makeFakeClient();

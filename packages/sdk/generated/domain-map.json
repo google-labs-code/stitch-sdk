@@ -269,11 +269,9 @@
       "class": "Project",
       "method": "getScreen",
       "args": {
-        "projectId": {
-          "from": "self"
-        },
         "screenId": {
-          "from": "param"
+          "from": "param",
+          "templateOnly": true
         },
         "name": {
           "from": "computed",
@@ -291,12 +289,6 @@
       "class": "Screen",
       "method": "getHtmlUrl",
       "args": {
-        "projectId": {
-          "from": "self"
-        },
-        "screenId": {
-          "from": "self"
-        },
         "name": {
           "from": "computed",
           "template": "projects/{projectId}/screens/{screenId}"
@@ -332,12 +324,6 @@
       "class": "Screen",
       "method": "getImageUrl",
       "args": {
-        "projectId": {
-          "from": "self"
-        },
-        "screenId": {
-          "from": "self"
-        },
         "name": {
           "from": "computed",
           "template": "projects/{projectId}/screens/{screenId}"

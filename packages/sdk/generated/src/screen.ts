@@ -3,7 +3,7 @@
 DO NOT EDIT — changes will be overwritten.
 
 Source: tools-manifest.json (sha256:88ec3dfa066c...)
-        domain-map.json     (sha256:a6177cc7e2f4...)
+        domain-map.json     (sha256:55a31393745c...)
  */
 import { type StitchToolClientSpec } from "../../src/spec/client.js";
 import { StitchError } from "../../src/spec/errors.js";
@@ -261,8 +261,6 @@ export class Screen {
 
     try {
       const raw = await this.client.callTool<GetScreenResponse>("get_screen", {
-        projectId: this.projectId,
-        screenId: this.screenId,
         name: `projects/${this.projectId}/screens/${this.screenId}`,
       });
       // writeBack: merge the response into this.data so the next call hits the cache
@@ -293,8 +291,6 @@ export class Screen {
 
     try {
       const raw = await this.client.callTool<GetScreenResponse>("get_screen", {
-        projectId: this.projectId,
-        screenId: this.screenId,
         name: `projects/${this.projectId}/screens/${this.screenId}`,
       });
       // writeBack: merge the response into this.data so the next call hits the cache

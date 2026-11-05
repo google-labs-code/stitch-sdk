@@ -71,6 +71,7 @@ const REQUIRED_TOKENS = [
   "rename",
   "default",
   "template",
+  "templateOnly",
   // Class config
   "constructorParams",
   "reference",
@@ -113,6 +114,10 @@ check(
 check(
   ArgSpec.safeParse({ from: "param", optional: true, default: "D" }).success,
   "param default is live",
+);
+check(
+  ArgSpec.safeParse({ from: "param", templateOnly: true }).success,
+  "param templateOnly is live",
 );
 check(
   !DomainClassConfig.safeParse({

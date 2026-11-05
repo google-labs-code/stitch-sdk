@@ -21,7 +21,7 @@ This skill teaches you how to perform **Stage 2** of the generation pipeline: re
 A valid `domain-map.json` with two sections: `classes` and `bindings`, validated by `ir-schema.ts`.
 
 > [!IMPORTANT]
-> Your output is validated **twice** by the codegen: structurally (Zod IR schema) and semantically (projection steps verified against `outputSchema` from the tools-manifest).
+> Your output is validated **twice** by the codegen: structurally (Zod IR schema) and semantically (sent args verified against `inputSchema`, projection steps verified against `outputSchema` from the tools-manifest).
 
 ---
 
@@ -83,6 +83,18 @@ Each binding maps one MCP tool to one class method. Ask: "Who owns this action?"
 Optional params use `"optional": true`. Renamed params use `"rename": "newName"`.
 A `"default": "VALUE"` (requires `optional: true`) is sent when the caller
 omits the value: `deviceType: options?.deviceType ?? "DESKTOP"`.
+
+A `computed` template reads `{field}` from the arg of that name, or from
+`this.field` when there is none — so a self field needs no arg to be used in a
+template. A param marked `"templateOnly": true` stays in the method signature
+and feeds the template, but is never sent: `getScreen(screenId)` sends only
+``{ name: `projects/${this.projectId}/screens/${screenId}` }``.
+
+> [!IMPORTANT]
+> **Every arg that is sent must be declared by the tool's `inputSchema`.** The
+> server rejects undeclared fields ("Request contains an invalid argument"), so
+> codegen fails on them. When a re-captured manifest drops an input field,
+> remove the arg, or mark the param `templateOnly` if it builds a `name`.
 
 > [!IMPORTANT]
 > **Method signature shape (D12):** required params are positional, in IR

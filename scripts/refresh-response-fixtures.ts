@@ -83,8 +83,6 @@ await record("list_screens", { projectId });
 await record("list_design_systems", { projectId });
 if (screenId) {
   await record("get_screen", {
-    projectId,
-    screenId,
     name: `projects/${projectId}/screens/${screenId}`,
   });
 } else {

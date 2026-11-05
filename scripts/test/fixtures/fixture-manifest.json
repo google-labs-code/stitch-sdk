@@ -73,6 +73,27 @@
     }
   },
   {
+    "name": "get_widget",
+    "description": "Gets a widget by resource name.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Resource name only (regression for get_screen, #381)"
+        }
+      },
+      "required": ["name"]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "label": { "type": "string" }
+      }
+    }
+  },
+  {
     "name": "spawn_widgets",
     "description": "Spawns widgets from a prompt.",
     "inputSchema": {

@@ -81,6 +81,22 @@
       }
     },
     {
+      "tool": "get_widget",
+      "class": "Gizmo",
+      "method": "getWidget",
+      "args": {
+        "widgetId": { "from": "param", "templateOnly": true },
+        "name": {
+          "from": "computed",
+          "template": "gizmos/{gizmoId}/widgets/{widgetId}"
+        }
+      },
+      "returns": {
+        "class": "Widget",
+        "projection": []
+      }
+    },
+    {
       "tool": "spawn_widgets",
       "class": "Gizmo",
       "method": "spawnFirst",

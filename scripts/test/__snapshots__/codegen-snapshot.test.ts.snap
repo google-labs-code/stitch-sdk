@@ -83,6 +83,7 @@ import { StitchError } from "../../src/spec/errors.js";
 import { GizmoInput, File, Component, GizmoData } from "./types.generated.js";
 import {
   GetGizmoAssetResponse,
+  GetWidgetResponse,
   SpawnWidgetsResponse,
 } from "./responses.generated.js";
 import { Widget } from "./widget.js";
@@ -170,6 +171,24 @@ export class Gizmo {
           recoverable: false,
         });
       return _value;
+    } catch (error) {
+      throw StitchError.fromUnknown(error);
+    }
+  }
+
+  /**
+   * Gets a widget by resource name.
+   * Tool: get_widget
+   */
+  async getWidget(widgetId: string): Promise<Widget> {
+    try {
+      const raw = await this.client.callTool<GetWidgetResponse>("get_widget", {
+        name: \`gizmos/\${this.gizmoId}/widgets/\${widgetId}\`,
+      });
+      return this.client.entities.resolve(Widget, ["gizmoId", "widgetId"], {
+        ...raw,
+        gizmoId: this.gizmoId,
+      });
     } catch (error) {
       throw StitchError.fromUnknown(error);
     }
@@ -414,6 +433,12 @@ export interface ListGizmosResponse {
 export interface GetGizmoAssetResponse {
   htmlCode?: File;
   title?: string;
+}
+
+/** Response message for get_widget. */
+export interface GetWidgetResponse {
+  name?: string;
+  label?: string;
 }
 
 /** Response message for spawn_widgets. */

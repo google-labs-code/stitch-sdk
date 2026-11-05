@@ -460,6 +460,44 @@ describe("DownloadAssetsHandler", () => {
       },
     ]);
   });
+
+  it("falls back to get_screen with only the resource name when a screen has no htmlCode", async () => {
+    const mockClient = { callTool: vi.fn() } as any;
+    mockClient.callTool.mockImplementation((tool: string) => {
+      if (tool === "list_screens") {
+        return Promise.resolve({
+          screens: [{ id: "s1", name: "projects/p1/screens/s1" }],
+        });
+      }
+      if (tool === "get_screen") {
+        return Promise.resolve({
+          htmlCode: { downloadUrl: "https://fake/s1.html" },
+        });
+      }
+      return Promise.resolve({});
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve("<html></html>"),
+      }),
+    );
+
+    const handler = new DownloadAssetsHandler(mockClient);
+    const result = await handler.execute({
+      projectId: "p1",
+      outputDir: "/tmp/out",
+    });
+
+    // get_screen accepts only `name`; any extra field is rejected (#381)
+    expect(mockClient.callTool).toHaveBeenCalledWith("get_screen", {
+      name: "projects/p1/screens/s1",
+    });
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.downloadedScreens.map((s) => s.screenId)).toEqual(["s1"]);
+  });
 });
 
 describe("sanitizeFilename", () => {

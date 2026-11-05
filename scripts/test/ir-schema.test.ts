@@ -124,6 +124,16 @@ describe("ArgSpec", () => {
     expect(result.success).toBe(true);
   });
 
+  test("accepts templateOnly param arg", () => {
+    const result = ArgSpec.safeParse({ from: "param", templateOnly: true });
+    expect(result.success).toBe(true);
+  });
+
+  test("rejects templateOnly on a self arg (self fields reach templates without an arg)", () => {
+    const result = ArgSpec.safeParse({ from: "self", templateOnly: true });
+    expect(result.success).toBe(false);
+  });
+
   test("rejects unknown 'from' variant", () => {
     const result = ArgSpec.safeParse({ from: "magic" });
     expect(result.success).toBe(false);

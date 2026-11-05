@@ -70,9 +70,8 @@ describe("SDK Unit Tests", () => {
 
       const result = await screen.getHtmlUrl();
 
+      // get_screen accepts only `name`; any extra field is rejected (#381)
       expect(mockClient.callTool).toHaveBeenCalledWith("get_screen", {
-        projectId: projectId,
-        screenId: "screen-123",
         name: "projects/proj-123/screens/screen-123",
       });
       expect(result).toBe("https://api.example.com/html");
@@ -105,8 +104,6 @@ describe("SDK Unit Tests", () => {
       const result = await screen.getImageUrl();
 
       expect(mockClient.callTool).toHaveBeenCalledWith("get_screen", {
-        projectId: projectId,
-        screenId: "screen-123",
         name: "projects/proj-123/screens/screen-123",
       });
       expect(result).toBe("https://api.example.com/image.png");
@@ -127,8 +124,6 @@ describe("SDK Unit Tests", () => {
       const err = await screen.getHtmlUrl().catch((e: unknown) => e);
 
       expect(mockClient.callTool).toHaveBeenCalledWith("get_screen", {
-        projectId: projectId,
-        screenId: "screen-123",
         name: "projects/proj-123/screens/screen-123",
       });
       // Missing artifact is NOT_FOUND, never a silent empty string
@@ -562,6 +557,28 @@ describe("SDK Unit Tests", () => {
       });
 
       expect(result).toEqual([]);
+    });
+
+    it("getScreen should call get_screen with only the resource name", async () => {
+      const project = mockClient.entities.resolve(
+        Project,
+        ["projectId"],
+        projectId,
+      );
+
+      (mockClient.callTool as Mock).mockResolvedValue({
+        name: `projects/${projectId}/screens/s-42`,
+        title: "Checkout",
+      });
+
+      const screen = await project.getScreen("s-42");
+
+      expect(mockClient.callTool).toHaveBeenCalledWith("get_screen", {
+        name: `projects/${projectId}/screens/s-42`,
+      });
+      expect(screen).toBeInstanceOf(Screen);
+      expect(screen.projectId).toBe(projectId);
+      expect(screen.screenId).toBe("s-42");
     });
 
     it("generate should throw StitchError on failure", async () => {
